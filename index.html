@@ -11312,7 +11312,8 @@ function tcRender(){
   $("#tcSort") && ($("#tcSort").onchange = e => { TC_F.sort = e.target.value; tcRender(); });
   $("#tcQ") && ($("#tcQ").oninput = e => { clearTimeout(window.__tcQt); const v = e.target.value; window.__tcQt = setTimeout(() => { TC_F.q = v; const y = scrollY; tcRender(); scrollTo(0, y); const i = $("#tcQ"); if (i){ i.focus(); i.setSelectionRange(v.length, v.length); } }, 250); });
   // ouvrir un booster, ou plusieurs du même type d'un coup (même mise en scène, toutes les cartes à la suite)
-  const openN = q => { if (document.querySelector(".tcopen")) return;   /* 25 oct. 2026 : double appui au téléphone → deux ouvertures superposées, la seconde restait bloquée */
+  const openN = q => { { const o = document.querySelector(".tcopen"); if (o && Date.now() - (+o.dataset.t0 || 0) < 2500) return; }   /* 25 oct. 2026 : double appui au téléphone → deux ouvertures superposées, la seconde restait bloquée */
+    /* 2 nov. 2026 : un écran d'ouverture resté dans la page (app reprise après une mise en veille) bloquait toutes les ouvertures suivantes jusqu'au rechargement ; passé 2,5 s, tcOpening le remplace */
     const s = tcLoad(), k = TC_PICK, real = k === "free" ? "mix:0" : k; if (!k) return;
     if (k === "free"){ if (s.free.n < q) return; if (s.free.n === TC_FREE.max) s.free.t = Date.now(); s.free.n -= q; } else { if (!((s.packs[k] || 0) >= q)) return; s.packs[k] -= q; }
     // 25 oct. 2026 : ordre d'un vrai booster TCG. On ouvre booster par booster ; dans chacun, Communes d'abord, Peu communes, puis la Rare,
@@ -11324,6 +11325,7 @@ function tcRender(){
     tcSave(s); tcOpening(real, all); try { gxPull(all); } catch {} };
   $("#tcOpen") && ($("#tcOpen").onclick = () => openN(1));
   // « Tout ouvrir » : tous les boosters du type choisi d'un coup (TC_ALLMAX au plus par clic, pour que l'écran de bilan reste fluide)
+  window.tcOpenN = q => { if (q === "all"){ const s = tcLoad(), n = TC_PICK === "free" ? s.free.n : s.packs[TC_PICK] || 0; if (n >= 1) openN(Math.min(TC_ALLMAX, n)); } else openN(q); };   /* l'accueil ouvre sans passer par les boutons de l'onglet (absents s'il n'est pas affiché) */
   document.querySelectorAll("[data-tcopen]").forEach(b => b.onclick = () => { if (b.dataset.tcopen !== "all") return openN(+b.dataset.tcopen); const s = tcLoad(), n = TC_PICK === "free" ? s.free.n : s.packs[TC_PICK] || 0; if (n >= 1) openN(Math.min(TC_ALLMAX, n)); });
   document.querySelectorAll("[data-tcbuy]").forEach(b => b.onclick = () => { const s = tcLoad(), t = +b.dataset.tcbuy, c = tcPrice(TC_SHOP.u, t); if (s.gems < c) return;
     if (!tcPaidOk(c, () => b.click())) return; s.gems -= c; tcGive(s, tcKey(TC_SHOP.u, t)); TC_PICK = tcKey(TC_SHOP.u, t); TC_SUB = "mine"; tcSave(s); tcRender(); SFX.play("pop"); });
@@ -11462,7 +11464,7 @@ const TC_YC = {L: "#f7c64a", M: "#ff4a2e", X: "#7de3ff", S: "#ff7ab8", G: "#ffd2
 // moteur 3D des cinématiques : créé une seule fois et préparé pendant la déchirure du sachet (tcCineWarm), puis réutilisé.
 // Le créer au début de chaque cinématique figeait l'écran 0,2 à 0,5 s (plus sur téléphone) — 19 oct. 2026
 let TC_CRD = null;
-function tcCineRD(T){ if (!TC_CRD) TC_CRD = new T.WebGLRenderer({alpha: true, antialias: !TC_LITE, powerPreference: "high-performance"}); return TC_CRD; }
+function tcCineRD(T){ if (TC_CRD){ let lost = true; try { lost = TC_CRD.getContext().isContextLost(); } catch {} if (lost){ try { TC_CRD.dispose(); } catch {} TC_CRD = null; } } if (!TC_CRD) TC_CRD = new T.WebGLRenderer({alpha: true, antialias: !TC_LITE, powerPreference: "high-performance"}); return TC_CRD; }
 function tcCineWarm(){ const T = window.THREE; if (!T || tcCalm() || (TC_CRD && TC_CRD._warm)) return; try { const rd = tcCineRD(T); rd.setSize(8, 8, false);
     const sc = new T.Scene(), cam = new T.PerspectiveCamera(70, 1, .1, 120), g = new T.BufferGeometry(); g.setAttribute("position", new T.Float32BufferAttribute([0, 0, -1, 1, 1, -2], 3)); sc.fog = new T.Fog(0x050407, 5, 58);
     const ms = [new T.LineBasicMaterial({transparent: true, opacity: .5}), new T.LineBasicMaterial({color: 0xffffff, transparent: true, opacity: .7, blending: T.AdditiveBlending, depthWrite: false}), new T.SpriteMaterial({transparent: true, blending: T.AdditiveBlending, depthWrite: false, opacity: 0, fog: false})];
@@ -11486,7 +11488,8 @@ function tcCineGL(el, col, myth){ const T = window.THREE; if (!T || tcCalm()) re
   const sun = spr(C, false), core = spr(0xffffff, false), flash = spr(0xffffff, false); sun.position.z = core.position.z = -50; flash.position.z = -6; sc.add(sun, core, flash); disp.push(gtx);
   let raf = 0, dead = false, last = performance.now(), t0 = last, stage = 0, rev = 0, speed = 12, kick = 0, slow = 0, n = 0, prev = 0;
   addEventListener("resize", size);
-  const stop = () => { if (dead) return; dead = true; cancelAnimationFrame(raf); removeEventListener("resize", size); el.classList.remove("gl"); cv.remove(); disp.forEach(d => d.dispose()); };   /* le moteur est gardé pour la prochaine cinématique */
+  const stop = () => { if (dead) return; dead = true; cancelAnimationFrame(raf); removeEventListener("resize", size); cv.removeEventListener("webglcontextlost", lost); el.classList.remove("gl"); cv.remove(); disp.forEach(d => d.dispose()); }, lost = () => { stop(); TC_CRD = null; };   /* contexte perdu : tunnel CSS, nouveau moteur à la prochaine */
+  cv.addEventListener("webglcontextlost", lost);   /* le moteur est gardé pour la prochaine cinématique */
   const loop = now => { if (dead) return; if (!el.isConnected){ stop(); return; } try { const dt = Math.min(.05, (now - last) / 1000), el2 = (now - t0) / 1000; last = now;
     { const NN = TC_LITE ? 36 : 51, lim = TC_LITE ? 26 : 40; if (n < NN){ n++; if (n > 6){ if (prev) slow += now - prev; prev = now; } if (n === NN && slow / (NN - 8) > lim){ stop(); return; } } }   /* les premières images (mise en route) ne comptent pas */   /* l'appareil ne suit pas : retour au tunnel simple */
     const rt = rev ? (now - rev) / 1000 : -1, target = rev ? 2.2 : [12, 20, 30, 46][stage]; speed += (target - speed) * Math.min(1, dt * (rev ? 2.4 : 3)); kick *= Math.pow(.02, dt);
@@ -11517,7 +11520,7 @@ function tcCine(c, o = {}){
   return new Promise(res => {
     const sty = c.f === "Z" ? "Z" : c.f === "G" ? "G" : c.f === "K" ? "M" : c.f === "S" ? "S" : c.f === "W" ? "L" : c.r === "X" ? "X" : c.r === "M" ? "M" : c.r === "L" ? "L" : "E", myth = sty !== "L" && sty !== "E", calm = tcCalm(), mini = !!o.mini || (sty === "E" && !o.full);
     try {   /* 19 oct. 2026 : si la cinématique échoue, on la retire et on continue (avant, l'écran restait bloqué) */
-    const img = tcArt(c, c.f);
+    const img = tcArt(c, c.f); document.querySelectorAll(".tccine").forEach(x => x.remove());
     document.body.insertAdjacentHTML("beforeend", `<div class="tccine r-${tcER(c, c.f)} y${sty} ${mini ? "mini" : ""} ${TC_LITE ? "lite" : ""}" role="dialog" aria-modal="true" aria-label="${TC_R[tcER(c, c.f)][0]} : ${esc(c.n)}">
       <div class="tun" aria-hidden="true"><i class="floor"></i><i class="ceil"></i><i class="beam b1"></i><i class="beam b2"></i></div>
       ${sty === "M" || sty === "X" || sty === "Z" ? `<div class="bolts" aria-hidden="true"><i></i><i></i><i></i></div>` : ""}${sty === "S" ? `<div class="pans" aria-hidden="true"><i></i><i></i><i></i></div>` : ""}${sty === "G" ? `<div class="rain" aria-hidden="true"></div>` : ""}
@@ -11527,7 +11530,7 @@ function tcCine(c, o = {}){
       <div class="fl"></div><div class="rays"></div>${myth ? `<div class="rays two"></div>` : ""}<div class="ring"></div>${myth ? `<div class="ring two"></div>` : ""}
       <div class="sp">${Array.from({length: TC_LITE ? (myth ? 18 : 12) : myth ? 46 : 28}, (_, k) => `<i style="--a:${Math.round(Math.random() * 360)}deg;--d:${30 + Math.round(Math.random() * 46)}vmin;--t:${(.7 + Math.random() * 1.1).toFixed(2)}s;--w:${(Math.random() * .5).toFixed(2)}s"></i>`).join("")}</div>
       <div class="seal">${c.f === "Z" ? "伝説" : c.r === "X" ? "覚醒" : c.f === "G" ? "黄金" : c.f === "K" ? "鮮血" : c.f === "S" ? "特別" : c.f === "W" ? "手配" : c.r === "M" ? "神話" : c.r === "L" ? "伝説" : "叙事"}</div>${o.key ? tcOddsOf(c, o.key) : ""}<div class="lab">${TC_R[tcER(c, c.f)][0]}${c.f ? " · " + TC_FIN[c.f][0] : ""}</div><div class="cardw">${tcCard(c, {isNew: c.isNew, newFin: c.newFin, f: c.f})}</div><div class="who"><b>${esc(c.n)}</b><span>${c.isNew ? "Nouvelle carte" : c.newFin ? "Nouvelle version" : "Doublon"} · ${TC_PACKS[c.u][0]}</span></div><div class="tap">Touche pour continuer</div></div>`);
-    const el = document.querySelector(".tccine"), timers = []; let final = 0;
+    const el = document.body.lastElementChild, timers = []; let final = 0;
     const GLc = tcCineGL(el, TC_YC[sty] || "#b07cff", myth), G = !calm && window.gsap;
     // révélation : la carte arrive du fond en tournant sur elle-même, puis flotte et suit le doigt ou la souris (reflets compris)
     const card3d = () => { const cd = el.querySelector(".cardw .tc"); if (!G || !cd) return; el.classList.add("gs");
@@ -11884,7 +11887,7 @@ function tcPouchImg(key){ const ok = !document.fonts || (document.fonts.check('8
   if (!ok && !TC_PFONT){ TC_PFONT = true; Promise.all([document.fonts.load('800 40px "Shippori Mincho B1"', "海龍忍混呪鬼英"), document.fonts.load('900 40px Unbounded', "HANKO"), document.fonts.load('500 20px "JetBrains Mono"', "A")]).then(() => { TC_PIMG.clear(); try { if (!$("#tcg").classList.contains("hidden") && !document.querySelector(".tcopen,.tcview,.tccine")) tcRender(); } catch {} }).catch(() => {}); }
   if (!TC_PIMG.has(key)){ try { TC_PIMG.set(key, tcPouchTex(key, false).toDataURL("image/jpeg", .9)); } catch { return ""; } } return TC_PIMG.get(key); }
 function tcPouchGL(O, key){ const T = window.THREE, wrap = O.querySelector(".tearw"), p = wrap && wrap.querySelector(".pouch"); if (!T || !p || tcCalm()) return null;
-  let rd; try { rd = new T.WebGLRenderer({alpha: true, antialias: true, powerPreference: "high-performance"}); } catch { return null; }
+  let rd; try { rd = new T.WebGLRenderer({alpha: true, antialias: true, powerPreference: "high-performance"}); if (rd.getContext().isContextLost()){ rd.dispose(); return null; } } catch { return null; }
   const {t} = tcParse(key), cv = rd.domElement, K = 1.6; cv.className = "pkgl"; cv.setAttribute("aria-hidden", "true"); wrap.appendChild(cv); wrap.classList.add("gl");
   const size = () => { const r = p.getBoundingClientRect(), w = r.width * K, h = r.height * K; rd.setPixelRatio(Math.min(devicePixelRatio || 1, 2)); rd.setSize(w, h, false); }; size(); rd.outputEncoding = T.sRGBEncoding;
   const sc = new T.Scene(), cam = new T.PerspectiveCamera(30, 13 / 19, .1, 50); cam.position.z = 1.9 * K / (2 * Math.tan(15 * Math.PI / 180));
@@ -11928,6 +11931,9 @@ function tcPouchGL(O, key){ const T = window.THREE, wrap = O.querySelector(".tea
       const s2 = Math.max(0, Math.min(1, (tr - .95) / .5)); if (s2 > 0){ bodyG.position.y = -s2 * s2 * .95; fade(false, 1 - s2); } }
     rd.render(sc, cam); raf = requestAnimationFrame(loop); };
   raf = requestAnimationFrame(loop);
+  /* 2 nov. 2026 : sur iPhone (app sur l'écran d'accueil), le système retire le contexte 3D en arrière-plan ou quand la mémoire manque ; le sachet 3D devenait invisible
+     et le sachet CSS restait caché : on revient au sachet CSS, toujours ouvrable */
+  cv.addEventListener("webglcontextlost", () => { try { stop(); } catch {} }); document.addEventListener("visibilitychange", function vis(){ if (dead) return document.removeEventListener("visibilitychange", vis); if (!document.hidden) try { if (rd.getContext().isContextLost()) stop(); } catch { stop(); } });
   return {charge: () => { chg = performance.now(); }, tear: (d = 1) => { tdir = d < 0 ? -1 : 1; frz = false; tear = performance.now(); }, hold: on => { frz = !!on; if (frz){ tx2 = ty2 = 0; } }, stop,
     // booster secret : le sachet fait un tour complet ; son dos s'illumine à la couleur du booster, puis il revient de face recouvert de sa feuille colorée
     secret: (col, kj, cb, delay = 0) => { spTx = [false, true].map(bk => { const tx = new T.CanvasTexture(tcSecTex(key, bk, col, kj)); tx.encoding = T.sRGBEncoding; tx.anisotropy = 4; return tx; });
@@ -11948,7 +11954,7 @@ function tcOpening(key, got){
   const {u, t} = tcParse(key), best = top ? (top.r === "L" && top.f !== "G" ? "L" : "M") : "C", bi = top ? (best === "M" ? 5 : 4) : 0, calm = tcCalm();
   document.querySelectorAll(".tcopen").forEach(x => x.remove());   /* un écran d'ouverture resté ouvert : jamais deux à la fois (les cartes sont déjà enregistrées) */
   document.body.insertAdjacentHTML("beforeend", `<div class="tcopen t${t}" style="--pc:${TC_PACKS[u][2]}" role="dialog" aria-modal="true" aria-label="Ouverture du booster"><div class="otop"><button class="ghost" id="tcBackB">← Retour</button><b><i>${TC_PACKS[u][1]}</i>${tcName(key)}</b><span class="ost"></span></div><span class="owm" aria-hidden="true">H</span><h2>Booster ${tcName(key)}${got.packs > 1 ? " ×" + got.packs : ""}</h2><div class="mid"><div class="aura"></div>${(got.secs || []).length ? (() => { const sx = TC_SECRET.find(x => x[0] === got.secs[0]), n = got.secs.length; return `<div class="secx" style="--sc:${sx[4]}"><small>Booster secret</small><b>${n > 1 ? n + " boosters secrets" : "Booster " + sx[1]}</b>${n > 1 ? "" : `<span class="odds">1 chance sur ${sx[3]}</span>`}</div>`; })() : ""}<div class="tearw ${(got.secs || []).length ? "sec" : ""}" style="--sc:${(got.secs || []).length ? TC_SECRET.find(x => x[0] === got.secs[0])[4] : "transparent"}">${(got.secs || []).length ? `<i class="secrays" aria-hidden="true"></i>` : ""}${got.packs > 1 ? `<span class="xn">×${got.packs}</span>` : ""}${tcPouch(key)}${(got.secs || []).length ? `<i class="secfoil" aria-hidden="true"></i>` : ""}<div class="cutband" aria-hidden="true"><i class="cutg"></i><i class="cutl"></i><i class="cuth"></i></div></div>${(got.secs || []).length ? (() => { const L = [...new Set(got.secs)].map(k => TC_SECRET.find(x => x[0] === k)), sx = L[0]; return `<div class="secinf" style="--sc:${sx[4]}">${L.length > 1 ? `<span class="odds">${L.map(x => x[1]).join(" · ")}</span>` : ""}<span class="gar">${L.map(x => cap1(x[5])).join(" · ")}</span></div>`; })() : ""}<p class="muted">Glisse ton doigt le long de la ligne pour ouvrir</p></div><div class="bot"></div></div>`);
-  const O = document.body.lastElementChild, mid = O.querySelector(".mid"), bot = O.querySelector(".bot"), seen = got.map(() => false); let busy = false, fin = false;
+  const O = document.body.lastElementChild, mid = O.querySelector(".mid"), bot = O.querySelector(".bot"), seen = got.map(() => false); O.dataset.t0 = Date.now(); let busy = false, fin = false;
   const G = !calm && window.gsap, lvlOf = c => c.r === "M" || c.r === "X" || c.f === "G" || c.f === "Z" ? 3 : c.r === "L" || c.f === "K" || c.f === "S" || c.f === "W" ? 2 : TC_ORDER.indexOf(c.r) === 3 || c.f ? 1 : 0;
   let GL = null; try { GL = tcPouchGL(O, key); } catch (e) { console.warn("sachet 3D", e); } if (!calm) setTimeout(() => tcSnd("rustle"), 420);
   setTimeout(() => { try { tcCineWarm(); } catch {} }, 900);   /* prépare le moteur des cinématiques pendant que le joueur ouvre le sachet */
@@ -19914,12 +19920,12 @@ window.NV_ON = true;   /* false : retour à l'ancienne interface */
       if (d.day != null){ PK.sh = 0; pkDraw(); return kjDaily(); } if (d.hs != null){ PK.sh = 0; TC_TAB = "series"; tcRender(); return window.scrollTo(0, 0); } if (d.rt) return tcDrops(d.rt); if (d.pk){ const p = tcParse(d.pk); PK.u = p.u; PK.t = p.t; PK.sh = 0; PK.ex = ""; pkDraw(); } });
     b.querySelectorAll("[data-pq]").forEach(y => y.onclick = () => { PK.q = y.dataset.pq === "all" ? "all" : +y.dataset.pq; pkDraw(); });
     $1("#nvGoPk").onclick = () => { const s = tcLoad(), key = tcKey(PK.u, PK.t);
-      if (PK.q === "all"){ if (stock(s, key) < 1) return; TC_PICK = key === "mix:0" && s.free.n >= 2 ? "free" : key; TC_SUB = "mine"; tcRender(); const go = $1('[data-tcopen="all"]'); if (go) go.click(); return; }
+      if (PK.q === "all"){ if (stock(s, key) < 1) return; TC_PICK = key === "mix:0" && s.free.n >= 2 ? "free" : key; TC_SUB = "mine"; tcRender(); if (window.tcOpenN) return tcOpenN("all"); const go = $1('[data-tcopen="all"]'); if (go) go.click(); return; }
       const q = PK.q, m = Math.max(0, q - stock(s, key)), c = tcPrice(PK.u, PK.t) * m; if (s.gems < c) return; if (m && !tcPaidOk(c, () => $1("#nvGoPk")?.click())) return;
       if (m){ s.gems -= c; for (let k = 0; k < m; k++) tcGive(s, key); tcSave(s); }
       /* les boosters gratuits d'abord, si ils suffisent ; sinon ceux en réserve (les gratuits restants passent au tour suivant) */
       const S = tcLoad(); TC_SUB = "mine"; TC_PICK = key === "mix:0" && S.free.n >= q ? "free" : key; if (key === "mix:0" && (S.packs[key] || 0) < q && S.free.n < q){ const need = q - (S.packs[key] || 0); S.free.n -= need; S.packs[key] = (S.packs[key] || 0) + need; tcSave(S); }
-      tcRender(); const go = q === 1 ? $1("#tcOpen") : $1(`[data-tcopen="${q}"]`); if (go) go.click(); }; };
+      tcRender(); if (window.tcOpenN) return tcOpenN(q); const go = q === 1 ? $1("#tcOpen") : $1(`[data-tcopen="${q}"]`); if (go) go.click(); }; };
   /* Collection : recherche au-dessus des pastilles, le reste replié sous « Filtres » */
   const collFix = () => { const b = $1("#tcg .tcfb"); if (!b || b.querySelector("#nvFl")) return; const q = b.querySelector(".tcfb-q"); if (q){ q.id = "nvQ"; b.prepend(q); q.querySelector("span")?.remove(); } const f = document.createElement("button"); f.id = "nvFl"; f.textContent = "Filtres"; f.onclick = () => { NV.filt = !NV.filt; b.classList.toggle("nvf", NV.filt); }; b.querySelector(".tcrchips")?.after(f); b.classList.toggle("nvf", !!NV.filt); };
   const seg = () => { const b = $1("#nvSeg"); if (!b) return; const set = ["packs", "series"].includes(TC_TAB) ? [["packs", "Boosters"], ["series", "Séries"]] : ["album", "kizuna", "vitrine"].includes(TC_TAB) ? [["album", "Cartes"], ["kizuna", "Kizuna"], ["vitrine", "Vitrine"]] : null; b.classList.toggle("on", !!set); b.innerHTML = set ? set.map(([k, l]) => `<button data-s="${k}" class="${TC_TAB === k ? "on" : ""}">${l}</button>`).join("") : ""; b.querySelectorAll("button").forEach(x => x.onclick = () => { TC_TAB = x.dataset.s; tcRender(); }); };
