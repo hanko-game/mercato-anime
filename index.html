@@ -20119,6 +20119,10 @@ function cofBuy(P, u){ const s = tcLoad(), st = cofState(s, P, u); if (!st.ok) r
   if (c) setTimeout(() => { try { tcView(c, "P"); } catch {} }, 300); }
 /* section Coffrets en tête de l'onglet Boutique du panneau « Ouvrir » */
 document.addEventListener("click", e => { const b = e.target.closest && e.target.closest("[data-cof]"); if (b){ e.stopPropagation(); cofOpen(b.dataset.cof); } }, true);
+const cofGrid = s => `<p class="cofh">Coffrets · dans les 6 univers</p><div class="cofs">${COF.map(P => `<button data-cof="${P.id}"><img src="coffret-${P.id}.webp" alt="" loading="lazy"><b>${esc(P.n)}</b><small>${P.soon ? P.soon : P.deck && !s.cofDeckFree && tcLvl(s.xp || 0) >= 3 ? "Offert" : P.p.toLocaleString("fr-FR") + " ◆"}</small></button>`).join("")}</div>`;
+/* aussi dans la Boutique de l'écran des boosters (onglets « Gratuits et gagnés / Boutique ») */
+new MutationObserver(() => { const t = document.querySelector('#tcg .tcsub [data-tcsub="shop"].sel'); if (!t) return; const sub = t.closest(".tcsub"); if (sub.nextElementSibling && sub.nextElementSibling.classList.contains("cofw")) return;
+  sub.insertAdjacentHTML("afterend", `<div class="cofw">${cofGrid(tcLoad())}<p class="cofh">Boosters</p></div>`); }).observe(document.body, {childList: true, subtree: true});
 new MutationObserver(() => { const sh = document.querySelector("#nvPk .nvsh>div"), on = sh && sh.querySelector('.nvtb [data-tb="2"].on'); if (!on || sh.querySelector(".cofs")) return;
   const s = tcLoad(); sh.querySelector(".nvtb").insertAdjacentHTML("afterend", `<p class="cofh">Coffrets · dans les 6 univers</p><div class="cofs">${COF.map(P => `<button data-cof="${P.id}"><img src="coffret-${P.id}.webp" alt="" loading="lazy"><b>${esc(P.n)}</b><small>${P.soon ? P.soon : P.deck && !s.cofDeckFree && tcLvl(s.xp || 0) >= 3 ? "Offert" : P.p.toLocaleString("fr-FR") + " ◆"}</small></button>`).join("")}</div><p class="cofh">Boosters</p>`); }).observe(document.body, {childList: true, subtree: true});
 </script>
