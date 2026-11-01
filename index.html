@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
 <title>Hanko</title>
+<meta name="theme-color" content="#050505"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Hanko">
+<script>/* 1er nov. 2026 : application installable, seulement sur le site (pas dans claude.ai, où ces fichiers n'existent pas) */
+if (/(^|\.)github\.io$/.test(location.hostname)) document.write('<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icone-apple.png">');</script>
 <meta name="description" content="Hanko : jeux d'anime entre amis (Mercato, Undercover, Perso pixelisé, Silhouettes), mode Carrière et boosters de cartes One Piece, Naruto, Dragon Ball, Jujutsu Kaisen, Demon Slayer et My Hero Academia.">
 <meta property="og:type" content="website"><meta property="og:site_name" content="Hanko"><meta property="og:title" content="Hanko · jeux d'anime et cartes à collectionner">
 <meta property="og:description" content="Joue à 4 jeux d'anime avec tes amis, lance ta Carrière et ouvre des boosters de cartes : One Piece, Naruto, Dragon Ball, Jujutsu Kaisen, Demon Slayer, My Hero Academia.">
@@ -13496,7 +13499,7 @@ function mnOpen(){ mnClose(); const d = mnData(), ratio = d.l ? (d.w / d.l).toFi
         return `<div class="mnwho ${card ? "cc" : ""}" data-mn="profil" role="button" tabindex="0" aria-label="Ouvrir mon profil">${card ? `<div class="ccbg" aria-hidden="true">${card}</div>` : ""}${av}<span class="who"><b>${esc(d.name || "Choisis un pseudo")}</b>${ti}<small>${esc(acc)}</small></span><em aria-hidden="true">→</em></div>`; })()}
       <div class="mnst"><div><span>V/D en ligne</span><b>${ratio}</b><small>${d.w} V · ${d.l} D</small></div><div><span>Cartes</span><b>${d.own}</b><small>sur ${d.tot}</small></div><div><span>Éclats</span><b>${d.s ? d.s.gems : 0} ◆</b><small>niveau ${d.s ? tcLvl(d.s.xp || 0) : 0}</small></div></div></div>
     <h3>Cartes</h3><div class="mngrid"><button data-mn="packs"><i>札</i>Boosters${d.stock ? `<u>${d.stock}</u>` : ""}</button><button data-mn="album"><i>集</i>Collection</button><button data-mn="missions"><i>務</i>Missions${d.todo ? `<u>${d.todo}</u>` : ""}</button><button data-mn="vitrine"><i>飾</i>Vitrine</button></div>
-    <h3>Profil</h3><div class="mngrid"><button data-mn="profil"><i>名</i>Mon profil</button><button data-mn="amis"><i>友</i>Amis</button><button data-mn="parrain"><i>招</i>Parrainage</button><button data-mn="news"><i>新</i>Nouveautés</button></div>
+    <h3>Profil</h3><div class="mngrid"><button data-mn="profil"><i>名</i>Mon profil</button><button data-mn="amis"><i>友</i>Amis</button><button data-mn="parrain"><i>招</i>Parrainage</button><button data-mn="news"><i>新</i>Nouveautés</button><button data-mn="app"><i>報</i>Application et notifications</button></div>
     <h3>Jouer</h3><div class="mngrid"><button data-mn="jeux"><i>遊</i>Tous les jeux</button><button data-mn="join"><i>参</i>Rejoindre</button></div>
     <div class="mnfoot"><button class="a" data-mn="compte">${d.mail ? "Mon compte et ma sauvegarde" : d.guest ? "Créer un compte" : "Se connecter ou créer un compte"} →</button>${d.mail ? `<button class="q" data-mn="out">Se déconnecter</button>` : ""}</div></div></div>`);
   const V = document.querySelector(".mnveil"); V.onclick = e => { if (e.target === V) mnClose(); }; V.querySelector(".mnx").onclick = mnClose; document.addEventListener("keydown", mnKey);
@@ -13507,6 +13510,7 @@ function mnOpen(){ mnClose(); const d = mnData(), ratio = d.l ? (d.w / d.l).toFi
     if (k === "profil") return d.name ? pfShow() : scrollTo("#profBox");
     if (k === "amis") return d.name ? frShow() : scrollTo("#profBox");
     if (k === "news") return hkNews();
+    if (k === "app") return hkApp();
     if (k === "parrain"){ if (!d.name) return scrollTo("#profBox"); FR_TAB = "ref"; return frShow(); }
     if (k === "jeux"){ show("home"); return window.scrollTo({top: 0, behavior: "smooth"}); }
     if (k === "join") return scrollTo("#joinBox");
@@ -14407,6 +14411,48 @@ function hvTuto(i){ const n = HV_TUTO.length, [ill, t, p] = HV_TUTO[i];
       if (FRS.data) go(); else frsLoad().then(go); } catch {} };
 })();
 </script>
+
+<script>
+/* ---- Messages entre amis (1er nov. 2026, lot3-messages-push-supabase.sql) : réservés aux amis, reçus en direct, avec cartes à partager ---- */
+const DM = {open: null, un: {}, off: false, ch: null, list: []};
+const dmName = id => { const f = (FRS.data && FRS.data.friends || []).find(x => x.uid === id); return f ? f.name : "Un ami"; };
+const dmHour = t => new Date(t).toLocaleTimeString("fr-FR", {hour: "2-digit", minute: "2-digit"});
+function dmBubble(m){ const me = m.from_id === CP.user.id, c = m.card_id && hvCard(m.card_id);
+  return `<div class="dmm ${me ? "me" : ""}" data-m="${m.id || ""}">${c ? `<button class="dmc" data-c="${esc(m.card_id)}|${esc(m.card_ver || "")}" aria-label="${esc(hvLbl(m.card_id, m.card_ver))}">${hvMini(m.card_id, m.card_ver, 84)}</button>` : ""}${m.body ? `<p>${esc(m.body)}</p>` : ""}<small>${new Date(m.created_at).toLocaleDateString("fr-FR", {day: "numeric", month: "short"})} · ${dmHour(m.created_at)}</small></div>`; }
+function dmDraw(stick){ const b = document.querySelector(".dml"); if (!b) return; b.innerHTML = DM.list.length ? DM.list.map(dmBubble).join("") : `<p class="hv-note" style="text-align:center">Écris le premier message à ${esc(DM.open.name)}.</p>`;
+  b.querySelectorAll("[data-c]").forEach(x => x.onclick = () => { const [c, v] = x.dataset.c.split("|"), f = DM.open; hvConfirm("Proposer un échange ?", `Tu peux proposer à ${f.name} un échange contre ${hvLbl(c, v)}.`, "Proposer", async () => { tcShow("market"); hvNewTrade({to: f.id, wants: [{c, v}]}); }); });
+  if (stick !== false) b.scrollTop = b.scrollHeight; }
+async function dmLoad(){ const f = DM.open, me = CP.user.id, {data, error} = await CP.sb.from("direct_messages").select("*").or(`and(from_id.eq.${me},to_id.eq.${f.uid}),and(from_id.eq.${f.uid},to_id.eq.${me})`).order("created_at", {ascending: false}).limit(80);
+  if (error) throw error; DM.list = (data || []).reverse(); dmDraw(); await CP.sb.rpc("dm_read", {other: f.uid}); delete DM.un[f.uid]; dmBadge(); }
+async function dmSend(body, card, ver){ const f = DM.open, e = document.querySelector(".dmerr"); if (e) e.textContent = ""; const {data, error} = await CP.sb.from("direct_messages").insert({from_id: CP.user.id, to_id: f.uid, body, card_id: card || null, card_ver: ver || ""}).select().single();
+  if (error){ if (e) e.textContent = /row-level|security/i.test(error.message) ? "Vous n'êtes plus amis : message impossible." : error.message; return false; } DM.list.push(data); dmDraw(); return true; }
+function dmOpen(f){ DM.open = f; DM.list = []; const {M, close} = hvModal(`<div class="head"><h2>${esc(f.name)}</h2><button class="ghost" data-close>✕</button></div><div class="dml"><p class="hv-note" style="text-align:center">Chargement…</p></div><p class="err dmerr" style="margin:0"></p>
+    <div class="dmp hidden"><input type="search" id="dmQ" placeholder="Chercher une de tes cartes" autocomplete="off"><div class="dmg"></div></div>
+    <form class="dmf"><button type="button" id="dmCard" aria-label="Envoyer une carte">札</button><input id="dmIn" maxlength="500" placeholder="Ton message" autocomplete="off" enterkeyhint="send"><button class="primary" type="submit">Envoyer</button></form>`, () => { DM.open = null; });
+  M.classList.add("dmw"); M.querySelector("[data-close]").onclick = close; const inp = M.querySelector("#dmIn");
+  M.querySelector(".dmf").onsubmit = async e => { e.preventDefault(); const v = inp.value.trim(); if (!v) return; inp.value = ""; if (!await dmSend(v)) inp.value = v; inp.focus(); };
+  const P = M.querySelector(".dmp"), draw = q => { const s = tcLoad(), L = hvMyCards(s).filter(x => !q || x.c.n.toLowerCase().includes(q.toLowerCase())).sort((a, b) => (b.c.p || 0) - (a.c.p || 0)).slice(0, 12); P.querySelector(".dmg").innerHTML = L.map(x => `<button data-s="${esc(x.c.id)}|${esc(x.v)}" aria-label="${esc(hvLbl(x.c.id, x.v))}">${hvMini(x.c.id, x.v, 66)}</button>`).join("") || `<p class="hv-note">Aucune carte.</p>`; P.querySelectorAll("[data-s]").forEach(b => b.onclick = async () => { const [c, v] = b.dataset.s.split("|"); P.classList.add("hidden"); await dmSend("", c, v); }); };
+  M.querySelector("#dmCard").onclick = () => { P.classList.toggle("hidden"); if (!P.classList.contains("hidden")) draw(""); }; M.querySelector("#dmQ").oninput = e => draw(e.target.value.trim());
+  dmLoad().catch(() => { const b = document.querySelector(".dml"); if (b) b.innerHTML = `<p class="hv-note" style="text-align:center">Messages indisponibles pour l'instant.</p>`; }); }
+function dmBadge(){ document.querySelectorAll("#modal [data-frdm]").forEach(b => { const n = DM.un[b.dataset.frdm] || 0; b.textContent = n ? `Message (${n})` : "Message"; }); try { hkBellDraw(); } catch {} }
+async function dmPoll(){ if (!frsOn() || DM.off) return; try { const {data, error} = await CP.sb.from("direct_messages").select("from_id").eq("to_id", CP.user.id).is("read_at", null).limit(100); if (error){ DM.off = /does not exist|schema cache|404/.test(String(error.message)); return; }
+    const u = {}; (data || []).forEach(m => u[m.from_id] = (u[m.from_id] || 0) + 1); DM.un = u; dmBadge(); } catch {} }
+function dmLive(){ if (!frsOn() || DM.ch || DM.off) return; try { DM.ch = CP.sb.channel("hanko-dm-" + CP.user.id).on("postgres_changes", {event: "INSERT", schema: "public", table: "direct_messages", filter: "to_id=eq." + CP.user.id}, p => { const m = p.new;
+      if (DM.open && DM.open.uid === m.from_id){ DM.list.push(m); dmDraw(); CP.sb.rpc("dm_read", {other: m.from_id}).then(() => {}, () => {}); return; }
+      DM.un[m.from_id] = (DM.un[m.from_id] || 0) + 1; dmBadge(); frToast(`${dmName(m.from_id)} : ${m.body ? m.body.slice(0, 70) : "t'a envoyé une carte"}`, "Répondre", () => { const f = FRS.data && FRS.data.friends.find(x => x.uid === m.from_id); if (f) dmOpen(f); }); }).subscribe(); } catch { DM.ch = null; } }
+setInterval(() => { if (DM.ch && !frsOn()){ try { CP.sb.removeChannel(DM.ch); } catch {} DM.ch = null; DM.un = {}; } else if (!DM.ch && frsOn()){ dmLive(); dmPoll(); } }, 3000); setInterval(dmPoll, 6e4);
+{ const base = frShow; frShow = function(msg){ const r = base(msg); try { if (frsOn() && FRS.data && !DM.off) document.querySelectorAll("#modal .frrow").forEach(row => { const v = row.querySelector(".row [data-frv]"); if (!v || row.querySelector("[data-frdm]")) return; const f = FRS.data.friends.find(x => x.id === v.dataset.frv); if (!f) return;
+        v.insertAdjacentHTML("afterend", `<button data-frdm="${esc(f.uid)}">Message</button>`); row.querySelector("[data-frdm]").onclick = () => { $("#modal").classList.add("hidden"); dmOpen(f); }; }); dmBadge(); } catch {} return r; }; }
+</script>
+<style>
+.hvm.dmw .box{height:min(100%,680px);grid-template-rows:auto 1fr auto auto auto;align-content:stretch}
+.dml{min-height:0;overflow:auto;display:flex;flex-direction:column;gap:8px;padding:4px 2px}
+.dmm{max-width:78%;align-self:flex-start;display:grid;gap:4px;padding:8px 11px;border-radius:14px 14px 14px 4px;background:#1b1a21}.dmm.me{align-self:flex-end;border-radius:14px 14px 4px 14px;background:color-mix(in srgb,var(--accent) 26%,#14131a)}
+.dmm p{margin:0;font-size:14.5px;line-height:1.35;overflow-wrap:anywhere;color:var(--text)}.dmm small{font-size:10.5px;color:var(--muted)}.dmc{all:unset;cursor:pointer}
+.dmf{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px}.dmf input,.dmp input{min-width:0;font-size:16px}.dmf #dmCard{padding:0 12px;font:500 18px var(--brand)}
+.dmp{display:grid;gap:8px}.dmg{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}.dmg button{all:unset;cursor:pointer;flex:none}
+</style>
+
 
 <style>
 /* 19 oct. 2026 : les images ne se « sortent » plus (glisser à la souris, appui long sur téléphone) ; seule l'image de partage reste enregistrable */
@@ -19367,6 +19413,8 @@ window.NV_ON = true;   /* false : retour à l'ancienne interface */
 <script>
 /* 1er nov. 2026 : cloche de notifications (marché, amis, Kizuna) et page Nouveautés, d'après Kyara */
 const HK_NEWS = [["1er novembre 2026", [
+  ["n", "Messages entre amis : discute et envoie des cartes, en direct."],
+  ["n", "Hanko s'installe comme une application, avec des notifications même jeu fermé."],
   ["n", "10 boosters offerts à l'ouverture d'un compte."],
   ["n", "Cette page Nouveautés, et une cloche pour retrouver toutes tes notifications."],
   ["n", "Mon activité : tes ventes, achats, ordres et échanges au même endroit."],
@@ -19392,19 +19440,44 @@ const HK_NEWS_N = HK_NEWS[0][0] + HK_NEWS[0][1].length;
 const hkNewsNew = () => { try { return localStorage.getItem("hanko-news-vu") !== HK_NEWS_N; } catch { return false; } };
 function hkNews(){ try { localStorage.setItem("hanko-news-vu", HK_NEWS_N); } catch {} const T = {n: "Nouveau", a: "Amélioré", c: "Corrigé"}; const {M, close} = hvModal(`<div class="head"><h2>Quoi de neuf ?</h2><button class="ghost" data-close>✕</button></div><div class="hkn">${HK_NEWS.map(([d, L]) => `<h3>${esc(d)}</h3><ul>${L.map(([k, x]) => `<li><em class="${k === "n" ? "n" : ""}">${T[k]}</em><span>${esc(x)}</span></li>`).join("")}</ul>`).join("")}</div>`); M.querySelector("[data-close]").onclick = close; hkBellDraw(); }
 const BELL = {market: 0};
-function hkBellN(){ const fr = (typeof FRS !== "undefined" && FRS.data && FRS.data.incoming || []).length, kz = (KZ.st && (KZ.st.pairs || []).filter(p => !p.duo).length) || 0; return (HV.data ? hvUnread() : BELL.market) + fr + kz + (hkNewsNew() ? 1 : 0); }
+const hkDmN = () => Object.values(DM.un).reduce((a, b) => a + b, 0);
+function hkBellN(){ const fr = (typeof FRS !== "undefined" && FRS.data && FRS.data.incoming || []).length + hkDmN(), kz = (KZ.st && (KZ.st.pairs || []).filter(p => !p.duo).length) || 0; return (HV.data ? hvUnread() : BELL.market) + fr + kz + (hkNewsNew() ? 1 : 0); }
 function hkBellDraw(){ const b = document.querySelector("#nvBell b"); if (!b) return; const n = hkBellN(); b.hidden = !n; b.textContent = n > 9 ? "9+" : n; document.querySelector("#nvBell").setAttribute("aria-label", n ? `Notifications, ${n} nouvelles` : "Notifications"); }
 async function hkBellPoll(){ try { if (!frsOn() || document.visibilityState !== "visible") return hkBellDraw(); const {count} = await CP.sb.from("market_notes").select("id", {count: "exact", head: true}).is("read_at", null); BELL.market = count || 0; } catch {} hkBellDraw(); }
 async function hkBell(){ const {M, close} = hvModal(`<div class="head"><h2>Notifications</h2><button class="ghost" data-close>✕</button></div><div class="hkl"><p class="hv-note">Chargement…</p></div>`); M.querySelector("[data-close]").onclick = close;
   try { if (frsOn()){ if (!HV.data) await hvLoad(); if (!FRS.data) await frsLoad(); } } catch {} const box = M.querySelector(".hkl"); if (!box) return; const L = [];
   if (hkNewsNew()) L.push({i: "新", a: "Quoi de neuf ?", b: "De nouvelles fonctions sont arrivées.", isNew: 1, go: () => hkNews()});
   (typeof FRS !== "undefined" && FRS.data && FRS.data.incoming || []).forEach(x => L.push({i: "友", a: `${x.id} veut être ton ami`, b: "Accepte ou refuse sa demande.", isNew: 1, go: () => { FR_TAB = "req"; frShow(); }}));
+  Object.entries(DM.un).forEach(([id, n]) => { const f = FRS.data && FRS.data.friends.find(x => x.uid === id); if (f) L.push({i: "信", a: `${f.name} t'a écrit`, b: n > 1 ? `${n} messages non lus.` : "1 message non lu.", isNew: 1, go: () => dmOpen(f)}); });
   ((KZ.st && KZ.st.pairs) || []).filter(p => !p.duo).forEach(p => L.push({i: "絆", a: `Toi et ${p.partner} êtes liés`, b: "Choisissez votre carte Kizuna.", isNew: 1, go: () => { TC_TAB = "kizuna"; tcShow("kizuna"); }}));
   (HV.data ? HV.data.notes : []).slice(0, 30).forEach(n => { const [a, b] = hvNoteTxt(n); L.push({m: hvMini(n.card_id, n.ver, 54), a, b: b + " · " + hvAgo(n.created_at), isNew: !n.read_at, go: () => { tcShow("market"); HV.tab = n.kind === "trade" ? "trade" : "act"; hvPaint(); if (n.listing_id && HV.data.list.some(l => l.id === n.listing_id)) hvListing(n.listing_id); }}); });
   box.innerHTML = !frsOn() ? `<p class="hv-note">Connecte-toi à ton compte pour recevoir tes notifications.</p>` : L.length ? L.map((x, i) => `<button class="hkb ${x.isNew ? "new" : ""}" data-b="${i}">${x.m || `<i>${x.i || "札"}</i>`}<span><b>${esc(x.a)}</b><small>${esc(x.b)}</small></span></button>`).join("") : `<p class="hv-note">Rien de nouveau pour l'instant.</p>`;
   box.querySelectorAll("[data-b]").forEach(b => b.onclick = () => { close(); L[+b.dataset.b].go(); });
   if (HV.data && hvUnread()){ try { await CP.sb.rpc("market_notes_read"); HV.data.notes.forEach(n => n.read_at = n.read_at || new Date().toISOString()); BELL.market = 0; hvBadge(); } catch {} } hkBellDraw(); }
 document.querySelector("#nvBell")?.addEventListener("click", hkBell);
+/* 1er nov. 2026 : application installable et notifications jeu fermé. Sur le site seulement : claude.ai ne permet ni l'un ni l'autre. */
+const APP = {prompt: null, on: false};
+const appSolo = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+const appIos = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const appPush = () => "serviceWorker" in navigator && "PushManager" in window && "Notification" in window && /(^|\.)github\.io$/.test(location.hostname);
+addEventListener("beforeinstallprompt", e => { e.preventDefault(); APP.prompt = e; });
+const appB64 = s => Uint8Array.from(atob((s + "=".repeat((4 - s.length % 4) % 4)).replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
+async function appSub(){ const reg = await navigator.serviceWorker.getRegistration(); return reg ? reg.pushManager.getSubscription() : null; }
+async function appPushOn(){ if (await Notification.requestPermission() !== "granted") throw new Error("Notifications refusées : autorise-les dans les réglages de ton navigateur pour ce site.");
+  const reg = await navigator.serviceWorker.register("sw.js"); await navigator.serviceWorker.ready; let key = (await CP.sb.rpc("push_key")).data;
+  if (!key){ const {data, error} = await CP.sb.functions.invoke("push", {body: {init: 1}}); if (error) throw new Error("Notifications pas encore disponibles sur le serveur."); key = data.key; }
+  const s = await reg.pushManager.subscribe({userVisibleOnly: true, applicationServerKey: appB64(key)}), j = s.toJSON(), {error} = await CP.sb.rpc("push_sub", {ep: j.endpoint, k: j.keys.p256dh, a: j.keys.auth}); if (error) throw new Error("Notifications pas encore disponibles sur le serveur."); }
+async function appPushOff(){ const s = await appSub(); if (s){ try { await CP.sb.rpc("push_unsub", {ep: s.endpoint}); } catch {} await s.unsubscribe(); } }
+async function hkApp(){ const solo = appSolo(), ok = appPush(), ios = appIos(), site = /(^|\.)github\.io$/.test(location.hostname); let sub = null; try { if (ok) sub = await appSub(); } catch {}
+  const inst = solo ? `<p class="hv-note">Hanko est installé sur cet appareil.</p>` : !site ? `<p class="hv-note">L'installation se fait depuis le site : hanko-game.github.io/mercato-anime</p>` : ios ? `<p class="hv-note">Dans Safari, touche le bouton Partager, puis « Sur l'écran d'accueil ». Hanko s'ouvre ensuite comme une vraie application.</p>` : APP.prompt ? `<button class="primary" id="appIn">Installer Hanko</button>` : `<p class="hv-note">Dans le menu de ton navigateur, choisis « Installer l'application » ou « Ajouter à l'écran d'accueil ».</p>`;
+  const noti = !site ? `<p class="hv-note">Disponibles depuis le site uniquement.</p>` : !frsOn() ? `<p class="hv-note">Connecte-toi à ton compte pour les activer.</p>` : ios && !solo ? `<p class="hv-note">Sur iPhone, installe d'abord Hanko sur ton écran d'accueil, puis ouvre-le pour activer les notifications.</p>` : !ok ? `<p class="hv-note">Ton navigateur ne les permet pas.</p>` : `<p class="hv-note">Sois prévenu quand un ami t'écrit ou t'invite, et quand ça bouge au marché, même jeu fermé.</p><button class="${sub ? "ghost" : "primary"}" id="appNo">${sub ? "Désactiver" : "Activer"}</button>`;
+  const {M, close} = hvModal(`<div class="head"><h2>Application et notifications</h2><button class="ghost" data-close>✕</button></div><div class="hv-box"><h4>Application</h4>${inst}</div><div class="hv-box"><h4>Notifications</h4>${noti}<p class="err" id="appErr" style="margin:0"></p></div>`); M.querySelector("[data-close]").onclick = close;
+  M.querySelector("#appIn") && (M.querySelector("#appIn").onclick = async () => { const p = APP.prompt; APP.prompt = null; p.prompt(); await p.userChoice.catch(() => {}); close(); });
+  M.querySelector("#appNo") && (M.querySelector("#appNo").onclick = async e => { e.target.disabled = true; try { if (sub) await appPushOff(); else await appPushOn(); close(); frToast(sub ? "Notifications désactivées." : "Notifications activées."); } catch (x){ M.querySelector("#appErr").textContent = x.message || "Activation impossible."; e.target.disabled = false; } }); }
+// un appui sur une notification amène au bon endroit
+function appNotif(t){ try { if (!t) return; if (t === "marche"){ tcShow("market"); HV.tab = "act"; hvPaint(); } else if (t === "amis"){ FR_TAB = "req"; frShow(); } else if (t.startsWith("msg-")){ const go = () => { const f = FRS.data && FRS.data.friends.find(x => x.uid === t.slice(4)); if (f) dmOpen(f); else hkBell(); }; FRS.data ? go() : frsLoad().finally(go); } else hkBell(); } catch {} }
+navigator.serviceWorker?.addEventListener("message", e => appNotif(e.data && e.data.notif));
+{ const m = location.hash.match(/^#notif=(.+)$/); if (m){ const t = decodeURIComponent(m[1]); history.replaceState(null, "", location.pathname + location.search); const iv = setInterval(() => { if (frsOn()){ clearInterval(iv); appNotif(t); } }, 1000); setTimeout(() => clearInterval(iv), 15000); } }
 setInterval(hkBellPoll, 6e4); setTimeout(hkBellPoll, 5000); setInterval(hkBellDraw, 5000);
 </script>
 
