@@ -13121,7 +13121,7 @@ function frCard(){
     top: top ? [top.no, s.own[top.id]] : null, own: all.filter(c => s.own[c.id]).map(c => [c.no, tcBestFin(s, c)]), tr: frTradeable(s), n: all.length, v: !s.taint, show: vtMine(s), unl: (s.unl || []).length};
 }
 // une seule fenêtre automatique à la fois : la suivante attend que l'écran soit libre
-const hkBusy = () => !!document.querySelector(".cpgate:not(.hidden),.welcome,.tcopen,.tcview,.tctour,.hs-ov,#modal:not(.hidden)");
+const hkBusy = () => !!document.querySelector(".cpgate:not(.hidden),.welcome,.tcopen,.tcview,.tctour,.hs-ov,#modal:not(.hidden),.dfov");
 function frToast(txt, label, fn){
   toastPut(`<div class="tctoast" role="status"><i>友</i><span>${esc(txt)}</span>${label ? `<button class="primary" style="border-radius:999px;padding:7px 13px;font-size:13px">${esc(label)}</button>` : ""}</div>`, 20000, () => fn && fn(), () => SFX.play("win"));
 }
@@ -19862,10 +19862,10 @@ window.NV_ON = true;   /* false : retour à l'ancienne interface */
   const drawHome = () => { const box = $1("#nvHome"); let S = null; try { const r = crLoad(); S = r.cur && r.saves[r.cur]; } catch {} const me = frMe(), g = games()[0];
     const hero = S ? `<button class="nvhero" id="nvResume"><img src="${bann(S.u)}" onerror="this.onerror=null;this.src='${art(S.u)}'" alt=""><small>Carrière · ${esc(UNI[S.u].name)}</small><b>Reprends ta carrière</b><span>${esc(S.club)} · saison ${S.season}</span><u>Continuer</u></button>`
       : `<button class="nvhero" id="nvResume"><img src="${bann("op")}" onerror="this.onerror=null;this.src='${art("op")}'" alt=""><small>À découvrir</small><b>Lance ta carrière</b><span>Ton équipe, ton univers, ta légende</span><u>Commencer</u></button>`;
-    if (!box.dataset.init){ box.dataset.init = 1; box.innerHTML = `${hd("Bonjour · 今日", me ? esc(me.name) : "Bienvenue")}<div class="nvtwo"><div id="nvHero"></div><div><div class="nv2">Rejoindre une partie</div><div class="nvjoin"><input id="nvCode" maxlength="4" placeholder="Code à 4 caractères" autocomplete="off"><button id="nvJoin">Entrer</button></div><div class="nverr" id="nvErr"></div><div class="nv2">Ta journée</div><div id="nvDay"></div></div></div><div class="nv2">Gros tirages</div><div id="nvPulls"></div>`;
+    if (!box.dataset.init){ box.dataset.init = 1; box.innerHTML = `${hd("Bonjour · 今日", me ? esc(me.name) : "Bienvenue")}<div id="dfHome"></div><div class="nvtwo"><div id="nvHero"></div><div><div class="nv2">Rejoindre une partie</div><div class="nvjoin"><input id="nvCode" maxlength="4" placeholder="Code à 4 caractères" autocomplete="off"><button id="nvJoin">Entrer</button></div><div class="nverr" id="nvErr"></div><div class="nv2">Ta journée</div><div id="nvDay"></div></div></div><div class="nv2">Gros tirages</div><div id="nvPulls"></div>`;
       const kd = $1(".kjd"), gx = $1(".gxf"); if (kd) $1("#nvDay").appendChild(kd); if (gx) $1("#nvPulls").appendChild(gx);
       $1("#nvJoin").onclick = () => { const v = $1("#nvCode").value.trim().toUpperCase(), er = $1("#nvErr"); er.textContent = ""; if (v.length !== 4) return er.textContent = "Entre les 4 caractères du code."; const m = frMe(); if (!m) return nvGo("me"); $1("#qjName").value = m.name; $1("#qjCode").value = v; $1("#qjGo").click(); setTimeout(() => { const t = $1("#qjErr")?.textContent; if (t) er.textContent = t; }, 400); }; }
-    $1("#nvHero").innerHTML = hero; $1("#nvResume").onclick = () => crOpen(); try { kjDayDraw(); } catch {} try { gxDraw(); if (Date.now() - GX.at > 15000) gxTick(true); } catch {} };
+    $1("#nvHero").innerHTML = hero; $1("#nvResume").onclick = () => crOpen(); try { kjDayDraw(); } catch {} try { gxDraw(); if (Date.now() - GX.at > 15000) gxTick(true); } catch {} try { dfHomeDraw(); } catch {} };
   const drawPlay = () => { const box = $1("#nvPlay"); if (box.dataset.init) return; box.dataset.init = 1;
     box.innerHTML = `${hd("Jouer · 遊ぶ", "À quoi on joue ?")}<button class="nvhero" id="nvCr" style="min-height:150px"><img class="crb" src="${bann("na")}" onerror="this.onerror=null;this.src='${art("na")}'" alt=""><small>Solo · 1 joueur</small><b>Carrière</b><span>Six univers, ton équipe, ta légende</span></button><div class="nv2">Les jeux</div><div class="nvgs">${games().map((c, k) => { const im = c.querySelector(".art img"); return `<button class="nvg" data-k="${k}"><i>${im ? `<img src="${im.src}" alt="">` : c.querySelector(".k")?.textContent || ""}</i><div><b>${esc(c.querySelector("b").textContent)}</b><span>${esc(c.querySelector("span").textContent)}</span></div><u>›</u></button>`; }).join("")}</div>`;
     $1("#nvCr").onclick = () => crOpen(); box.querySelectorAll(".nvg").forEach(b => b.onclick = () => pickGame(games()[+b.dataset.k])); };
@@ -20159,6 +20159,227 @@ new MutationObserver(() => { const t = document.querySelector('#tcg .tcsub [data
   sub.insertAdjacentHTML("afterend", `<div class="cofw">${cofGrid(tcLoad())}<p class="cofh">Boosters</p></div>`); }).observe(document.body, {childList: true, subtree: true});
 new MutationObserver(() => { const sh = document.querySelector("#nvPk .nvsh>div"), on = sh && sh.querySelector('.nvtb [data-tb="2"].on'); if (!on || sh.querySelector(".cofs")) return;
   const s = tcLoad(); sh.querySelector(".nvtb").insertAdjacentHTML("afterend", `<p class="cofh">Coffrets · dans les 6 univers</p><div class="cofs">${COF.map(P => `<button data-cof="${P.id}"><img src="coffret-${P.id}-op.webp" alt=""><b>${esc(P.n)}</b><small>${P.soon ? P.soon : P.deck && !s.cofDeckFree && tcLvl(s.xp || 0) >= 3 ? "Offert" : P.p.toLocaleString("fr-FR") + " ◆"}</small></button>`).join("")}</div><p class="cofh">Boosters</p>`); }).observe(document.body, {childList: true, subtree: true});
+</script>
+
+<style>
+/* ==== Défi du jour mondial et débat du jour (2 nov. 2026) : écran d'arrivée « Aujourd'hui », bloc de l'accueil, partage ==== */
+.dfov{position:fixed;inset:0;z-index:90;overflow-y:auto;overscroll-behavior:contain;background:radial-gradient(ellipse 80% 50% at 50% 0%,#3a0d14,transparent 70%),#0b0a0e;color:#f1eef4;padding:calc(14px + env(safe-area-inset-top,0px)) 16px calc(24px + env(safe-area-inset-bottom,0px))}
+.dfin{width:min(100%,560px);margin:0 auto;display:grid;gap:14px}
+.dftop{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.dftop small{font:700 11px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:#ff5a63}
+.dftop button{border-radius:999px;padding:8px 14px;font-size:13px;background:#1c1922;border:1px solid #2b2932;color:#ddd;cursor:pointer}
+.dfh{font:900 clamp(26px,7.4vw,38px)/1.05 var(--title);letter-spacing:-.02em;margin:2px 0 0;text-wrap:balance}
+.dfsub{color:#a7a0b1;font-size:14px;margin:-6px 0 0}
+.dfc{position:relative;border-radius:20px;border:1px solid #2b2932;background:#14121a;padding:16px;overflow:hidden;display:grid;gap:12px}
+.dfc>h3{margin:0;font:900 19px var(--title);display:flex;align-items:center;gap:8px}.dfc>h3 i{font-style:normal;font:700 11px var(--mono);letter-spacing:.1em;color:#ff5a63;text-transform:uppercase;margin-left:auto}
+.dfc p{margin:0;color:#c9c3d1;font-size:14px;line-height:1.45}
+.dfteas{position:relative;display:grid;grid-template-columns:118px 1fr;gap:14px;align-items:center}
+.dfzoom{position:relative;aspect-ratio:4/5;border-radius:14px;overflow:hidden;background:#000;border:1px solid #2b2932}
+.dfzoom img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .7s cubic-bezier(.2,.8,.2,1),filter .7s}
+.dfzoom .q{position:absolute;inset:auto 8px 8px auto;font:900 13px var(--title);background:#0b0a0ecc;border-radius:999px;padding:3px 9px}
+.dfbtn{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;min-height:50px;border-radius:14px;background:#ff2d3a;color:#fff;font:800 15px var(--title);padding:0 18px;text-align:center}
+.dfbtn.g{background:#1c1922;border:1px solid #2b2932;color:#eee;font-weight:700}
+.dfbtn[disabled]{opacity:.5;cursor:default}
+.dfrow{display:flex;gap:8px;flex-wrap:wrap}.dfrow>*{flex:1 1 0;min-width:120px}
+.dfstat{display:flex;gap:6px;flex-wrap:wrap;font:500 13px/1.4 var(--body,system-ui);color:#a7a0b1}.dfstat b{color:#fff}
+.dfstreak{display:inline-flex;align-items:center;gap:6px;font:800 13px var(--title);color:#ffb347}
+/* débat */
+.dfvs{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:stretch}
+.dfvs>b{align-self:center;font:900 20px var(--title);color:#ff5a63}
+.dfp{all:unset;box-sizing:border-box;cursor:pointer;position:relative;display:flex;flex-direction:column;justify-content:flex-end;border-radius:16px;overflow:hidden;aspect-ratio:4/5;border:2px solid #2b2932;background:#000;transition:transform .2s,border-color .2s}
+.dfp img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 18%}
+.dfp::after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 45%,#0b0a0ef0)}
+.dfp span{position:relative;z-index:1;padding:10px;font:900 clamp(12px,3.4vw,15px)/1.15 var(--title);overflow-wrap:anywhere}.dfp span small{display:block;font:600 10.5px/1.3 var(--mono);color:#c9c3d1;margin-top:3px}
+.dfp:hover{transform:translateY(-2px)}.dfp.me{border-color:#ff2d3a}.dfp.lo{opacity:.62}
+.dfp .pc{position:absolute;z-index:2;top:8px;left:8px;font:900 18px var(--title);background:#0b0a0ecc;border-radius:10px;padding:3px 9px}
+.dfbar{height:10px;border-radius:99px;background:#2b2932;overflow:hidden;display:flex}.dfbar i{display:block;height:100%;background:#ff2d3a;transition:width .8s cubic-bezier(.2,.8,.2,1)}.dfbar i+i{background:#4da3ff}
+/* jeu */
+.dfplay .dfzoom{width:min(58vw,250px,32dvh);margin:0 auto}
+.dfdots{display:flex;justify-content:center;gap:6px}.dfdots i{width:12px;height:12px;border-radius:50%;background:#2b2932}.dfdots i.x{background:#e0452f}.dfdots i.ok{background:#3ccf7a}
+.dfhints{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}.dfhints span{font:700 12px var(--mono);border-radius:999px;padding:5px 10px;border:1px dashed #3a3742;color:#8f889a}.dfhints span.on{border-style:solid;border-color:#ffb347;color:#ffd9a0}
+.dfin2{position:relative}.dfin2 input{width:100%;box-sizing:border-box;min-height:50px;border-radius:14px;border:1px solid #3a3742;background:#0b0a0e;color:#fff;font:600 16px var(--body,system-ui);padding:0 14px}
+.dfsug{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:3;background:#1c1922;border:1px solid #3a3742;border-radius:14px;overflow:hidden;display:grid}
+.dfsug button{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;padding:8px 12px;font-size:14.5px}.dfsug button:hover,.dfsug button.on{background:#2b2932}
+.dfsug img{width:32px;height:40px;object-fit:cover;object-position:50% 15%;border-radius:6px}.dfsug small{color:#8f889a;margin-left:auto;font:600 11px var(--mono)}
+.dfgs{display:grid;gap:6px}
+.dfg{display:grid;grid-template-columns:40px repeat(3,minmax(0,1fr));gap:4px 6px;align-items:center;animation:dfin .35s ease-out}.dfg img{grid-row:1/3}.dfg>b{grid-column:2/-1}
+.dfg img{width:40px;height:50px;object-fit:cover;object-position:50% 15%;border-radius:7px}
+.dfg>b{font:800 13px/1.2 var(--title);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dfg>span{display:grid;place-items:center;text-align:center;min-height:44px;border-radius:9px;font:700 11.5px/1.15 var(--mono);padding:3px;background:#5a1c22;color:#ffd2d5}
+.dfg>span.ok{background:#1e5a37;color:#c9f5da}.dfg>span.mid{background:#6b4a12;color:#ffe2a8}
+.dfgh{display:grid;grid-template-columns:40px repeat(3,minmax(0,1fr));gap:6px;font:700 10.5px var(--mono);color:#8f889a;text-transform:uppercase;letter-spacing:.06em}.dfgh span{text-align:center}
+@keyframes dfin{from{opacity:0;transform:translateY(-6px)}}
+.dfdist{display:grid;gap:4px}.dfdist div{display:grid;grid-template-columns:14px 1fr;gap:8px;align-items:center;font:700 12px var(--mono)}.dfdist i{display:block;height:16px;border-radius:5px;background:#3a3742;min-width:3px}.dfdist i.me{background:#3ccf7a}
+.dfwin{text-align:center;display:grid;gap:6px}.dfwin b{font:900 24px var(--title)}
+/* accueil */
+#dfHome{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:4px 0 14px}
+#dfHome button{all:unset;box-sizing:border-box;cursor:pointer;position:relative;display:flex;flex-direction:column;justify-content:flex-end;gap:3px;min-height:132px;padding:12px;border-radius:16px;overflow:hidden;border:1px solid #2b2932;background:#14121a}
+#dfHome button img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.55}
+#dfHome button::after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 20%,#0b0a0ef2 92%)}
+#dfHome button>*:not(img){position:relative;z-index:1}
+#dfHome small{font:700 10.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:#ff5a63}#dfHome b{font:900 16px/1.15 var(--title);color:#fff}#dfHome span{font-size:12.5px;color:#d7d3db}
+#dfHome .new::before{content:"";position:absolute;z-index:2;top:10px;right:10px;width:9px;height:9px;border-radius:50%;background:#ff2d3a;box-shadow:0 0 0 4px #ff2d3a40}
+@media (min-width:900px){#dfHome button{min-height:170px}#dfHome b{font-size:19px}}
+/* partage */
+.dfshm{position:fixed;inset:0;z-index:120;display:grid;place-items:center;background:#000d;padding:16px}.dfshm>div{width:min(100%,420px);display:grid;gap:10px}.dfshm img{width:100%;border-radius:14px}
+</style>
+<script>
+/* Défi du jour mondial (2 nov. 2026, façon Wordle/Loldle) : le même personnage à deviner pour tous les joueurs, chaque jour à 10 h.
+   L'image est très zoomée et se dévoile à chaque erreur ; chaque proposition compare l'univers, la rareté et le niveau (plus haut / plus bas).
+   Six essais. Résultat à partager en emojis (sans révéler la réponse), statistiques mondiales et série de jours.
+   Débat du jour : deux personnages, « qui gagne ? », un vote par compte ; les pourcentages mondiaux s'affichent après le vote.
+   Les deux sont présentés à l'arrivée sur le site, une fois par jour, avant le reste. Données : defi-debat-supabase.sql. */
+const DF0 = "2026-11-01", DF_MAX = 6, DF_ZOOM = [6.5, 5.2, 4.1, 3.2, 2.4, 1.7];
+const dfNum = d => Math.round((Date.parse(d + "T12:00:00Z") - Date.parse(DF0 + "T12:00:00Z")) / 864e5) + 1;
+const dfRng = seed => { let h = 1779033703 ^ seed.length; for (let i = 0; i < seed.length; i++){ h = Math.imul(h ^ seed.charCodeAt(i), 3432918353); h = h << 13 | h >>> 19; } return () => { h = Math.imul(h ^ h >>> 16, 2246822507); h = Math.imul(h ^ h >>> 13, 3266489909); h ^= h >>> 16; return (h >>> 0) / 4294967296; }; };
+const dfShuffle = (a, seed) => { const r = dfRng(seed), b = a.slice(); for (let i = b.length - 1; i > 0; i--){ const j = Math.floor(r() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
+// personnages connus (popularité S ou A) : 137, aucun ne revient avant d'avoir fait le tour
+const dfPool = () => tcCards().filter(c => !c.obj && c.r !== "X" && (c.pop === "S" || c.pop === "A") && c.i).sort((a, b) => a.id < b.id ? -1 : 1);
+const dfAll = () => tcCards().filter(c => !c.obj && c.r !== "X" && c.i);
+let DF_T = null;
+function dfToday(){ const d = tcDay(); if (DF_T && DF_T.d === d) return DF_T; const n = dfNum(d), P = dfPool(); if (!P.length) return null;
+  const perm = dfShuffle(P.map((_, k) => k), "hanko-defi"), a = P[perm[(n - 1 + P.length * 100) % P.length]], r = dfRng("zoom-" + d);
+  return DF_T = {d, n, a, fx: 32 + r() * 36, fy: 16 + r() * 30}; }
+// point de zoom : une zone détaillée du personnage (contrastes, couleurs), jamais le fond uni ; calcul identique pour tous les joueurs
+const DF_FOC = {};
+function dfFocus(T){ if (DF_FOC[T.d]) return DF_FOC[T.d]; return DF_FOC[T.d] = new Promise(res => { const im = new Image(); im.onload = () => { try {
+    const w = 24, h = 32, cv = document.createElement("canvas"); cv.width = w; cv.height = h; const g = cv.getContext("2d"); g.drawImage(im, 0, 0, w, h); const px = g.getImageData(0, 0, w, h).data, L = [];
+    const lum = (x, y) => { const k = (y * w + x) * 4; return .3 * px[k] + .59 * px[k + 1] + .11 * px[k + 2]; };
+    for (let y = 3; y < Math.round(h * .58); y++) for (let x = 3; x < w - 3; x++){   /* haut du personnage : visage, buste, tenue */ const k = (y * w + x) * 4, mx = Math.max(px[k], px[k + 1], px[k + 2]), mn = Math.min(px[k], px[k + 1], px[k + 2]), l = lum(x, y);
+      const det = Math.abs(l - lum(x + 1, y)) + Math.abs(l - lum(x, y + 1)) + Math.abs(l - lum(x - 1, y)) + Math.abs(l - lum(x, y - 1)), bg = l < 22 || (mx - mn < 10 && (l > 235 || l < 40));
+      if (!bg) L.push([det + (mx - mn) * .6, x, y]); }
+    L.sort((a, b) => b[0] - a[0]); const top = L.slice(0, Math.max(8, Math.floor(L.length * .25))), r = dfRng("foc-" + T.d), c = top[Math.floor(r() * top.length)];
+    res(c ? {fx: (c[1] + .5) / w * 100, fy: (c[2] + .5) / h * 100} : {fx: T.fx, fy: T.fy}); } catch { res({fx: T.fx, fy: T.fy}); } }; im.onerror = () => res({fx: T.fx, fy: T.fy}); im.src = T.a.i; }); }
+const dfApplyFocus = (T, root) => dfFocus(T).then(f => { T.fx = f.fx; T.fy = f.fy; (root || document).querySelectorAll(".dfz-" + T.d).forEach(i => i.style.transformOrigin = f.fx + "% " + f.fy + "%"); });
+const DF_Q = ["Qui gagne en duel ?", "Qui prends-tu dans ton équipe ?", "Qui gagne en duel ?", "Qui a le plus de charisme ?"];
+function dfDebate(){ const d = tcDay(), n = dfNum(d), P = dfPool(); if (P.length < 4) return null;
+  const grp = c => c.r === "M" || c.r === "L" ? 2 : c.r === "E" ? 1 : 0, perm = dfShuffle(P.map((_, k) => k), "hanko-debat"), a = P[perm[(n * 7 + 3) % P.length]];
+  const B = dfShuffle(P.filter(c => c.u !== a.u && grp(c) === grp(a)), "debat-" + d), b = B[0] || P.find(c => c.id !== a.id);
+  return {d, n, a, b, q: DF_Q[(n - 1 + DF_Q.length * 50) % DF_Q.length]}; }
+// état local (sauvegardé avec le compte) : s.df = {d, g: [id…], won, sent, st}, s.dfS = {n, last, best}, s.dfV = {d, pick, c}
+const dfState = () => { const s = tcLoad(), d = tcDay(); if (!s.df || s.df.d !== d) s.df = {d, g: [], won: null}; if (!s.dfS) s.dfS = {n: 0, last: "", best: 0}; if (!s.dfV || s.dfV.d !== d) s.dfV = {d, pick: null}; return s; };
+const dfNorm = t => String(t).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+const dfRel = (g, a) => { const ri = TC_ORDER.indexOf(g.r), ra = TC_ORDER.indexOf(a.r), dp = a.p - g.p;
+  return {u: g.u === a.u, r: ri === ra ? 0 : ra > ri ? 1 : -1, p: dp === 0 ? 0 : dp > 0 ? 1 : -1, pc: Math.abs(dp) <= 5 && dp !== 0}; };
+const dfSb = async () => { try { return await cpClient(); } catch { return null; } };
+async function dfRpc(fn, args){ const sb = await dfSb(); if (!sb) return null; try { const {data, error} = await sb.rpc(fn, args); if (error) return null; return data; } catch { return null; } }
+const dfEl = () => document.querySelector(".dfov");
+function dfClose(){ dfEl()?.remove(); try { dfHomeDraw(); } catch {} }
+function dfOpen(view = "today"){ let O = dfEl(); if (!O){ document.body.insertAdjacentHTML("beforeend", `<div class="dfov" role="dialog" aria-modal="true" aria-label="Aujourd'hui sur Hanko"><div class="dfin"></div></div>`); O = dfEl(); }
+  O.scrollTop = 0; (view === "play" ? dfPlay : dfHub)(O.querySelector(".dfin")); }
+const dfDate = () => new Date().toLocaleDateString("fr-FR", {weekday: "long", day: "numeric", month: "long"});
+const dfFire = s => s.dfS.n && (s.dfS.last === tcDay() || s.dfS.last === tcDay(-1)) ? s.dfS.n : 0;
+// ——— écran « Aujourd'hui » ———
+function dfHub(box){ const T = dfToday(), D = dfDebate(), s = dfState(); if (!T || !D) return dfClose();
+  const st = s.df, done = st.won !== null, tries = st.g.length, z = done ? 1 : DF_ZOOM[0], fire = dfFire(s);
+  box.innerHTML = `<div class="dftop"><small>Aujourd'hui · 今日 · ${esc(dfDate())}</small><button id="dfX">Accéder au jeu ›</button></div>
+    <h1 class="dfh">Le défi et le débat du jour</h1><p class="dfsub">Les mêmes pour tous les joueurs. Nouveau défi chaque jour à 10 h.</p>
+    <section class="dfc"><h3>Défi du jour #${T.n}<i>${done ? (st.won ? "Trouvé" : "Raté") : "6 essais"}</i></h3>
+      <div class="dfteas"><div class="dfzoom"><img class="dfz-${T.d}" src="${T.a.i}" alt="" style="transform-origin:${T.fx}% ${T.fy}%;transform:scale(${z})">${done ? "" : `<span class="q">?</span>`}</div>
+        <div style="display:grid;gap:8px">${done ? `<p><b>${esc(T.a.n)}</b> · ${esc(TC_PACKS[T.a.u][0])}</p><p>${st.won ? `Trouvé en ${tries} essai${tries > 1 ? "s" : ""}` : "Pas trouvé cette fois"}${fire ? ` · <span class="dfstreak">🔥 ${fire} jour${fire > 1 ? "s" : ""}</span>` : ""}</p>` : `<p>Devine le personnage caché. À chaque erreur, l'image se dézoome et tu sais si l'univers, la rareté et le niveau sont les bons.</p>${fire ? `<span class="dfstreak">🔥 Série de ${fire} jour${fire > 1 ? "s" : ""}</span>` : ""}`}
+          <div class="dfstat" id="dfHubSt"></div></div></div>
+      <div class="dfrow">${done ? `<button class="dfbtn" id="dfShare">Partager mon résultat</button><button class="dfbtn g" id="dfSee">Voir le détail</button>` : `<button class="dfbtn" id="dfGo">${tries ? "Continuer le défi" : "Jouer au défi du jour"}</button>`}</div></section>
+    <section class="dfc" id="dfDeb"></section>
+    <button class="dfbtn g" id="dfX2">Accéder au jeu</button>`;
+  box.querySelector("#dfX").onclick = box.querySelector("#dfX2").onclick = dfClose;
+  box.querySelector("#dfGo") && (box.querySelector("#dfGo").onclick = () => dfOpen("play"));
+  box.querySelector("#dfSee") && (box.querySelector("#dfSee").onclick = () => dfOpen("play"));
+  box.querySelector("#dfShare") && (box.querySelector("#dfShare").onclick = e => dfShare("defi", e.currentTarget));
+  dfDebDraw(box.querySelector("#dfDeb"), D, s); dfApplyFocus(T, box);
+  dfRpc("daily_stats", {p_day: T.d}).then(x => { const el = box.querySelector("#dfHubSt"); if (!el || !x) return; el.innerHTML = x.n ? `<span><b>${x.n}</b> joueur${x.n > 1 ? "s" : ""}</span><span>·</span><span><b>${Math.round(x.won / x.n * 100)} %</b> ont trouvé</span>` : `<span>Sois le premier à le trouver aujourd'hui</span>`; }); }
+// ——— débat ———
+function dfDebDraw(el, D, s){ const v = s.dfV, c = v.c, tot = c ? c.a + c.b : 0, pa = tot ? Math.round(c.a / tot * 100) : null, me = v.pick;
+  const card = (x, k) => `<button class="dfp ${me === k ? "me" : me != null ? "lo" : ""}" data-pick="${k}" ${me != null ? "disabled" : ""}><img src="${x.i}" alt="">${pa != null ? `<span class="pc">${k ? 100 - pa : pa} %</span>` : ""}<span>${esc(x.n)}<small>${esc(TC_PACKS[x.u][0])} · ${esc(TC_R[x.r][0])}</small></span></button>`;
+  el.innerHTML = `<h3>Débat du jour<i>${me != null ? "Tu as voté" : "Un vote"}</i></h3><p style="font:900 17px var(--title);color:#fff">${esc(D.q)}</p>
+    <div class="dfvs">${card(D.a, 0)}<b>VS</b>${card(D.b, 1)}</div>
+    ${pa != null ? `<div class="dfbar"><i style="width:${pa}%"></i><i style="width:${100 - pa}%"></i></div><p class="dfstat"><span><b>${tot}</b> vote${tot > 1 ? "s" : ""} dans le monde</span><span>·</span><span>${me != null ? (me ? 100 - pa : pa) >= 50 ? "tu es avec la majorité" : "tu es dans la minorité" : ""}</span></p>`
+      : me != null ? `<p class="dfstat">${CP.user ? "Ton vote est enregistré. Les résultats mondiaux s'affichent dès qu'ils sont disponibles." : "Connecte-toi pour que ton vote compte dans les résultats mondiaux."}</p>` : `<p class="dfstat">Touche ton personnage. Les résultats s'affichent après ton vote.</p>`}
+    ${me != null ? `<button class="dfbtn g" id="dfShareD">Partager le débat</button>` : ""}`;
+  el.querySelectorAll("[data-pick]").forEach(b => b.onclick = async () => { const k = +b.dataset.pick, s2 = dfState(); if (s2.dfV.pick != null) return; s2.dfV.pick = k; tcSave(s2); try { tcSnd("pop"); } catch {}
+    dfDebDraw(el, D, s2); const r = CP.user ? await dfRpc("debate_vote", {p_day: D.d, p_pick: k}) : await dfRpc("debate_counts", {p_day: D.d});
+    if (r){ const s3 = dfState(); s3.dfV.c = {a: r.a + (CP.user ? 0 : k === 0 ? 1 : 0), b: r.b + (CP.user ? 0 : k === 1 ? 1 : 0)}; tcSave(s3); if (el.isConnected) dfDebDraw(el, D, s3); } });
+  el.querySelector("#dfShareD") && (el.querySelector("#dfShareD").onclick = e => dfShare("debat", e.currentTarget));
+  if (me != null && CP.user) dfRpc("debate_counts", {p_day: D.d}).then(r => { if (!r || !el.isConnected) return; const s3 = dfState(); const old = s3.dfV.c; if (old && old.a === r.a && old.b === r.b) return; s3.dfV.c = {a: r.a, b: r.b}; tcSave(s3); dfDebDraw(el, D, s3); }); }
+// ——— le jeu ———
+function dfPlay(box){ const T = dfToday(), s = dfState(); if (!T) return dfClose(); const st = s.df, A = T.a, all = dfAll(), byId = Object.fromEntries(all.map(c => [c.id, c]));
+  const al = (() => { try { return ALIASES || {}; } catch { return {}; } })(), keys = all.map(c => [c, [c.n, ...((al[c.u] || {})[c.n] || [])].map(dfNorm)]);
+  const draw = () => { const s = dfState(), st = s.df, G = st.g.map(id => byId[id]).filter(Boolean), done = st.won !== null, miss = G.filter(c => c.id !== A.id).length, z = done ? 1 : DF_ZOOM[Math.min(miss, DF_ZOOM.length - 1)];
+    const hint = (k, lab, val) => `<span class="${miss >= k || done ? "on" : ""}">${miss >= k || done ? val : `${lab} · après ${k} erreur${k > 1 ? "s" : ""}`}</span>`;
+    box.innerHTML = `<div class="dftop"><button id="dfBack">‹ Aujourd'hui</button><small>Défi du jour #${T.n}</small></div>
+      <div class="dfc dfplay"><div class="dfzoom"><img class="dfz-${T.d}" src="${A.i}" alt="" style="transform-origin:${T.fx}% ${T.fy}%;transform:scale(${z})"></div>
+        <div class="dfdots">${Array.from({length: DF_MAX}, (_, k) => `<i class="${k < G.length ? (G[k].id === A.id ? "ok" : "x") : ""}"></i>`).join("")}</div>
+        <div class="dfhints">${hint(2, "Univers", TC_PACKS[A.u][0])}${hint(3, "Rareté", TC_R[A.r][0])}${hint(4, "Initiale", A.n[0] + "…")}</div>
+        ${done ? `<div class="dfwin">${st.won ? `<b>Trouvé : ${esc(A.n)} !</b><p>En ${G.length} essai${G.length > 1 ? "s" : ""}${st.gain ? ` · +${st.gain} ◆` : ""}</p>` : `<b>C'était ${esc(A.n)}</b><p>Retente ta chance demain${st.gain ? ` · +${st.gain} ◆ pour avoir essayé` : ""}</p>`}</div>
+          <div class="dfrow"><button class="dfbtn" id="dfShare">Partager mon résultat</button><button class="dfbtn g" id="dfCopy">Copier le texte</button></div><div class="dfc" style="background:#0f0e13"><h3>Dans le monde</h3><div id="dfSt" class="dfstat">Chargement…</div></div>`
+        : `<div class="dfin2"><input id="dfQ" placeholder="Nom du personnage…" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go"><div class="dfsug" id="dfSug" hidden></div></div><p class="dfstat" style="justify-content:center">${DF_MAX - G.length} essai${DF_MAX - G.length > 1 ? "s" : ""} restant${DF_MAX - G.length > 1 ? "s" : ""}</p>`}
+        ${G.length ? `<div class="dfgh"><span></span><span>Univers</span><span>Rareté</span><span>Niveau</span></div>` : ""}
+        <div class="dfgs">${G.slice().reverse().map(g => { const r = dfRel(g, A); return `<div class="dfg"><img src="${g.i}" alt=""><b>${esc(g.n)}</b><span class="${r.u ? "ok" : ""}">${esc(TC_PACKS[g.u][0])}</span><span class="${r.r === 0 ? "ok" : ""}">${esc(TC_R[g.r][0])}${r.r ? (r.r > 0 ? " ↑" : " ↓") : ""}</span><span class="${r.p === 0 ? "ok" : r.pc ? "mid" : ""}">Niv ${g.p}${r.p ? (r.p > 0 ? " ↑" : " ↓") : ""}</span></div>`; }).join("")}</div></div>`;
+    dfApplyFocus(T, box); box.querySelector("#dfBack").onclick = () => dfOpen("today");
+    if (done){ box.querySelector("#dfShare").onclick = e => dfShare("defi", e.currentTarget); box.querySelector("#dfCopy").onclick = async e => { try { await navigator.clipboard.writeText(dfText()); e.currentTarget.textContent = "Copié ✔"; } catch { e.currentTarget.textContent = "Copie impossible ici"; } }; dfStats(box.querySelector("#dfSt"), T, st); return; }
+    const q = box.querySelector("#dfQ"), sug = box.querySelector("#dfSug"); let L = [], on = 0;
+    const pick = c => { const s = dfState(), st = s.df; if (st.won !== null || st.g.includes(c.id)) return; st.g.push(c.id); const hit = c.id === A.id;
+      if (hit || st.g.length >= DF_MAX) dfFinish(s, hit); else { tcSave(s); try { tcSnd("flip0"); } catch {} try { navigator.vibrate?.(20); } catch {} } draw(); };
+    const show = () => { const t = dfNorm(q.value); if (!t){ sug.hidden = true; return; } const used = new Set(dfState().df.g);
+      L = keys.filter(([c, ks]) => !used.has(c.id) && ks.some(k => k.startsWith(t) || k.split(" ").some(w => w.startsWith(t)))).slice(0, 6).map(x => x[0]); on = 0;
+      sug.hidden = !L.length; sug.innerHTML = L.map((c, k) => `<button data-k="${k}" class="${k ? "" : "on"}"><img src="${c.i}" alt="">${esc(c.n)}<small>${esc(TC_PACKS[c.u][0])}</small></button>`).join("");
+      sug.querySelectorAll("button").forEach(b => b.onclick = () => pick(L[+b.dataset.k])); };
+    q.oninput = show; q.onkeydown = e => { if (e.key === "ArrowDown" || e.key === "ArrowUp"){ e.preventDefault(); if (!L.length) return; on = (on + (e.key === "ArrowDown" ? 1 : L.length - 1)) % L.length; sug.querySelectorAll("button").forEach((b, k) => b.classList.toggle("on", k === on)); } else if (e.key === "Enter" && L[on]){ e.preventDefault(); pick(L[on]); } };
+    setTimeout(() => { try { if (matchMedia("(hover:hover)").matches) q.focus(); } catch {} }, 60); };
+  draw(); }
+function dfFinish(s, won){ const st = s.df, d = st.d; st.won = won; const n = st.g.length; st.gain = won ? 30 + 10 * (DF_MAX - n) : 10; s.gems = (s.gems || 0) + st.gain;
+  const S = s.dfS; if (won){ S.n = S.last === tcDay(-1) ? S.n + 1 : S.last === d ? S.n : 1; S.last = d; S.best = Math.max(S.best || 0, S.n); if (S.n % 7 === 0){ tcGive(s, "mix:0"); st.bonus = 1; } } else { S.n = 0; S.last = ""; }
+  tcSave(s); try { tcSnd(won ? "cele" : "flip0"); } catch {} try { if (won && typeof tcBoom === "function") tcBoom(2, document.querySelector(".dfov .dfzoom")); } catch {}
+  try { tcToast(won ? `Défi du jour réussi : +${st.gain} ◆${st.bonus ? " et un booster offert (7 jours de suite)" : ""}` : `Défi du jour : +${st.gain} ◆ pour avoir essayé`); } catch {}
+  if (CP.user) dfRpc("daily_submit", {p_day: d, p_tries: n, p_won: won}).then(r => { if (!r) return; const s2 = dfState(); s2.df.sent = 1; s2.df.st = r; tcSave(s2); const el = document.querySelector("#dfSt"); if (el) dfStats(el, dfToday(), s2.df); }); }
+async function dfStats(el, T, st){ const r = st.st && st.sent ? st.st : await dfRpc("daily_stats", {p_day: T.d}); if (!el.isConnected) return;
+  if (!r){ el.textContent = "Les statistiques mondiales arrivent bientôt."; return; } const mx = Math.max(1, ...r.dist), me = st.won ? st.g.length : 0;
+  el.outerHTML = `<div style="display:grid;gap:10px"><div class="dfstat"><span><b>${r.n}</b> joueur${r.n > 1 ? "s" : ""}</span><span>·</span><span><b>${r.n ? Math.round(r.won / r.n * 100) : 0} %</b> ont trouvé</span>${r.rank ? `<span>·</span><span>tu es le <b>${r.rank}${r.rank === 1 ? "er" : "e"}</b> à trouver</span>` : ""}</div>
+    <div class="dfdist">${r.dist.map((v, k) => `<div><span>${k + 1}</span><i class="${me === k + 1 ? "me" : ""}" style="width:${Math.max(2, v / mx * 100)}%"></i></div>`).join("")}</div>${CP.user ? "" : `<p class="dfstat">Connecte-toi pour que ton résultat compte dans le classement du jour.</p>`}</div>`; }
+// texte à partager (aucune réponse dévoilée) : une ligne par proposition, univers / rareté / niveau
+function dfText(){ const T = dfToday(), s = dfState(), st = s.df, all = dfAll(), byId = Object.fromEntries(all.map(c => [c.id, c])), G = st.g.map(id => byId[id]).filter(Boolean), fire = dfFire(s);
+  const sq = (ok, mid) => ok ? "🟩" : mid ? "🟨" : "🟥";
+  return `Hanko · Défi du jour #${T.n} ${st.won ? G.length : "X"}/${DF_MAX}${fire > 1 ? " 🔥" + fire : ""}\n${G.map(g => { const r = dfRel(g, T.a); return g.id === T.a.id ? "🟩🟩🟩 ✅" : sq(r.u) + sq(r.r === 0) + sq(r.p === 0, r.pc); }).join("\n")}\nEt toi ? https://hanko-game.github.io/mercato-anime/`; }
+// image à partager (1080 × 1350) : défi (zoom de départ, grille, série) ou débat (les deux personnages, ton choix, le pourcentage)
+const dfImg = src => new Promise(r => { const i = new Image(); i.onload = () => r(i); i.onerror = () => r(null); i.src = src; });
+async function dfPoster(kind){ const W = 1080, H = 1350, cv = document.createElement("canvas"); cv.width = W; cv.height = H; const g = cv.getContext("2d");
+  try { await document.fonts.load('900 60px Unbounded'); } catch {}
+  const bg = g.createRadialGradient(W / 2, 0, 50, W / 2, 200, H); bg.addColorStop(0, "#4a1018"); bg.addColorStop(1, "#0b0a0e"); g.fillStyle = bg; g.fillRect(0, 0, W, H);
+  const T = dfToday(); { const f = await dfFocus(T); T.fx = f.fx; T.fy = f.fy; } const s = dfState(), tx = (t, x, y, sz, c = "#fff", w = 900, a = "center", f = "Unbounded, system-ui") => { g.font = `${w} ${sz}px ${f}`; g.fillStyle = c; g.textAlign = a; g.fillText(t, x, y); };
+  const cover = (im, x, y, w, h, ox = .5, oy = .2, sc = 1, fx = .5, fy = .5) => { if (!im) return; g.save(); g.beginPath(); g.roundRect ? g.roundRect(x, y, w, h, 36) : g.rect(x, y, w, h); g.clip(); const r = Math.max(w / im.width, h / im.height) * sc, iw = im.width * r, ih = im.height * r; g.drawImage(im, x - (iw - w) * (sc > 1 ? fx : ox), y - (ih - h) * (sc > 1 ? fy : oy), iw, ih); g.restore(); };
+  tx("HANKO", W / 2, 120, 64, "#ff2d3a"); tx(new Date().toLocaleDateString("fr-FR", {day: "numeric", month: "long", year: "numeric"}), W / 2, 176, 28, "#c9c3d1", 600, "center", "'JetBrains Mono', monospace");
+  if (kind === "defi"){ const st = s.df, fire = dfFire(s), all = dfAll(), byId = Object.fromEntries(all.map(c => [c.id, c])), G = st.g.map(id => byId[id]).filter(Boolean); tx(`Défi du jour #${T.n}`, W / 2, 270, 62);
+    /* l'image du départ, très zoomée et floutée : rien n'est dévoilé à ceux qui n'ont pas encore joué */
+    const im = await dfImg(T.a.i), bx = 330, by = 320, bw = 420, bh = 525; g.save(); g.beginPath(); g.roundRect ? g.roundRect(bx, by, bw, bh, 32) : g.rect(bx, by, bw, bh); g.clip(); g.fillStyle = "#000"; g.fillRect(bx, by, bw, bh);
+    if (im){ const r0 = Math.max(bw / im.width, bh / im.height), w0 = im.width * r0, h0 = im.height * r0, x0 = bx - (w0 - bw) / 2, y0 = by - (h0 - bh) * .2, ox = bx + bw * T.fx / 100, oy = by + bh * T.fy / 100, z = DF_ZOOM[0];
+      g.filter = "blur(10px)"; g.drawImage(im, ox + (x0 - ox) * z, oy + (y0 - oy) * z, w0 * z, h0 * z); g.filter = "none"; }
+    g.fillStyle = "#0b0a0e66"; g.fillRect(bx, by, bw, bh); g.restore(); tx("?", W / 2, by + bh / 2 + 70, 200, "#ffffffd0");
+    tx(st.won ? `Trouvé en ${G.length}/${DF_MAX}` : `Pas trouvé (${DF_MAX}/${DF_MAX})`, W / 2, 950, 64, st.won ? "#3ccf7a" : "#ff6b75");
+    /* grille : une colonne par proposition, trois cases (univers, rareté, niveau) */
+    const sz = 58, gap = 14, colW = sz + 26, x00 = W / 2 - (G.length * colW - 26) / 2;
+    G.forEach((c, k) => { const r = dfRel(c, T.a), hit = c.id === T.a.id; [hit || r.u, hit || r.r === 0, hit || r.p === 0].forEach((ok, j) => { g.fillStyle = ok ? "#3ccf7a" : j === 2 && r.pc ? "#f2b13a" : "#e0452f"; const x = x00 + k * colW, y = 1000 + j * (sz + gap); g.beginPath(); g.roundRect ? g.roundRect(x, y, sz, sz, 12) : g.rect(x, y, sz, sz); g.fill(); }); });
+    tx(fire > 1 ? `🔥 Série de ${fire} jours · Et toi ?` : "Et toi, tu le trouves ?", W / 2, 1268, 38, "#ffd9a0", 800); }
+  else { const D = dfDebate(), v = s.dfV, c = v.c, tot = c ? c.a + c.b : 0, pa = tot ? Math.round(c.a / tot * 100) : null; tx("Débat du jour", W / 2, 260, 52, "#ff5a63"); tx(D.q, W / 2, 340, 54);
+    const [ia, ib] = await Promise.all([dfImg(D.a.i), dfImg(D.b.i)]); cover(ia, 60, 400, 450, 600); cover(ib, 570, 400, 450, 600); tx("VS", W / 2, 720, 70, "#ff2d3a");
+    [[D.a, 60, 0], [D.b, 570, 1]].forEach(([x, X, k]) => { if (v.pick === k){ g.lineWidth = 12; g.strokeStyle = "#ff2d3a"; g.strokeRect(X, 400, 450, 600); } tx(x.n.length > 18 ? x.n.slice(0, 17) + "…" : x.n, X + 225, 1070, 38); if (pa != null) tx((k ? 100 - pa : pa) + " %", X + 225, 1140, 60, k ? "#4da3ff" : "#ff6b75"); });
+    tx(v.pick != null ? `J'ai choisi ${[D.a, D.b][v.pick].n}. Et toi ?` : "Et toi, tu choisis qui ?", W / 2, 1250, 38, "#ffd9a0", 800); }
+  tx("hanko-game.github.io/mercato-anime", W / 2, 1316, 26, "#8f889a", 600, "center", "'JetBrains Mono', monospace"); return cv; }
+async function dfShare(kind, btn){ const t = btn ? btn.textContent : ""; if (btn){ btn.disabled = true; btn.textContent = "Préparation…"; }
+  try { const cv = await dfPoster(kind), blob = await new Promise(r => cv.toBlob(r, "image/png")), file = new File([blob], "hanko-" + kind + ".png", {type: "image/png"}), text = kind === "defi" ? dfText() : "Débat du jour sur Hanko : " + dfDebate().q + " https://hanko-game.github.io/mercato-anime/";
+    if (navigator.canShare && navigator.canShare({files: [file]})){ try { await navigator.share({files: [file], text}); return; } catch (e) { if (e && e.name === "AbortError") return; } }
+    const url = URL.createObjectURL(blob); document.body.insertAdjacentHTML("beforeend", `<div class="dfshm"><div><img src="${url}" alt="Mon résultat Hanko"><div class="dfrow"><a class="dfbtn" href="${url}" download="hanko-${kind}.png">Télécharger</a><button class="dfbtn g" id="dfShC">Copier le texte</button></div><button class="dfbtn g" id="dfShX">Fermer</button></div></div>`);
+    const M = document.body.lastElementChild, close = () => { M.remove(); URL.revokeObjectURL(url); }; M.querySelector("#dfShX").onclick = close; M.onclick = e => { if (e.target === M) close(); };
+    M.querySelector("#dfShC").onclick = async e => { try { await navigator.clipboard.writeText(text); e.currentTarget.textContent = "Copié ✔"; } catch { e.currentTarget.textContent = "Copie impossible ici"; } };
+  } catch (e) { console.warn("partage", e); } finally { if (btn){ btn.disabled = false; btn.textContent = t; } } }
+// ——— bloc de l'accueil : toujours visible en haut ———
+function dfHomeDraw(){ const el = document.querySelector("#dfHome"); if (!el) return; const T = dfToday(), D = dfDebate(); if (!T || !D) return; const s = dfState(), st = s.df, done = st.won !== null, fire = dfFire(s);
+  el.innerHTML = `<button id="dfH1" class="${done ? "" : "new"}"><img class="dfz-${T.d}" src="${T.a.i}" alt="" style="transform-origin:${T.fx}% ${T.fy}%;transform:scale(${done ? 1 : 4})"><small>Défi du jour #${T.n}</small><b>${done ? (st.won ? `Trouvé en ${st.g.length}/6` : "Raté aujourd'hui") : "Qui se cache ici ?"}</b><span>${done ? (fire ? `🔥 ${fire} jour${fire > 1 ? "s" : ""} de suite` : "Prochain défi à 10 h") : "Même défi pour tous · 6 essais"}</span></button>
+    <button id="dfH2" class="${s.dfV.pick != null ? "" : "new"}"><img src="${(s.dfV.pick === 1 ? D.b : D.a).i}" alt="" style="object-position:50% 20%"><small>Débat du jour</small><b>${esc(D.a.n)} ou ${esc(D.b.n)} ?</b><span>${s.dfV.pick != null ? "Voir les résultats" : esc(D.q)}</span></button>`;
+  dfApplyFocus(T, el); el.querySelector("#dfH1").onclick = () => dfOpen(done ? "today" : "play"); el.querySelector("#dfH2").onclick = () => { dfOpen("today"); setTimeout(() => document.querySelector("#dfDeb")?.scrollIntoView({behavior: "smooth", block: "center"}), 80); }; }
+// ——— à l'arrivée : une fois par jour, avant le reste, dès que plus rien d'autre n'est affiché (connexion, bienvenue, tutoriel…) ———
+(() => { let n = 0; const tick = () => { if (++n > 120) return; try { const s = tcLoad(), d = tcDay();
+      if (s.dfSeen === d) return; const busy = (typeof hkBusy === "function" && hkBusy()) || document.querySelector(".dfov,.tccine,.tccele,.crpov,#arena,.tcsharebox,.cofm") || !tcCards().length;
+      if (!busy){ s.dfSeen = d; tcSave(s); dfOpen("today"); return; } } catch {} setTimeout(tick, 1200); };
+  addEventListener("load", () => setTimeout(tick, 900)); if (document.readyState === "complete") setTimeout(tick, 900); })();
 </script>
 
 </body>
