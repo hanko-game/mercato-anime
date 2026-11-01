@@ -14726,7 +14726,12 @@ document.addEventListener("contextmenu", e => { if (e.target.closest && !e.targe
       for (let j = 0; j < N; j++) ev.push([Cs + j * step, j === N - 1 ? () => { tcSnd("cele"); SFX.play("win"); } : () => tcSnd("deal")]);
       if (N > 1) ev.push([Math.max(Cs + 100, Cs + (N - 1) * step - 950), () => tcRiser(.9, 1.15)]);   /* montée avant la plus belle carte */
       ev.sort((a, b) => a[0] - b[0]); let ei = 0;
-      try { await new Promise(resolve => { let s0 = 0; rec.onstop = resolve; const loop = ts => { if (!s0) s0 = ts; const el = ts - s0; while (ei < ev.length && el >= ev[ei][0]){ try { ev[ei][1](); } catch {} ei++; } try { drawOpening(g, D, poster, el, W, H); } catch {} if (el < DUR) requestAnimationFrame(loop); else { try { rec.stop(); } catch { resolve(); } } }; rec.start(); requestAnimationFrame(loop); }); } finally { setTimeout(unhook, 300); }
+      /* 1er nov. 2026 : la piste son ne démarrait qu'au premier bruit puis était collée au début → sons en avance. On la fait tourner dès le départ (souffle inaudible), on attend que l'enregistreur tourne, et l'animation suit l'horloge audio */
+      let ka = null; if (dest){ try { await ac.resume(); const o = ac.createOscillator(), kg = ac.createGain(); kg.gain.value = 1e-4; oc.call(o, kg); oc.call(kg, dest); o.start(); ka = o; } catch {} }
+      try { drawOpening(g, D, poster, 0, W, H); } catch {}
+      await new Promise(r => { rec.onstart = r; rec.start(); setTimeout(r, 1500); }); await new Promise(r => setTimeout(r, 300));
+      const clk = () => dest && ac.state === "running" ? ac.currentTime * 1000 : performance.now();
+      try { await new Promise(resolve => { const s0 = clk(); rec.onstop = resolve; const loop = () => { const el = clk() - s0; while (ei < ev.length && el >= ev[ei][0]){ try { ev[ei][1](); } catch {} ei++; } try { drawOpening(g, D, poster, el, W, H); } catch {} if (el < DUR) requestAnimationFrame(loop); else { try { rec.stop(); } catch { resolve(); } } }; requestAnimationFrame(loop); }); } finally { setTimeout(() => { unhook(); try { ka && ka.stop(); } catch {} }, 300); }
       const ext = mime.indexOf("mp4") >= 0 ? "mp4" : "webm", blob = new Blob(chunks, {type: mime}), file = new File([blob], "hanko-tirage." + ext, {type: mime}), text = "Mon tirage sur Hanko !";
       if (navigator.canShare && navigator.canShare({files: [file]})){ try { await navigator.share({files: [file], title: "Mon tirage Hanko", text}); return; } catch (e) { if (e && e.name === "AbortError") return; } }
       const url = URL.createObjectURL(blob), M = document.createElement("div"); M.className = "tcview tcsharebox"; M.style.cssText = "display:grid;place-items:center;align-content:center;overflow:auto;background:rgba(5,5,7,.92)";
