@@ -14641,16 +14641,65 @@ document.addEventListener("contextmenu", e => { if (e.target.closest && !e.targe
     const sw = (k - .22) / .42; if (sw > 0 && sw < 1){ const x = -.35 * W + sw * 1.7 * W; g.save(); g.globalCompositeOperation = "screen"; const gr = g.createLinearGradient(x - 160, 0, x + 160, H); gr.addColorStop(0, "transparent"); gr.addColorStop(.5, "rgba(255,255,255,.16)"); gr.addColorStop(1, "transparent"); g.fillStyle = gr; g.fillRect(0, 0, W, H); g.restore(); }
     if (k > .35){ g.save(); g.globalCompositeOperation = "screen"; for (let i = 0; i < 14; i++){ const a = (i * 2654435761 % 1000) / 1000, b = ((i * 40503) % 1000) / 1000, tw = .5 + .5 * Math.sin((k - .35) / .65 * 6.28 + i * 1.7), x = a * W, y = 150 + b * (H - 360), r = 2 + tw * 5; g.globalAlpha = .2 + .6 * tw; g.fillStyle = "#fff"; g.beginPath(); g.arc(x, y, r, 0, 6.28); g.fill(); } g.restore(); }
   }
+  // ---- Rejoue toute l'ouverture en vidéo : booster -> révélation carte par carte -> récap (1er nov. 2026) ----
+  const TTL = "Unbounded, Inter, system-ui, sans-serif", MONO = "'JetBrains Mono', Inter, monospace";
+  const RCOL = {C: "#b9b4c0", P: "#6fdc9f", R: "#6db6ff", E: "#c39bff", L: "#f7c64a", M: "#ff6a48", X: "#8fe9ff"};
+  async function collectReplay(){
+    const all = tcCards(), els = [...document.querySelectorAll(".tcopen .tcrow > .tc, .tcopen .tcrow > * > .tc")].filter((e, i, a) => a.indexOf(e) === i);
+    let L = els.map(e => { const no = +((e.textContent.match(/#(\d{3})/) || [])[1] || 0), c = all.find(x => x.id === e.dataset.tc) || all.find(x => x.no === no), im = e.querySelector("img:not(.g)"); return c ? {c, src: im && im.getAttribute("src"), fin: ([...e.classList].find(k => /^f-/.test(k)) || "").slice(2), ar: e.classList.contains("arp")} : null; }).filter(Boolean);
+    if (!L.length) return null;
+    L.sort((a, b) => RANK.indexOf(b.c.r) - RANK.indexOf(a.c.r)); L = L.slice(0, 8);
+    const imgs = await Promise.all(L.map(x => load(x.src || tcArt(x.c, x.fin) || tcBase(x.c))));
+    const items = L.map((x, i) => ({img: imgs[i], col: RCOL[x.c.r] || "#ccc", name: x.c.n, lab: x.ar ? "AR" : (x.fin && TC_FIN[x.fin] ? TC_FIN[x.fin][0] : (TC_R[x.c.r] ? TC_R[x.c.r][0] : x.c.r))}));
+    const uni = TC_PACKS[L[0].c.u] || TC_PACKS.mix, O = document.querySelector(".tcopen.res");
+    return {items, rev: [...items].reverse(), uni: {k: uni[1], n: uni[0]}, best: items[0], oddsp: O && O.dataset.oddsp ? parseFloat(O.dataset.oddsp) : null, oddslab: (O && O.dataset.oddslab) || ""};
+  }
+  function drawMini(g, cx, cy, w, it, o){ o = o || {}; const h = w * 666 / 450, x = cx - w / 2, y = cy - h / 2;
+    g.save(); if (o.rot){ g.translate(cx, cy); g.rotate(o.rot); g.translate(-cx, -cy); } g.globalAlpha = o.alpha == null ? 1 : o.alpha;
+    if (o.glow){ g.save(); g.shadowColor = it.col; g.shadowBlur = o.glow; rr(g, x, y, w, h, 14); g.fillStyle = it.col; g.fill(); g.restore(); }
+    g.save(); rr(g, x, y, w, h, 14); g.fillStyle = "#0e0e12"; g.fill(); g.clip();
+    if (it.img){ const s = Math.max(w / it.img.naturalWidth, h / it.img.naturalHeight), iw = it.img.naturalWidth * s, ih = it.img.naturalHeight * s; g.drawImage(it.img, x + (w - iw) / 2, y + (h - ih) * .1, iw, ih); }
+    const sh = g.createLinearGradient(0, y + h * .5, 0, y + h); sh.addColorStop(0, "transparent"); sh.addColorStop(1, "rgba(0,0,0,.92)"); g.fillStyle = sh; g.fillRect(x, y, w, h); g.restore();
+    g.save(); rr(g, x + 1.5, y + 1.5, w - 3, h - 3, 12.5); g.lineWidth = 3; g.strokeStyle = it.col; g.stroke(); g.restore();
+    g.textAlign = "left"; g.fillStyle = "#fff"; g.font = `900 ${w * .092 | 0}px ${TTL}`; g.fillText(fit(g, it.name, w - 22, w * .092 | 0, 900, TTL), x + 12, y + h - 28 * (w / 230));
+    g.fillStyle = it.col; g.font = `800 ${w * .058 | 0}px ${MONO}`; g.fillText((it.lab || "").toUpperCase(), x + 12, y + h - 11 * (w / 230)); g.textAlign = "center"; g.restore(); }
+  function drawOpening(g, D, poster, t, W, H){ const RED = "#ff1e2d", B = 1750, Cs = 1750, Cend = 5600;
+    g.fillStyle = "#050507"; g.fillRect(0, 0, W, H);
+    const gl = g.createRadialGradient(W / 2, H * .42, 40, W / 2, H * .42, 780); gl.addColorStop(0, "rgba(255,30,45,.16)"); gl.addColorStop(1, "transparent"); g.fillStyle = gl; g.fillRect(0, 0, W, H);
+    g.textAlign = "center"; g.textBaseline = "alphabetic";
+    if (t < B){ const e = 1 - Math.pow(1 - Math.min(1, t / 520), 3), bob = Math.sin(t / 240) * 9, pw = 360, ph = 512, cx = W / 2, cy = H * .44 + (1 - e) * 110 + bob, sc = .72 + e * .28;
+      g.save(); g.globalAlpha = Math.min(1, t / 260); g.translate(cx, cy); g.scale(sc, sc); g.translate(-cx, -cy);
+      if (t > 820){ const c = Math.min(1, (t - 820) / 600); g.save(); g.shadowColor = RED; g.shadowBlur = 30 + c * 70; rr(g, cx - pw / 2, cy - ph / 2, pw, ph, 28); g.fillStyle = "#140406"; g.fill(); g.restore(); }
+      rr(g, cx - pw / 2, cy - ph / 2, pw, ph, 28); const pg = g.createLinearGradient(0, cy - ph / 2, 0, cy + ph / 2); pg.addColorStop(0, "#1c0a0f"); pg.addColorStop(1, "#0b0508"); g.fillStyle = pg; g.fill();
+      g.save(); rr(g, cx - pw / 2, cy - ph / 2, pw, ph, 28); g.clip(); g.fillStyle = "rgba(255,255,255,.1)"; g.font = `900 250px ${TTL}`; g.textBaseline = "middle"; g.fillText(D.uni.k, cx, cy + 30);
+      g.fillStyle = RED; g.fillRect(cx - pw / 2, cy - ph / 2, pw, 66); g.fillStyle = "#fff"; g.font = `900 32px ${TTL}`; g.fillText("HANKO", cx, cy - ph / 2 + 34); g.textBaseline = "alphabetic"; g.restore();
+      g.strokeStyle = "rgba(255,255,255,.22)"; g.setLineDash([9, 9]); g.lineWidth = 2; g.beginPath(); g.moveTo(cx - pw / 2 + 18, cy - ph / 2 + 92); g.lineTo(cx + pw / 2 - 18, cy - ph / 2 + 92); g.stroke(); g.setLineDash([]); g.restore();
+      g.fillStyle = "#cfcbd6"; g.font = `700 27px ${MONO}`; g.fillText(t < 850 ? "BOOSTER " + D.uni.n.toUpperCase() : "OUVERTURE…", W / 2, cy + ph / 2 * sc + 64);
+      if (t > B - 260){ const f = (t - (B - 260)) / 260; g.save(); g.globalCompositeOperation = "screen"; g.globalAlpha = Math.sin(Math.min(1, f) * Math.PI); g.fillStyle = "#fff"; g.fillRect(0, 0, W, H); g.restore(); }
+      return; }
+    const rev = D.rev, N = rev.length, step = (Cend - Cs) / N, cw = Math.min(236, (W - 120) / Math.max(3, N) + 70), spread = N > 1 ? Math.min(W - cw - 70, cw * .78 * (N - 1)) : 0, cy = H * .45;
+    g.fillStyle = RED; g.font = `700 24px ${MONO}`; g.fillText("TON TIRAGE", W / 2, 150);
+    g.fillStyle = "#fff"; g.font = `900 50px ${TTL}`; g.fillText(fit(g, "Booster " + D.uni.n, W - 120, 50, 900, TTL), W / 2, 212);
+    let newest = -1;
+    for (let j = 0; j < N; j++){ const tj = Cs + j * step; if (t < tj) continue; newest = j; const p = Math.min(1, (t - tj) / 360), pop = p < 1 ? 1 + .22 * Math.sin(p * Math.PI) : 1, slotX = W / 2 + (N > 1 ? (j - (N - 1) / 2) * (spread / (N - 1)) : 0), rot = (j - (N - 1) / 2) * .05;
+      drawMini(g, slotX, cy, cw * pop, rev[j], {rot, glow: (j === N - 1 ? 26 : 14) * (p < 1 ? 1.6 : 1)}); }
+    if (newest === N - 1){ g.save(); g.globalCompositeOperation = "screen"; for (let i = 0; i < 16; i++){ const a = i / 16 * 6.28, r2 = cw * .8 + Math.sin(t / 150 + i) * 20, x = W / 2 + Math.cos(a) * r2, y = cy + Math.sin(a) * r2 * .9, s = 2 + Math.abs(Math.sin(t / 120 + i)) * 4; g.globalAlpha = .3 + .5 * Math.abs(Math.sin(t / 120 + i)); g.fillStyle = "#fff"; g.beginPath(); g.arc(x, y, s, 0, 6.28); g.fill(); } g.restore();
+      if (D.oddsp != null){ const pt = D.oddsp >= 10 ? D.oddsp.toFixed(0) : D.oddsp >= 1 ? D.oddsp.toFixed(1).replace(".", ",") : D.oddsp.toFixed(2).replace(".", ","), lbl = `${(D.oddslab || "").toUpperCase()} · ${pt} % DE CHANCE${D.oddsp < 5 ? " · 1 BOOSTER SUR " + Math.max(2, Math.round(100 / D.oddsp)) : ""}`;
+        g.font = `800 30px Inter, system-ui, sans-serif`; const tw = g.measureText(lbl).width, pw2 = Math.min(W - 80, tw + 56), px = (W - pw2) / 2, py = cy + cw * 666 / 450 / 2 + 34;
+        g.save(); rr(g, px, py, pw2, 56, 28); g.fillStyle = "rgba(0,0,0,.55)"; g.fill(); g.lineWidth = 2.5; g.strokeStyle = D.best.col; g.stroke(); g.fillStyle = "#fff"; g.textBaseline = "middle"; g.fillText(fit(g, lbl, pw2 - 36, 30, 800, "Inter, system-ui, sans-serif"), W / 2, py + 29); g.textBaseline = "alphabetic"; g.restore(); } }
+    if (t >= Cend){ const f = Math.min(1, (t - Cend) / 450); g.save(); g.globalAlpha = f; g.drawImage(poster, 0, 0, W, H); g.restore(); }
+  }
   async function record(btn){
     const t0 = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<i aria-hidden="true">🎬</i>Vidéo…';
     try {
-      const poster = await render(); if (!poster) return;
-      const mime = mimeFor(), W = poster.width, H = poster.height, cv = document.createElement("canvas"); cv.width = W; cv.height = H; const g = cv.getContext("2d");
+      const D = await collectReplay(); if (!D){ btn.disabled = false; btn.innerHTML = t0; return share(btn); }
+      const poster = await render();
+      const mime = mimeFor(), W = 1080, H = 1350, cv = document.createElement("canvas"); cv.width = W; cv.height = H; const g = cv.getContext("2d");
       if (!window.MediaRecorder || !cv.captureStream || !mime){ btn.disabled = false; btn.innerHTML = t0; return share(btn); }   // pas d'enregistrement possible ici : on retombe sur l'image
       const stream = cv.captureStream(30), chunks = [], rec = new MediaRecorder(stream, {mimeType: mime, videoBitsPerSecond: 9e6});
       rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
-      const DUR = 4600;
-      await new Promise(resolve => { let s0 = 0; rec.onstop = resolve; const loop = ts => { if (!s0) s0 = ts; const el = ts - s0; drawFrame(g, poster, Math.min(1, el / DUR), W, H); if (el < DUR) requestAnimationFrame(loop); else { try { rec.stop(); } catch { resolve(); } } }; rec.start(); requestAnimationFrame(loop); });
+      const DUR = 7400;
+      await new Promise(resolve => { let s0 = 0; rec.onstop = resolve; const loop = ts => { if (!s0) s0 = ts; const el = ts - s0; try { drawOpening(g, D, poster, el, W, H); } catch {} if (el < DUR) requestAnimationFrame(loop); else { try { rec.stop(); } catch { resolve(); } } }; rec.start(); requestAnimationFrame(loop); });
       const ext = mime.indexOf("mp4") >= 0 ? "mp4" : "webm", blob = new Blob(chunks, {type: mime}), file = new File([blob], "hanko-tirage." + ext, {type: mime}), text = "Mon tirage sur Hanko !";
       if (navigator.canShare && navigator.canShare({files: [file]})){ try { await navigator.share({files: [file], title: "Mon tirage Hanko", text}); return; } catch (e) { if (e && e.name === "AbortError") return; } }
       const url = URL.createObjectURL(blob), M = document.createElement("div"); M.className = "tcview tcsharebox"; M.style.cssText = "display:grid;place-items:center;align-content:center;overflow:auto;background:rgba(5,5,7,.92)";
@@ -19674,11 +19723,11 @@ window.NV_ON = true;   /* false : retour à l'ancienne interface */
     return `<div class="nvsh"><div><i class="nvgb"></i><div class="nvsht"><b>Ouvrir</b><button data-x aria-label="Fermer">×</button></div><div class="nvtb">${["Mes boosters", "Du jour et séries", "Boutique"].map((x, i) => `<button data-tb="${i}" class="${tb === i ? "on" : ""}">${x}${i === 0 && mine.length ? `<em>${tcStock(s)}</em>` : ""}</button>`).join("")}</div>${body}</div></div>`; };
   const pkDraw = () => { const G = $1("#tcg"), b = $1("#nvPk"); if (!b) return; const on = TC_TAB === "packs"; G.classList.toggle("nvpk", on); if (!on){ b.innerHTML = ""; return; }
     const s = tcLoad(), keys = allKeys(s); if (!PK.set){ PK.set = 1; if (!stock(s, tcKey(PK.u, PK.t)) && stock(s, keys[0])){ const p = tcParse(keys[0]); PK.u = p.u; PK.t = p.t; } }
-    const key = tcKey(PK.u, PK.t), T = TC_T[PK.t], n = stock(s, key), miss = Math.max(0, PK.q - n), price = tcPrice(PK.u, PK.t) * miss, ok = s.gems >= price, P = s.pity || {}, sh = shot(key);
+    const key = tcKey(PK.u, PK.t), T = TC_T[PK.t], n = stock(s, key), qn = PK.q === "all" ? n : PK.q, miss = Math.max(0, qn - n), price = tcPrice(PK.u, PK.t) * miss, ok = s.gems >= price, P = s.pity || {}, sh = shot(key);
     const rest = miss ? `${price.toLocaleString("fr-FR")} ◆` : key === "mix:0" && s.free.n ? `Gratuit · ${s.free.n} restant${s.free.n > 1 ? "s" : ""}` : `${n} en réserve`;
     const x = b.querySelector(".nvsh>div")?.scrollTop || 0;
     b.innerHTML = `<div class="nvky" style="--uc:${UC_BG[PK.u] || UC_BG.mix}"><div class="nvkt"><button class="nvb" aria-label="Retour">‹</button><button class="hpill"></button></div><div class="nvks">${sh ? `<img src="${sh}" alt="">` : tcPouch3D(key)}</div><p class="nvki">${esc(tcName(key))} · 5 cartes · ${T.g} garantie</p>${wishLine(s, key)}
-      <div class="nvkq">${[1, 5, 10].map(q => `<button data-pq="${q}" class="${PK.q === q ? "on" : ""}">×${q}</button>`).join("")}</div>
+      <div class="nvkq">${[1, 5, 10].map(q => `<button data-pq="${q}" class="${PK.q === q ? "on" : ""}">×${q}</button>`).join("")}${n >= 2 ? `<button data-pq="all" class="tcall ${PK.q === "all" ? "on" : ""}">Tout · ${Math.min(TC_ALLMAX, n)}</button>` : ""}</div>
       <button class="nvkg" id="nvGoPk" ${ok ? "" : "disabled"}>Ouvrir<small>${rest}</small></button>
       <p class="nvkn">${ok ? `Mythique garantie dans ${Math.max(0, TC_PITY.M - (P.M || 0))} boosters au plus` : `Il te manque ${(price - s.gems).toLocaleString("fr-FR")} ◆`}</p><div class="nvkb"><button class="nvkl" id="nvCh">Changer de booster</button><button class="nvkl" id="nvShop">Boutique</button></div></div>${PK.sh ? sheet(s, keys) : ""}`;
     { const y = b.querySelector(".nvsh>div"); if (y) y.scrollTop = x; } try { mnRefresh(); } catch {}
@@ -19690,8 +19739,10 @@ window.NV_ON = true;   /* false : retour à l'ancienne interface */
     b.querySelector(".nvsh")?.addEventListener("click", e => { const S = e.currentTarget, c = e.target.closest("button"); if (e.target === S || (c && "x" in c.dataset)){ PK.sh = 0; return pkDraw(); } if (!c) return; const d = c.dataset;
       if (d.tb != null){ PK.tb = +d.tb; PK.ex = ""; return pkDraw(); } if (d.f){ PK.f = d.f; PK.ex = ""; return pkDraw(); } if (d.ex){ PK.ex = PK.ex === d.ex ? "" : d.ex; return pkDraw(); }
       if (d.day != null){ PK.sh = 0; pkDraw(); return kjDaily(); } if (d.hs != null){ PK.sh = 0; TC_TAB = "series"; tcRender(); return window.scrollTo(0, 0); } if (d.rt) return tcDrops(d.rt); if (d.pk){ const p = tcParse(d.pk); PK.u = p.u; PK.t = p.t; PK.sh = 0; PK.ex = ""; pkDraw(); } });
-    b.querySelectorAll("[data-pq]").forEach(y => y.onclick = () => { PK.q = +y.dataset.pq; pkDraw(); });
-    $1("#nvGoPk").onclick = () => { const s = tcLoad(), key = tcKey(PK.u, PK.t), q = PK.q, m = Math.max(0, q - stock(s, key)), c = tcPrice(PK.u, PK.t) * m; if (s.gems < c) return; if (m && !tcPaidOk(c, () => $1("#nvGoPk")?.click())) return;
+    b.querySelectorAll("[data-pq]").forEach(y => y.onclick = () => { PK.q = y.dataset.pq === "all" ? "all" : +y.dataset.pq; pkDraw(); });
+    $1("#nvGoPk").onclick = () => { const s = tcLoad(), key = tcKey(PK.u, PK.t);
+      if (PK.q === "all"){ if (stock(s, key) < 1) return; TC_PICK = key === "mix:0" && s.free.n >= 2 ? "free" : key; TC_SUB = "mine"; tcRender(); const go = $1('[data-tcopen="all"]'); if (go) go.click(); return; }
+      const q = PK.q, m = Math.max(0, q - stock(s, key)), c = tcPrice(PK.u, PK.t) * m; if (s.gems < c) return; if (m && !tcPaidOk(c, () => $1("#nvGoPk")?.click())) return;
       if (m){ s.gems -= c; for (let k = 0; k < m; k++) tcGive(s, key); tcSave(s); }
       /* les boosters gratuits d'abord, si ils suffisent ; sinon ceux en réserve (les gratuits restants passent au tour suivant) */
       const S = tcLoad(); TC_SUB = "mine"; TC_PICK = key === "mix:0" && S.free.n >= q ? "free" : key; if (key === "mix:0" && (S.packs[key] || 0) < q && S.free.n < q){ const need = q - (S.packs[key] || 0); S.free.n -= need; S.packs[key] = (S.packs[key] || 0) + need; tcSave(S); }
