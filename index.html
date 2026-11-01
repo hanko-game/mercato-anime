@@ -318,7 +318,7 @@ body[data-u="db"] .mini img,body[data-u="db"] .slot img,.uni[data-u="db"] img{ob
 <!-- ACCUEIL -->
 <section id="home">
   <div class="sitebar">
-    <div class="logo"><svg class="hlogo" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="hlg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3fe0a8"/><stop offset="1" stop-color="#c9f26b"/></linearGradient></defs><path d="M50 3l40.7 23.5v47L50 97 9.3 73.5v-47z" fill="url(#hlg)"/><path d="M50 12l32.9 19v38L50 88 17.1 69V31z" fill="#0c1312"/><rect x="31" y="28" width="11" height="44" rx="2.5" fill="url(#hlg)"/><rect x="58" y="28" width="11" height="44" rx="2.5" fill="url(#hlg)"/><path d="M27 60l46-21v10L27 70z" fill="#3fe0a8"/></svg><span>Hanko</span></div>
+    <div class="logo"><svg class="hlogo" viewBox="0 0 100 100" aria-hidden="true"><path d="M50 3l40.7 23.5v47L50 97 9.3 73.5v-47z" fill="#ff1e2d"/><path d="M50 12l32.9 19v38L50 88 17.1 69V31z" fill="#120506"/><rect x="31" y="28" width="11" height="44" rx="2.5" fill="#ff1e2d"/><rect x="58" y="28" width="11" height="44" rx="2.5" fill="#ff1e2d"/><path d="M27 60l46-21v10L27 70z" fill="#ff1e2d"/></svg><span>Hanko</span></div>
     <nav class="sitenav" aria-label="Raccourcis"><a href="#joinBox" data-nav="join">Rejoindre</a><a href="#" data-nav="cartes">Cartes</a><a href="#" data-nav="amis">Amis</a></nav>
   </div>
   <div class="feature">
@@ -11208,12 +11208,12 @@ function tcRender(){
     const gain = all.reduce((a, c) => a + tcDups(s, c).g, 0), fins = all.reduce((a, c) => a + Object.keys(s.fin[c.id] || {}).length, 0);
     html += `${s.taint ? `<p class="note-off" style="margin-bottom:12px">Cette collection a été modifiée en dehors du jeu : elle n'est plus vérifiée, tes amis le voient et les échanges sont bloqués. <button class="ghost" id="tcWipe" style="margin-left:6px">Repartir de zéro</button></p>` : ""}${(() => { /* en-tête de collection façon Kyara, version Hanko C2 (17 oct. 2026) : set complet = chaque personnage au moins une fois ; master set = toutes les versions */
         const M = TC_SET === "master", cnt = cs => M ? [cs.reduce((a, c) => a + tcVersOf(c).filter(v => tcHas(s, c, v)).length, 0), cs.reduce((a, c) => a + tcVersOf(c).length, 0)] : [cs.filter(c => s.own[c.id]).length, cs.length];
-        const [o, t] = cnt(all), pc = t ? o / t * 100 : 0, pf = x => x >= 99.95 || x === 0 ? Math.round(x) : x < 10 ? x.toFixed(1).replace(".", ",") : Math.round(x);
+        const [o, t] = cnt(all), pc = t ? o / t * 100 : 0, pf = x => x >= 100 ? 100 : x <= 0 ? 0 : x < 10 ? (Math.floor(x * 10) / 10).toFixed(1).replace(".", ",") : Math.floor(x);
         return `<div class="tchd"><span class="ey">Album · コレクション</span><h3>Ma collection</h3>
           <div class="tcseg" role="tablist"><button role="tab" data-tcset="full" class="${M ? "" : "sel"}" aria-selected="${!M}">Set complet</button><button role="tab" data-tcset="master" class="${M ? "sel" : ""}" aria-selected="${M}">Master set</button></div>
           <div class="tcring"><div class="dn" style="--p:${pc.toFixed(2)}"><b>${pf(pc)}%</b><small>${M ? "Master" : "Set"}</small></div><ul><li>${M ? "Versions" : "Personnages"}<b>${o}/${t}</b></li><li>Manquantes<b>${t - o}</b></li><li>Doublons<b>${dup}</b></li></ul></div>
           <p class="small tchint">${M ? "Toutes les versions de chaque personnage : normale et Holo pour tous, AR dès Épique, Red Blood dès Légendaire, UR pour les Mythiques, Wanted et Légende pour quelques-uns." : "Chaque personnage au moins une fois, peu importe la version."} Touche une carte pour la voir en 3D.</p>
-          <div class="tcutiles">${TC_UNIS.map(u => { const [a2, b2] = cnt(all.filter(c => c.u === u)), q = b2 ? a2 / b2 * 100 : 0; return `<button data-tcu="${u}" class="${f.u === u ? "sel" : ""}"><span class="k" style="--p:${q.toFixed(2)}"><span>${TC_PACKS[u][1]}</span></span><b>${TC_PACKS[u][0]}</b><small>${a2}/${b2} · ${Math.round(q)} %</small></button>`; }).join("")}</div></div>`; })()}
+          <div class="tcutiles">${TC_UNIS.map(u => { const [a2, b2] = cnt(all.filter(c => c.u === u)), q = b2 ? a2 / b2 * 100 : 0; return `<button data-tcu="${u}" class="${f.u === u ? "sel" : ""}"><span class="k" style="--p:${q.toFixed(2)}"><span>${TC_PACKS[u][1]}</span></span><b>${TC_PACKS[u][0]}</b><small>${a2}/${b2} · ${pf(q)} %</small></button>`; }).join("")}</div></div>`; })()}
       <div class="row" style="margin-bottom:12px"><button id="tcRecycle" ${dup ? "" : "disabled"}>♻ Recycler ${dup} doublon${dup > 1 ? "s" : ""}${dup ? " · +" + gain + " ◆" : ""}</button></div>
       <div class="tcfb">
         <div class="tcchips tcrchips">${[["all", "Toutes"], ...[...TC_ORDER].reverse().filter(r => inV.some(([c, v]) => tcER(c, v) === r)).map(r => [r, TC_R[r][0]])].map(([k, n]) => `<button class="${f.r === k ? "sel" : ""}" data-tcr="${k}">${n}</button>`).join("")}</div>
@@ -16073,11 +16073,14 @@ const crCapLeft = () => { const r = crLoad(); return r.cap && r.cap.d === tcDay(
 /* sous-divisions (14 oct. 2026) : chaque division a trois niveaux, 1 → 3. Niveaux 1 et 2 : les deux premiers montent d’un niveau, le dernier redescend.
    Niveau 3 : les deux premiers montent de division (le premier est champion en Élite 3), les deux derniers redescendent. Les clubs sont un peu plus faibles aux niveaux 1 et 2. */
 const CR_SUB = {up: 2, down: 1, k: .05};   /* réglé par simulation (avec clubLo .38) : titre en ~405 matchs pour un robot, ~470-520 pour un joueur, soit 13 à 16 h de jeu (demande du 14 oct. 2026) */
-const crSub = S => S.sub || 0, crDivN = (S, d = S.div, b = crSub(S)) => CR_DIV[d][0] + " " + (b + 1);
+const crSub = S => S.sub || 0;
+// chaque titre d'Élite ajoute un rang Légende : les clubs d'Élite montent vers le haut de la fourchette, un joueur très fort cesse de tout gagner
+const crLegendBump = S => Math.min(.5, (S.legend || 0) * .08);
+const crDivN = (S, d = S.div, b = crSub(S)) => (S.legend ? CR_DIV[4][0] + " · Légende " + "I".repeat(Math.min(3, S.legend)) + (S.legend > 3 ? " +" + (S.legend - 3) : "") : CR_DIV[d][0] + " " + (b + 1));
 const crUpN = S => crSub(S) < 2 ? CR_SUB.up : S.div < 4 ? 2 : 1, crDnN = S => crSub(S) > 0 ? CR_SUB.down : S.div > 0 ? 2 : 0;
 const crUpTxt = S => crSub(S) < 2 ? `Les ${CR_SUB.up === 2 ? "deux" : CR_SUB.up} premiers montent en ${crDivN(S, S.div, crSub(S) + 1)}` : S.div < 4 ? `Les deux premiers montent en ${crDivN(S, S.div + 1, 0)}` : "Le premier est champion";
 const crDnTxt = S => crDnN(S) === 1 ? ", le dernier redescend" : crDnN(S) === 2 ? ", les deux derniers descendent" : "";
-function crMkClub(S, name, s, rival){ const [lo, hi] = crBand(S), c = lo + (hi - lo) * (CR_ECO.clubLo + CR_ECO.clubUp * s - (CR_RANK.on ? 0 : (2 - crSub(S)) * CR_SUB.k) - (S.div === 0 ? CR_ANTI.ease[crSub(S)] + (crSub(S) === 0 ? (CR_ANTI.easeU[S.u] || 0) : 0) : 0)),   /* Bronze un peu plus accessible (19 oct. 2026) */ D = DATA[S.u]; return {name, s, rival: !!rival, pts: 0, team: crNear(S.u, c, 5, S.squad).sort((a, b) => D[a].p - D[b].p)}; }
+function crMkClub(S, name, s, rival){ const [lo, hi] = crBand(S), c = lo + (hi - lo) * Math.min(1.08, CR_ECO.clubLo + crLegendBump(S) + CR_ECO.clubUp * s - (CR_RANK.on ? 0 : (2 - crSub(S)) * CR_SUB.k) - (S.div === 0 ? CR_ANTI.ease[crSub(S)] + (crSub(S) === 0 ? (CR_ANTI.easeU[S.u] || 0) : 0) : 0)),   /* Bronze un peu plus accessible (19 oct. 2026) */ D = DATA[S.u]; return {name, s, rival: !!rival, pts: 0, team: crNear(S.u, c, 5, S.squad).sort((a, b) => D[a].p - D[b].p)}; }
 function crNewSeason(S){
   const names = crShuffle(CR_NAMES[S.u].filter(n => n !== S.rival)).slice(0, 6), str = crShuffle([.02, .2, .38, .55, .72, .9]);
   S.clubs = names.map((n, k) => crMkClub(S, n, str[k]));
@@ -16126,10 +16129,12 @@ function crNews(S, k, x = {}){ const d = crDivN(S); S.news = ({
   rival: `${S.rival} t'attend au prochain match. Ton rival n'a pas oublié votre dernière rencontre.`,
   beat: `${S.club} fait tomber ${S.rival} ! Toute la division en parle.`,
   lost: `${S.rival} l'emporte encore. La revanche attendra.`,
-  title: `${S.club} est champion d'Élite ! Tu es au sommet : il ne reste plus qu'à réunir la meilleure équipe possible et à défendre ton titre.`,
+  title: `${S.club} est champion d'Élite ! Rang Légende ${"I".repeat(Math.min(3, S.legend || 1))}${(S.legend || 1) > 3 ? " +" + ((S.legend || 1) - 3) : ""} : les clubs d'Élite se renforcent à chaque titre. Combien peux-tu en enchaîner ?`,
   out: `${x.n} est indisponible pour ${x.k} matchs.`, sponsor: `Un sponsor verse ${x.m} à ${S.club}.`, cup: `La coupe t'attend : ${x.r} contre ${x.n}. Une défaite et c'est l'élimination.`, cupwin: `${S.club} remporte la coupe ! Un personnage de choix t'attend en récompense.`, cupout: `${S.club} est éliminé de la coupe. Rendez-vous la saison prochaine.`}[k]) || S.news; }
+// 1er nov. 2026 : le didacticiel ne se joue qu'une fois dans la vie du joueur, pas à chaque nouvel univers
+const crTutoDone = () => { try { return localStorage.getItem("hanko-cr-tuto") === "1"; } catch { return false; } };
 function crStart(u, club){
-  const P = crPool(u), S = {u, club: cleanName(club, "Mon club"), rival: CR_RIVALS[u], div: 0, sub: 0, season: 1, money: CR_ECO.start, prestige: 0, squad: [], out: {}, items: {spy: 1, boost: 0}, mis: [], streak: 0, tuto: 0, ev: null,
+  const P = crPool(u), S = {u, club: cleanName(club, "Mon club"), rival: CR_RIVALS[u], div: 0, sub: 0, season: 1, money: CR_ECO.start, prestige: 0, squad: [], out: {}, items: {spy: 1, boost: 0}, mis: [], streak: 0, tuto: crTutoDone() ? 5 : 0, legend: 0, ev: null,
     stat: {played: 0, wins: 0, titles: 0, top: 0, ups: 0, cups: 0, best: 0, sale: 0, buy: 0, ex: 0, exN: ""}, reach: {}, news: "", eco: 2};
   // effectif de départ : six personnages parmi les plus faibles de l'univers
   S.squad = [1, 3, 5, 7, 9, 11].map(k => P.ix[k]);   /* un sur deux parmi les douze plus faibles : les six autres forment le tout premier adversaire, un cran en dessous */
@@ -16212,7 +16217,7 @@ function crCupClub(S){ const r = S.cup.r, used = S.clubs.map(c => c.name), name 
 function crCupPick(S){ const [lo, hi] = crBand(S, CR_RANK.ahead), P = crPool(S.u); return crShuffle(P.ix.filter(i => !S.squad.includes(i) && P.q[i] > hi - .05 && P.q[i] <= Math.min(1, hi + CR_ECO.cupUp))).slice(0, 3); }
 const crOpp = S => S.cup && S.cup.pend && S.cup.opp ? S.cup.opp : S.clubs[S.order[S.day]];
 // carrières commencées avant l'arrivée de la coupe, des règles spéciales et du palmarès : champs manquants ajoutés
-function crFix(S){ if (!S) return S; S.out = {}; if (S.sub == null) S.sub = S.season > 1 || S.div > 0 ? 2 : 0; S.cup = S.cup || {r: 0, alive: S.day < 2, pend: false, opp: null}; S.stat = Object.assign({played: 0, wins: 0, titles: 0, top: 0, ups: 0, cups: 0, best: 0, sale: 0, buy: 0, ex: 0, exN: ""}, S.stat || {}); S.reach = S.reach || {}; return S; }
+function crFix(S){ if (!S) return S; if (S.legend == null) S.legend = 0; if (S.tuto >= 5){ try { localStorage.setItem("hanko-cr-tuto", "1"); } catch {} } S.out = {}; if (S.sub == null) S.sub = S.season > 1 || S.div > 0 ? 2 : 0; S.cup = S.cup || {r: 0, alive: S.day < 2, pend: false, opp: null}; S.stat = Object.assign({played: 0, wins: 0, titles: 0, top: 0, ups: 0, cups: 0, best: 0, sale: 0, buy: 0, ex: 0, exN: ""}, S.stat || {}); S.reach = S.reach || {}; return S; }
 const crAvail = S => S.squad.slice();   /* plus aucun personnage indisponible : un match est toujours jouable avec 5 personnages */
 const crWeakest = S => S.squad.reduce((a, i) => crCard(S.u, i).p < crCard(S.u, a).p ? i : a, S.squad[0]);
 const crSum = (u, l) => l.reduce((a, i) => a + crCard(u, i).p, 0);
@@ -16300,7 +16305,7 @@ function crSeasonEnd(S){
   for (const o of S.obj){ const [t, ok] = CR_OBJ[o.k](S), done = ok(S, rank); out.obj.push({t, done}); if (done){ const p = crObjPrime(S); S.money += p; out.gains.push(["Objectif rempli", "+" + crMoney(S, p)]); } }
   S.stat.top = Math.max(S.stat.top, S.div);
   const sub = crSub(S), upN = crUpN(S), dnN = crDnN(S); out.upN = upN; out.dnN = dnN; out.dn0 = crDivN(S);
-  if (S.div === 4 && sub === 2 && rank === 1){ out.move = "title"; S.stat.titles++; S.prestige += 20; crNews(S, "title"); }
+  if (S.div === 4 && sub === 2 && rank === 1){ out.move = "title"; S.stat.titles++; S.legend = (S.legend || 0) + 1; S.prestige += 20; crNews(S, "title"); }
   else if (rank <= upN && sub < 2){ out.move = "sup"; S.sub = sub + 1; S.prestige += 3; crNews(S, "sup"); }
   else if (rank <= upN && S.div < 4){ out.move = "up"; S.div++; S.sub = 0; S.prestige += 10; S.stat.ups++; S.stat.top = Math.max(S.stat.top, S.div); crNews(S, "up"); }
   else if (dnN && rank > 8 - dnN && sub > 0){ out.move = "sdown"; S.sub = sub - 1; crNews(S, "sdown"); }
@@ -17108,7 +17113,8 @@ function bmTourMaybe(S, replay){ if (GTR || !S || (!replay && S.bmTut)) return; 
   gtStart(BM_TSTEPS, {title: "Marché noir", label: "Didacticiel du marché noir", cls: "bm", replay, end: () => { S.bmTut = 1; try { crSave(); } catch {} } }); }, 450); }
 
 /* ---------- Retour après une longue absence : on propose de revoir le didacticiel ---------- */
-function gtBackOffer(key, low, run){ let last = 0; try { last = +localStorage.getItem("hanko-seen-" + key) || 0; localStorage.setItem("hanko-seen-" + key, Date.now()); } catch { return; }
+function gtBackOffer(key, low, run){ return;   /* 1er nov. 2026 : plus de rappel « Content de te revoir » (demande de l'utilisateur) */
+  let last = 0; try { last = +localStorage.getItem("hanko-seen-" + key) || 0; localStorage.setItem("hanko-seen-" + key, Date.now()); } catch { return; }
   if (!last || Date.now() - last < 14 * 864e5 || !low || document.querySelector(".backtip")) return;
   document.body.insertAdjacentHTML("beforeend", `<div class="backtip" role="status"><div><b>Content de te revoir !</b><br><span>Ça fait un moment : veux-tu revoir comment ça marche ?</span></div><div class="row"><button class="ghost" data-bt="0">Non merci</button><button class="primary" data-bt="1">Revoir le didacticiel</button></div></div>`);
   const el = document.querySelector(".backtip"); el.querySelectorAll("[data-bt]").forEach(b => b.onclick = () => { el.remove(); if (b.dataset.bt === "1") run(); }); setTimeout(() => el.remove(), 15000); }
@@ -19354,7 +19360,8 @@ body.nv[data-nvs="home"] #nvTop,body.nv[data-nvs="tcg"] #nvTop,body.nv[data-nvs=
 body.nv[data-nvs="home"] #nvTab,body.nv[data-nvs="tcg"] #nvTab,body.nv[data-nvs="launch"] #nvTab{display:grid}
 body.nv[data-nvs="home"] .wrap,body.nv[data-nvs="tcg"] .wrap,body.nv[data-nvs="launch"] .wrap{padding-top:calc(72px + env(safe-area-inset-top,0px));padding-bottom:calc(104px + env(safe-area-inset-bottom,0px))}
 #nvTop{position:fixed;z-index:45;inset:0 0 auto;min-height:60px;padding:calc(8px + env(safe-area-inset-top,0px)) 14px 8px;align-items:center;gap:8px;background:color-mix(in srgb,var(--nvb) 90%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-bottom:1px solid #ffffff0d}
-#nvLogo{flex:none;width:36px;height:36px;padding:0;border:0;border-radius:10px;background:var(--nvr);display:grid;place-items:center;color:#fff;font:900 16px var(--title)}
+#nvLogo{flex:none;width:36px;height:36px;padding:0;border:0;border-radius:10px;background:none;display:grid;place-items:center}
+#nvLogo svg{width:36px;height:36px;display:block}
 #nvTop .hpill{margin-left:auto;box-shadow:none;background:var(--nvs);border:1px solid var(--nvl)}
 #nvTop .mnbtn{flex:none;box-shadow:none;background:none;border:0;padding:0}
 #nvBell{all:unset;box-sizing:border-box;position:relative;flex:none;width:38px;height:38px;display:grid;place-items:center;cursor:pointer;border-radius:50%;color:var(--text,#fff);-webkit-tap-highlight-color:transparent}
@@ -19434,7 +19441,7 @@ window.NV_ON = true;   /* false : retour à l'ancienne interface */
   const NV = {view: "home"}, $1 = s => document.querySelector(s), home = $1("#home"); document.body.classList.add("nv"); document.body.dataset.nv = "home"; document.body.dataset.nvs = "home";
   const hd = (e, t) => `<div class="nvh"><p class="e">${e}</p><h1>${t}</h1></div>`;
   home.insertAdjacentHTML("afterbegin", `<div id="nvHome"></div><div id="nvPlay"></div><div id="nvMe"></div>`);
-  document.body.insertAdjacentHTML("beforeend", `<header id="nvTop"><button id="nvLogo" aria-label="Accueil">H</button><button class="hpill"></button><button id="nvBell" aria-label="Notifications"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 6 2 7 2 7H4s2-1 2-7"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><b hidden></b></button><button class="mnbtn" id="nvAv" aria-label="Moi"></button></header>
+  document.body.insertAdjacentHTML("beforeend", `<header id="nvTop"><button id="nvLogo" aria-label="Accueil"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M50 3l40.7 23.5v47L50 97 9.3 73.5v-47z" fill="#ff1e2d"/><path d="M50 12l32.9 19v38L50 88 17.1 69V31z" fill="#120506"/><rect x="31" y="28" width="11" height="44" rx="2.5" fill="#ff1e2d"/><rect x="58" y="28" width="11" height="44" rx="2.5" fill="#ff1e2d"/><path d="M27 60l46-21v10L27 70z" fill="#ff1e2d"/></svg></button><button class="hpill"></button><button id="nvBell" aria-label="Notifications"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 6 2 7 2 7H4s2-1 2-7"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><b hidden></b></button><button class="mnbtn" id="nvAv" aria-label="Moi"></button></header>
     <nav id="nvTab" aria-label="Navigation principale"><button data-t="home"><i>家</i>Accueil</button><button data-t="play"><i>遊</i>Jouer</button><button data-t="packs" class="go"><i>札</i>Ouvrir<b id="nvNb"></b></button><button data-t="coll"><i>集</i>Collection</button><button data-t="market"><i>市</i>Marché</button></nav>`);
   $1("#tcg .topbar")?.insertAdjacentHTML("afterend", `<div id="nvSeg"></div><div id="nvPk"></div>`);
   $1("#nvTop .hpill").onclick = e => { e.stopPropagation(); hudPop(e.currentTarget); };
