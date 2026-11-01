@@ -13545,7 +13545,7 @@ function mnData(){ let name = "", s = null, own = 0, tot = 0, w = 0, l = 0, stoc
   return {name, s, own, tot, w, l, stock, todo, mail: (typeof CP !== "undefined" && CP.user && CP.user.email) || "", guest: !!window.__INVITE}; }
 function mnBtnHTML(){ const d = mnData(); return `<span class="av" aria-hidden="true">${esc((d.name || "?").slice(0, 1).toUpperCase())}</span><span class="nm">${esc(d.name || "Menu")}</span>${d.todo || d.stock ? `<span class="dot" aria-hidden="true"></span>` : ""}<span class="bg" aria-hidden="true"><i></i><i></i><i></i></span>`; }
 // pastille de la barre du haut (à la manière de Kyara) : boosters gratuits en réserve, éclats, niveau. Elle remplace les quatre tuiles de l'écran Cartes.
-function hudHTML(){ let n = 0, mx = 3, g = 0, lv = 0, wait = ""; try { const s = tcLoad(); n = s.free.n; mx = TC_FREE.max; g = s.gems || 0; lv = tcLvl(s.xp || 0); if (n < mx){ const ms = Math.max(0, s.free.t + TC_FREE.every - Date.now()), m = Math.ceil(ms / 6e4); wait = m >= 60 ? "1 h" : m + " min"; } } catch {}
+function hudHTML(){ let n = 0, mx = 3, g = 0, lv = 0, wait = ""; try { const s = tcLoad(); n = s.free.n; mx = TC_FREE.max; g = s.gems || 0; lv = tcLvl(s.xp || 0); if (n < mx){ const ms = Math.max(0, s.free.t + tcFreeEvery() - Date.now()), m = Math.ceil(ms / 6e4); wait = m >= 60 ? "1 h" : m + " min"; } } catch {}
   return {html: `<span class="f"><i aria-hidden="true"><u style="width:${mx ? n / mx * 100 : 0}%"></u></i>${n}/${mx}</span><span class="g">◆ ${g >= 10000 ? (g / 1000).toFixed(g >= 100000 ? 0 : 1).replace(".", ",") + "k" : g.toLocaleString("fr-FR")}</span><span class="l">Niv.&nbsp;${lv}</span>`, label: `${n} booster${n > 1 ? "s" : ""} gratuit${n > 1 ? "s" : ""} sur ${mx}${wait ? ", le prochain dans " + wait : ", réserve pleine"} · ${g} éclats · niveau ${lv}`}; }
 // volet qui se déroule sous la pastille (comme chez Kyara) : réserve de boosters gratuits et compte à rebours, boosters gagnés, éclats, niveau
 let HUD_T = 0;
@@ -13553,7 +13553,7 @@ function hudClose(){ clearInterval(HUD_T); HUD_T = 0; document.querySelector(".h
 function hudOut(e){ if (!e.target.closest || !e.target.closest(".hudpop,.hpill")) hudClose(); }
 function hudKey(e){ if (e.key === "Escape") hudClose(); }
 function hudPop(btn){ if (document.querySelector(".hudpop")) return hudClose(); let s; try { s = tcLoad(); } catch { return; }
-  const fill = () => { const s = tcLoad(), n = s.free.n, mx = TC_FREE.max, full = n >= mx, ms = full ? 0 : Math.max(0, s.free.t + TC_FREE.every - Date.now()), mm = Math.floor(ms / 6e4), ss = Math.floor(ms % 6e4 / 1e3), lv = tcLvl(s.xp || 0), x0 = tcLvlNeed(lv), x1 = tcLvlNeed(lv + 1), won = Object.values(s.packs || {}).reduce((a, b) => a + b, 0);
+  const fill = () => { const s = tcLoad(), n = s.free.n, mx = TC_FREE.max, full = n >= mx, ms = full ? 0 : Math.max(0, s.free.t + tcFreeEvery() - Date.now()), mm = Math.floor(ms / 6e4), ss = Math.floor(ms % 6e4 / 1e3), lv = tcLvl(s.xp || 0), x0 = tcLvlNeed(lv), x1 = tcLvlNeed(lv + 1), won = Object.values(s.packs || {}).reduce((a, b) => a + b, 0);
     return `<div class="hp-h"><span>Boosters gratuits</span><b>${n}<i>/${mx}</i></b></div><div class="hp-bar"><u style="width:${n / mx * 100}%"></u></div>
       <p>${full ? "Réserve pleine" : "Prochain dans " + (mm ? mm + " min " : "") + String(ss).padStart(2, "0") + " s"} · 1 toutes les ${typeof tcFreeEvery === "function" ? Math.round(tcFreeEvery() / 6e4) : 15} min${full ? " · ouvre-en un pour relancer le compteur" : ""}</p>
       <div class="hp-g"><div><span>Boosters gagnés</span><b>${won}</b></div><div><span>Éclats</span><b class="g">◆ ${(s.gems || 0).toLocaleString("fr-FR")}</b></div></div>
@@ -13872,7 +13872,8 @@ function hccHook(room){ if (!room || room.__hcc || typeof room.on !== "function"
 .hv-f label{display:grid;gap:3px;font:600 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);min-width:0}
 .hv-chips{display:flex;gap:6px;flex-wrap:wrap}
 .hv-chips button{all:unset;cursor:pointer;padding:6px 11px;border-radius:999px;border:1px solid var(--line);font:600 12.5px var(--body);color:var(--text)}
-.hv-chips button.sel{background:var(--text);color:#0e0d12;border-color:var(--text)}
+.hv-chips button.sel,.hv-chips button.sel:hover,.hv-chips button.sel:active,.hv-chips button.sel:focus{background:var(--text)!important;color:#0e0d12!important;border-color:var(--text)!important}   /* 1er nov. 2026 : sur téléphone, le survol « collant » du thème assombrissait la pastille choisie */
+.hv-chips button.sel small{color:#0e0d12;opacity:.7}
 .hv-chips button small{opacity:.6;margin-left:4px;font:500 11px var(--mono)}
 .hv-cnt{font:600 12px var(--mono);color:var(--muted)}
 .hv-note{margin:0;color:var(--muted);font-size:12.5px;line-height:1.45}
@@ -14982,8 +14983,12 @@ if (matchMedia("(hover: none) and (pointer: coarse)").matches) document.addEvent
 .tcopen .tcrow .tc.wishgot{box-shadow:0 0 0 3px #ff4f8b,0 0 26px #ff4f8b!important}
 .tcopen .tcrow .tc.wishgot::before{content:"♥ Envie";position:absolute;z-index:9;top:-9px;left:50%;transform:translateX(-50%);padding:2px 8px;border-radius:99px;background:#ff4f8b;color:#fff;font:800 10px var(--mono,monospace);letter-spacing:.05em;white-space:nowrap}
 #tcWishN{margin:6px 0 0;text-align:center;color:#ff7aa6;font-size:13px}
-.hkupd{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:150;display:flex;gap:10px;align-items:center;padding:10px 12px 10px 16px;border-radius:999px;background:#151419;border:1px solid var(--accent);box-shadow:0 10px 30px rgba(0,0,0,.5);font-size:14px;max-width:calc(100% - 24px)}
-.hkupd button{border-radius:999px;padding:7px 13px;font-size:13px}
+.hkupd{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:150;display:flex;gap:10px;align-items:center;width:min(440px,calc(100% - 24px));box-sizing:border-box;padding:10px 10px 10px 16px;border-radius:18px;background:linear-gradient(135deg,#2a0a10,#15090d);border:1px solid #ff1e2d;box-shadow:0 0 0 1px #ff1e2d33,0 12px 34px rgba(0,0,0,.6),0 0 24px #ff1e2d40;font:600 14px/1.25 var(--body);color:#fff;animation:hkupdin .35s cubic-bezier(.2,.9,.3,1.2)}
+.hkupd span{flex:1;min-width:0}.hkupd span::before{content:"↻";display:inline-grid;place-items:center;width:24px;height:24px;margin-right:8px;border-radius:50%;background:#ff1e2d;color:#fff;font-weight:900;vertical-align:-6px}
+.hkupd button{border-radius:12px;padding:10px 14px;font:800 13.5px var(--body);white-space:nowrap}
+.hkupd #hkUpd{background:#ff1e2d!important;color:#fff!important;border:0!important;box-shadow:0 4px 14px #ff1e2d66!important}
+.hkupd #hkUpdX{background:none!important;border:0!important;color:#c9bfc3!important;padding:10px 8px;box-shadow:none!important}
+@keyframes hkupdin{from{opacity:0;transform:translate(-50%,16px)}}
 </style>
 <script>
 (() => {
@@ -15015,7 +15020,7 @@ if (matchMedia("(hover: none) and (pointer: coarse)").matches) document.addEvent
     let base = null; const sig = async () => { try { const r = await fetch(location.pathname + "?v=" + Date.now(), {cache: "no-store"}); const t = await r.text(); return t.length + ":" + (t.match(/Jeu reconstruit|v=\d+/) || [""])[0] + t.slice(-400); } catch { return null; } };
     sig().then(x => base = x);
     setInterval(async () => { if (!base || document.querySelector(".hkupd") || document.visibilityState !== "visible") return; const now = await sig(); if (!now || now === base) return;
-      document.body.insertAdjacentHTML("beforeend", `<div class="hkupd" role="status"><span>Nouvelle version de Hanko disponible</span><button class="primary" id="hkUpd">Mettre à jour</button><button class="ghost" id="hkUpdX" aria-label="Plus tard">✕</button></div>`);
+      document.body.insertAdjacentHTML("beforeend", `<div class="hkupd" role="status"><span>Nouvelle version disponible</span><button class="primary" id="hkUpd">Mettre à jour</button><button class="ghost" id="hkUpdX" aria-label="Plus tard">✕</button></div>`);
       document.querySelector("#hkUpd").onclick = () => location.reload(); document.querySelector("#hkUpdX").onclick = () => { document.querySelector(".hkupd").remove(); base = now; }; }, 3e5);
   }
 })();
@@ -15038,6 +15043,11 @@ if (matchMedia("(hover: none) and (pointer: coarse)").matches) document.addEvent
 .gxf .gxc span{position:absolute;z-index:1;left:7px;right:7px;text-align:left;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .gxf .gxl{bottom:23px;font:800 9.5px var(--mono,monospace);letter-spacing:.05em;text-transform:uppercase;color:var(--rc)}
 .gxf .gxn{bottom:7px;font-weight:800;font-size:12.5px;color:#fff}
+/* 1er nov. 2026 : la vignette est la vraie carte, dans la version tirée (comme en cliquant dessus) */
+.gxf li:has(.gxtc){flex-basis:138px}
+.gxf .gxc.gxtc{width:138px;height:auto;border:0;background:none;overflow:visible;box-shadow:none;border-radius:10px;filter:drop-shadow(0 0 7px color-mix(in srgb,var(--rc) 55%,transparent))}
+.gxf .gxc.gxtc::after{display:none}
+.gxf .gxc.gxtc .tc{width:100%;margin:0;pointer-events:none}
 .gxf .gxw{display:block;margin-top:6px;font-size:12px;font-weight:700;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .gxf .gxw[data-kjp]{cursor:pointer;text-decoration:underline;text-underline-offset:2px}
 .gxf .gxa{display:block;font:500 10.5px var(--mono,monospace);color:var(--muted)}
@@ -15055,11 +15065,11 @@ function gxItem(r, byId){
   const m = String(r.card_id).match(/^s:([^:]+):(.+)$/);
   if (m){ const c = (HS_DATA[m[1]] || []).find(x => hsKey(x) === m[2]); if (!c || hsRk(c) < 4) return null; const [lab, col] = HS_R[c[9]]; return {r, img: hsImg(c), n: c[4], lab, col, open: () => hsZoom(m[1], m[2])}; }
   const c = byId.get(r.card_id), f = r.fin || ""; if (!c || !gxBig({r: c.r, f})) return null;
-  return {r, img: tcArt(c, f) || tcArt(c), n: c.n, lab: GX_FIN[f] ? TC_FIN[f][0] : TC_R[c.r][0], col: GX_FIN[f] || GX_COL[c.r], open: () => tcView(c, f || undefined)};
+  return {r, card: c, f, img: tcArt(c, f) || tcArt(c), n: c.n, lab: GX_FIN[f] ? TC_FIN[f][0] : f && TC_FIN[f] ? TC_FIN[f][0] : TC_R[c.r][0], col: GX_FIN[f] || GX_COL[c.r] || "#c9a2ff", open: () => tcView(c, f || undefined)};
 }
 function gxDraw(){
   const byId = new Map(tcCards().map(c => [c.id, c])), rows = GX.rows.map(r => gxItem(r, byId)).filter(Boolean).slice(0, 20);
-  const html = rows.length ? `<div class="gxt"><i></i>En direct · Les plus belles cartes</div><h3>Gros tirages</h3><ul>${rows.map((x, k) => `<li style="--rc:${x.col}"><button class="gxc" data-k="${k}" aria-label="${esc(x.n)}"><img src="${x.img}" alt="" loading="lazy"><span class="gxl">${x.lab}</span><span class="gxn">${esc(x.n)}</span></button><span class="gxw" ${x.r.handle ? `data-kjp="${esc(x.r.handle)}"` : ""}>${esc(x.r.name)}</span><span class="gxa">${gxAgo(x.r.at)}</span></li>`).join("")}</ul>${CP.user ? `<button class="gxo">${gxOff() ? "Afficher mes tirages ici" : "Ne pas afficher mes tirages ici"}</button>` : ""}` : "";
+  const html = rows.length ? `<div class="gxt"><i></i>En direct · Les plus belles cartes</div><h3>Gros tirages</h3><ul>${rows.map((x, k) => `<li style="--rc:${x.col}">${x.card ? `<button class="gxc gxtc" data-k="${k}" aria-label="${esc(x.n + " · " + x.lab)}">${tcCard(x.card, {f: x.f || undefined})}</button>` : `<button class="gxc" data-k="${k}" aria-label="${esc(x.n)}"><img src="${x.img}" alt="" loading="lazy"><span class="gxl">${x.lab}</span><span class="gxn">${esc(x.n)}</span></button>`}<span class="gxw" ${x.r.handle ? `data-kjp="${esc(x.r.handle)}"` : ""}>${esc(x.r.name)}</span><span class="gxa">${gxAgo(x.r.at)}</span></li>`).join("")}</ul>${CP.user ? `<button class="gxo">${gxOff() ? "Afficher mes tirages ici" : "Ne pas afficher mes tirages ici"}</button>` : ""}` : "";
   const box = document.querySelector(".gxf"); if (!box) return; box.hidden = !window.NV_ON && TC_TAB !== "packs"; if (box.dataset.h === html) return; const x = box.querySelector("ul")?.scrollLeft || 0; box.dataset.h = html; box.innerHTML = html; const u = box.querySelector("ul"); if (u) u.scrollLeft = x;
   box.querySelectorAll(".gxc").forEach(b => b.onclick = () => rows[+b.dataset.k].open());
   const o = box.querySelector(".gxo"); if (o) o.onclick = () => { const s = tcLoad(); s.noFeed = !s.noFeed; tcSave(s); delete box.dataset.h; gxDraw(); };
@@ -15075,6 +15085,8 @@ document.querySelector("#tcg")?.insertAdjacentHTML("beforeend", `<div class="gxf
 try { gxDraw(); } catch {}   /* rend tout de suite le cache */
 gxTick(true);   /* et lance un rafraîchissement immédiat au démarrage, sans attendre le 1er intervalle */
 setInterval(gxTick, 45e3);
+/* les illustrations des versions (et les images de base soignées) arrivent par des fichiers chargés en différé : on redessine le fil dès qu'elles sont là */
+setInterval(() => { const M = window.__MA || {}, k = Object.keys(M.TCALT || {}).length + ":" + Object.keys(M.TCBASE || {}).length; if (k === GX.ak) return; GX.ak = k; const b = document.querySelector(".gxf"); if (b) delete b.dataset.h; try { gxDraw(); } catch {} }, 1200);
 </script>
 
 <style>
@@ -15123,7 +15135,7 @@ function kjDaily(){ if (document.querySelector(".tcopen")) return; const s = tcL
 const kjClock = ms => { const m = Math.ceil(ms / 6e4); return String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0"); };
 function kjDayDraw(){ const box = document.querySelector(".kjd"); if (!box) return; box.hidden = !window.NV_ON && TC_TAB !== "packs"; if (box.hidden) return;
   const s = tcLoad(), P = s.pity || {}, todo = tcMissions(s).filter(m => m.cur >= m.g && !s.day.claimed.includes(m.k)).length + (s.login && s.login.got ? 0 : 1), st = s.login ? (s.login.n - 1) % 7 + 1 : 0, gone = s.dayPack === tcDay(), u = kjDayU(), [nm, kj, col] = TC_PACKS[u];
-  const nxt = s.free.n < TC_FREE.max && s.free.t ? kjClock(Math.max(0, TC_FREE.every - (Date.now() - s.free.t) % TC_FREE.every)) : "";
+  const nxt = s.free.n < TC_FREE.max && s.free.t ? kjClock(Math.max(0, tcFreeEvery() - (Date.now() - s.free.t) % tcFreeEvery())) : "";
   const tiles = [["#ff5a5a", s.free.n + "/" + TC_FREE.max, "gratuits", nxt, "", s.free.n > 0], ["#34c97b", todo, "à récupérer", "", "missions", todo > 0], ["#a78bfa", "J" + st + "/7", "série", "", "missions", false], ["#f7c64a", Math.max(0, TC_DPITY - (P.D || 0)), "avant le Doré", "", "", false], ["#ff5f8f", Math.max(0, TC_PITY.M - (P.M || 0)), "avant Mythique sûre", "", "", false]];
   const inv = s.opened >= 3 ? `<div class="kjp" style="--kc:#f7c64a"><i>紹</i><div><b>Invite tes amis, gagne une carte Kizuna</b><span>+3 boosters chacun et une carte exclusive à vous deux.</span></div><button class="primary" id="kjInv">Inviter</button></div>` : "";
   const html = `<div class="kjp" style="--kc:${col}"><i>${kj}</i><div><b>Pack du jour · ${esc(nm)}</b><span>${gone ? "Déjà ouvert. Le prochain arrive demain à " + TC_RESET + " h." : "Gratuit, Épique ou mieux garantie."}</span></div>${gone ? "" : `<button class="primary" id="kjGo">Ouvrir</button>`}</div>
