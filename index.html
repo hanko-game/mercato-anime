@@ -4,14 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<title>Hanko</title>
+<title>Hanko Games · jeux d'anime gratuits entre amis et cartes à collectionner</title>
+<link rel="canonical" href="https://hanko-game.github.io/mercato-anime/">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","name":"Hanko Games","alternateName":["Hanko","Hanko Game","Hanko jeux d'anime"],"url":"https://hanko-game.github.io/mercato-anime/","inLanguage":"fr"},{"@type":"VideoGame","name":"Hanko","alternateName":"Hanko Games","url":"https://hanko-game.github.io/mercato-anime/","description":"Jeux d'anime gratuits entre amis (Mercato, Grand Tournoi, Undercover, Perso pixelisé, Silhouettes), mode Carrière et boosters de cartes One Piece, Naruto, Dragon Ball, Jujutsu Kaisen, Demon Slayer, My Hero Academia.","genre":["Jeu de cartes à collectionner","Quiz","Jeu de soirée"],"gamePlatform":["Navigateur web","Android","iOS"],"applicationCategory":"Game","operatingSystem":"Web","inLanguage":"fr","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"image":"https://hanko-game.github.io/mercato-anime/icone-512.png"}]}</script>
 <meta name="theme-color" content="#050505"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Hanko">
 <script>/* 1er nov. 2026 : application installable, seulement sur le site (pas dans claude.ai, où ces fichiers n'existent pas) */
 if (/(^|\.)github\.io$/.test(location.hostname)) document.write('<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icone-apple.png">');</script>
 <meta name="description" content="Hanko : jeux d'anime entre amis (Mercato, Undercover, Perso pixelisé, Silhouettes), mode Carrière et boosters de cartes One Piece, Naruto, Dragon Ball, Jujutsu Kaisen, Demon Slayer et My Hero Academia.">
-<meta property="og:type" content="website"><meta property="og:site_name" content="Hanko"><meta property="og:title" content="Hanko · jeux d'anime et cartes à collectionner">
+<meta property="og:type" content="website"><meta property="og:site_name" content="Hanko Games"><meta property="og:title" content="Hanko · jeux d'anime et cartes à collectionner">
 <meta property="og:description" content="Joue à 4 jeux d'anime avec tes amis, lance ta Carrière et ouvre des boosters de cartes : One Piece, Naruto, Dragon Ball, Jujutsu Kaisen, Demon Slayer, My Hero Academia.">
-<meta property="og:url" content="https://hanko-game.github.io/mercato-anime/"><meta name="twitter:card" content="summary">
+<meta property="og:url" content="https://hanko-game.github.io/mercato-anime/"><meta property="og:image" content="https://hanko-game.github.io/mercato-anime/icone-512.png"><meta name="twitter:card" content="summary">
 <script>try { window.__CINE = location.hash === "#cine"; } catch {}</script>
 <script>
 /* Mode invité (« Jouer sans compte » sur l'écran de connexion) : doit s'installer avant tout le reste. Tant que l'onglet est ouvert en invité,
@@ -190,6 +192,7 @@ body[data-u="db"] .mini img,body[data-u="db"] .slot img,.uni[data-u="db"] img{ob
 </style>
 </head>
 <body data-u="op">
+<noscript><h1>Hanko Games : jeux d'anime gratuits entre amis</h1><p>Mercato, Grand Tournoi, Undercover, Perso pixelisé, Silhouettes, mode Carrière et boosters de cartes One Piece, Naruto, Dragon Ball, Jujutsu Kaisen, Demon Slayer et My Hero Academia. Active JavaScript pour jouer.</p><p><a href="jeux-anime.html">Découvrir les jeux</a> · <a href="boosters-cartes-anime.html">Boosters de cartes</a> · <a href="carriere-anime.html">Carrière</a></p></noscript>
 <style>
 .where{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .opts{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
@@ -9546,9 +9549,11 @@ setInterval(voxRender, 2000);
 .tc.no img{filter:grayscale(1) blur(7px) brightness(.5);opacity:.7;transform:scale(1.15)}
 .tc.no .nm{color:var(--muted)}
 .tc .qm{position:absolute;inset:0;z-index:4;display:grid;place-items:center;padding-bottom:8%;font-family:var(--title);font-weight:900;font-size:clamp(26px,34cqw,64px);font-size:clamp(26px,9vw,54px);line-height:1;color:var(--rc);text-shadow:0 3px 12px #000,0 0 22px rgba(0,0,0,.8);pointer-events:none}
-.tc .tcnew{position:absolute;z-index:9;top:11%;right:5%;font:900 8.5px/1 var(--title,Unbounded),system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;background:#ff1e2d;color:#fff;padding:.55em .9em;border-radius:99px;box-shadow:0 3px 10px #000a;pointer-events:none;white-space:nowrap}
-.tc .tcnew.v{background:#f5c84a;color:#1a1206}
-.kfl .tc .tcnew,.tccine .tc .tcnew,.tcview .tc .tcnew{font-size:12px}
+/* pastille « Nouvelle » discrète (1er nov. 2026, demande de l'utilisateur) : petite, translucide, dans la zone basse du texte, jamais sur le visage */
+.tc > .tcnew{position:absolute!important;z-index:9!important;top:auto;bottom:17%;right:5%;font:900 7px/1 var(--title,Unbounded),system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;background:rgba(255,30,45,.72);color:#fff;padding:.45em .75em;border-radius:99px;border:1px solid rgba(255,255,255,.25);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);pointer-events:none;white-space:nowrap}
+.tc > .tcnew.v{background:rgba(245,200,74,.8);color:#1a1206}
+.tc.lx > .tcnew{bottom:27%}.tc.arp > .tcnew{bottom:auto;top:15%}.tc.ob > .tcnew{bottom:auto;top:41%;right:9%}
+.kfl .tc > .tcnew,.tccine .tc > .tcnew,.tcview .tc > .tcnew{font-size:10px}
 .tc.new .nw{position:absolute;left:6px;top:24px;z-index:2;font-family:var(--brand);font-weight:900;font-size:12px;background:var(--accent);color:#0e0d12;border-radius:6px;padding:2px 6px}
 .tcbars{display:grid;gap:8px;margin-bottom:14px}
 .tcbars div{display:grid;grid-template-columns:104px 1fr 62px;gap:10px;align-items:center;font-size:13.5px}
