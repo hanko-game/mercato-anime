@@ -2172,7 +2172,7 @@ function leaveOnline(){
   NET.timers.forEach(clearInterval); NET.timers = [];
   NET.unsub.forEach(f => { try { f(); } catch {} }); NET.unsub = [];
   if (NET.game) NET.game.leave().catch(() => {});
-  Object.assign(NET, {role:null, game:null, code:null, hostPeer:null, guestPeer:null, guestName:null, hostOpts:null, proposed:false, agreeMsg:null, lastGuest:null, lastState:null, pendAct:null, away:false});
+  Object.assign(NET, {role:null, game:null, code:null, hostPeer:null, guestPeer:null, guestName:null, hostOpts:null, proposed:false, agreeMsg:null, lastGuest:null, lastState:null, pendAct:null, away:false, turnAt:0}); netAwake(false);
   ME = null;
   $("#net").classList.add("hidden");
   renderEmojiBar();
@@ -2181,14 +2181,20 @@ function leaveOnline(){
 // 1er nov. 2026 : présence en partie. Sans nouvelles de l'autre pendant 1 minute, la partie s'arrête : victoire par forfait.
 // Un téléphone en veille ne compte pas ce temps contre l'autre : il attend de revoir l'autre, qui lui annonce sa défaite s'il a été déclaré forfait.
 const NET_FF = 60000;
+// l'écran reste allumé pendant une partie en ligne : un téléphone posé pendant le tour des autres ne doit pas se mettre en veille
+const AWAKE = {lock: null, asking: false};
+async function netAwake(on){ try { if (!on){ if (AWAKE.lock){ const l = AWAKE.lock; AWAKE.lock = null; await l.release(); } return; } if (AWAKE.lock || AWAKE.asking || !navigator.wakeLock || document.visibilityState !== "visible") return; AWAKE.asking = true; const l = await navigator.wakeLock.request("screen"); AWAKE.lock = l; l.addEventListener("release", () => { if (AWAKE.lock === l) AWAKE.lock = null; }); } catch {} finally { AWAKE.asking = false; } }
+// la partie attend-elle l'invité (Mercato à 2) ? Sinon son absence ne compte pas : il a pu poser son téléphone pendant le tour de l'autre
+const netWaits = () => { const ph = G && G.phase; if (!ph) return false; if (ph.k === "open" || ph.k === "counter") return ph.bidder === 1; if (ph.k === "blind") return ph.bids && ph.bids[1] === null; if (ph.k === "order") return !(ph.orders && ph.orders[1]); return false; };
 function netWatch(game){
   NET.seen = NET.tick = Date.now(); NET.away = false;
   NET.timers.push(setInterval(() => {
     const now = Date.now();
     if (now - NET.tick > 5000) NET.seen = now;
-    NET.tick = now;
+    NET.tick = now; netAwake(!!G && !G.over && !G.ff);
     if (!G || G.over || G.ff) return;
-    const gone = now - Math.max(NET.seen, game.seen?.() || 0), off = navigator.onLine === false;
+    if (ME === 0){ if (!netWaits()){ NET.turnAt = 0; if (NET.away){ NET.away = false; setNet(`En ligne · ${NET.code}`, true); } return; } NET.turnAt = NET.turnAt || now; }
+    const gone = now - Math.max(NET.seen, game.seen?.() || 0, ME === 0 ? NET.turnAt : 0), off = navigator.onLine === false;
     if (gone < 12000){ if (NET.away){ NET.away = false; setNet(`En ligne · ${NET.code}`, true); } return; }
     const left = Math.ceil((NET_FF - gone) / 1000);
     if (left > 0){ NET.away = true; return setNet(`${off ? "Connexion perdue" : "Ton ami est déconnecté"} : forfait dans ${left} s`, false); }
@@ -2197,14 +2203,16 @@ function netWatch(game){
 }
 function ffEnd(loser){ if (!G || G.ff) return; G.ff = {l: loser}; G.over = true; render(); sendState(); }
 // 1er nov. 2026 : même règle dans les jeux à plusieurs. L'hôte retire le joueur absent depuis 1 minute ; si c'est l'hôte qui disparaît, la partie s'arrête pour tout le monde.
+// o.turn(i) : la partie attend-elle ce joueur ? La minute ne compte que pendant son tour : on peut poser son téléphone pendant que les autres jouent.
 function groupWatch(o){ const away = new Map(); let tick = Date.now(), seen = Date.now(), told = false, done = false;
   o.game.onPeers(ch => { ch.left.forEach(p => away.set(p.peer, Date.now())); ch.joined.forEach(p => away.delete(p.peer)); });
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && o.live()) netAwake(true); });
   if (!o.host) o.game.on(o.topic, m => { if (!m.sameTab){ seen = Date.now(); told = false; } });
   o.timers.push(setInterval(() => { const now = Date.now(), gap = now - tick; tick = now; if (done) return;
     if (gap > 5000){ seen = now; away.forEach((t, k) => away.set(k, t + gap)); }   // téléphone en veille : ce temps ne compte pas contre les autres
-    if (!o.live()) return;
-    if (o.host) return o.players().forEach((p, i) => { const t = p.peer ? away.get(p.peer) : null; if (!i) return; if (t == null){ p.told = 0; return; } if (!o.active(i)) return;
-      if (!p.told){ p.told = 1; frToast(`${p.name} est déconnecté : forfait dans moins d'une minute s'il ne revient pas.`); } if (now - t >= NET_FF){ away.delete(p.peer); o.drop(i); } });
+    netAwake(o.live()); if (!o.live()) return;
+    if (o.host) return o.players().forEach((p, i) => { const t = p.peer ? away.get(p.peer) : null; if (!i) return; const wait = o.active(i) && (!o.turn || o.turn(i)); p.turnAt = wait ? p.turnAt || now : 0; if (t == null || !wait){ p.told = 0; return; }
+      if (!p.told){ p.told = 1; frToast(`${p.name} ne répond plus : forfait dans moins d'une minute s'il ne revient pas.`); } if (now - Math.max(t, p.turnAt) >= NET_FF){ away.delete(p.peer); o.drop(i); } });
     const g = now - Math.max(seen, o.game.seen?.() || 0), off = navigator.onLine === false;
     if (g >= 15000 && !told){ told = true; frToast(off ? "Connexion perdue : forfait dans moins d'une minute si elle ne revient pas." : "L'hôte ne répond plus : la partie s'arrête dans moins d'une minute s'il ne revient pas."); }
     if (g >= NET_FF){ done = true; lobby(`<h2>${off ? "Défaite par forfait" : "Victoire par forfait"}</h2><p class="muted">${off ? "Tu as été déconnecté plus d'une minute." : "L'hôte s'est déconnecté plus d'une minute : la partie s'arrête, les joueurs restants gagnent."}</p><button class="primary" id="grpHome">Retour à l'accueil</button>`); $("#grpHome").onclick = () => { o.stop(); show("home"); }; }
@@ -3963,7 +3971,7 @@ async function ucHost(){
     if (!UC && ch.left.length){ UCN.lobby = UCN.lobby.filter((p, i) => i === 0 || !ch.left.some(l => l.peer === p.peer)); ucBroadcastLobby(); }
   }));
   UCN.timers.push(setInterval(() => UC ? ucSendAll() : ucBroadcastLobby(), 4000));
-  groupWatch({game, host: true, timers: UCN.timers, players: () => UCN.lobby, live: () => !!UC && UC.phase !== "over", active: i => !!UC.players[i] && UC.players[i].alive, drop: ucDrop});
+  groupWatch({game, host: true, timers: UCN.timers, players: () => UCN.lobby, live: () => !!UC && UC.phase !== "over", active: i => !!UC.players[i] && UC.players[i].alive, turn: i => UC.phase === "reveal" ? !UC.players[i].ready : UC.phase === "clues" ? ucCurrent() === i : UC.phase === "vote" ? UC.votes[i] == null : UC.phase === "guess" ? UC.last?.p === i : false, drop: ucDrop});
   ucBroadcastLobby();
 }
 function ucBroadcastLobby(){
@@ -15637,7 +15645,7 @@ async function mjHost(name){ const err = t => $("#onlineErr").textContent = t; e
   MJN.unsub.push(game.on("uact", msg => { if (msg.sameTab || !MJ) return; const i = MJN.lobby.findIndex(p => p.peer === msg.peer); if (i <= 0) return; const a = msg.data || {}; mjApply(i, {t: String(a.t), v: a.v, seq: Number(a.seq)}); }));
   MJN.unsub.push(game.onPeers(ch => { if (!MJ && ch.left.length){ MJN.lobby = MJN.lobby.filter((p, i) => i === 0 || !ch.left.some(l => l.peer === p.peer)); mjBroadcastLobby(); } }));
   MJN.timers.push(setInterval(() => MJ ? mjSendAll() : mjBroadcastLobby(), 4000));
-  groupWatch({game, host: true, timers: MJN.timers, players: () => MJN.lobby, live: () => !!MJ && !MJ.over, active: i => !!MJ.players[i] && !MJ.players[i].out, drop: mjDrop});
+  groupWatch({game, host: true, timers: MJN.timers, players: () => MJN.lobby, live: () => !!MJ && !MJ.over, active: i => !!MJ.players[i] && !MJ.players[i].out, turn: i => !!MJ.ph && MJ.ph.who === i && MJ.ph.k !== "done", drop: mjDrop});
   mjBroadcastLobby(); }
 async function mjJoin(code, name){ const err = t => $("#onlineErr").textContent = t; err("");
   MJN.myName = cleanName(name, "Joueur"); let game;
@@ -19509,7 +19517,7 @@ const HK_NEWS = [["1er novembre 2026", [
   ["n", "Cette page Nouveautés, et une cloche pour retrouver toutes tes notifications."],
   ["n", "Mon activité : tes ventes, achats, ordres et échanges au même endroit."],
   ["n", "Échanges : filtre « Contre mes doublons », pastille « Il te manque » et nombre d'exemplaires sur chaque carte."],
-  ["n", "Forfait dans tous les jeux en ligne : un joueur absent plus d'une minute quitte la partie, et les autres continuent."],
+  ["n", "Forfait dans tous les jeux en ligne : un joueur qui ne répond pas pendant 1 minute à son tour quitte la partie, et les autres continuent. Pendant le tour des autres, tu peux poser ton téléphone."],
   ["n", "Cartes Kizuna : des cartes exclusives au parrainage, à partager avec ton filleul."],
   ["n", "Nouvelle page pour ouvrir ses boosters, avec tes envies."],
   ["a", "Parrainage plus simple : tous les boosters comptent, et le jeu te dit combien de temps il reste."],
