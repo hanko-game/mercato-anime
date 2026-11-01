@@ -9549,11 +9549,17 @@ setInterval(voxRender, 2000);
 .tc.no img{filter:grayscale(1) blur(7px) brightness(.5);opacity:.7;transform:scale(1.15)}
 .tc.no .nm{color:var(--muted)}
 .tc .qm{position:absolute;inset:0;z-index:4;display:grid;place-items:center;padding-bottom:8%;font-family:var(--title);font-weight:900;font-size:clamp(26px,34cqw,64px);font-size:clamp(26px,9vw,54px);line-height:1;color:var(--rc);text-shadow:0 3px 12px #000,0 0 22px rgba(0,0,0,.8);pointer-events:none}
-/* pastille « Nouvelle » discrète (1er nov. 2026, demande de l'utilisateur) : petite, translucide, dans la zone basse du texte, jamais sur le visage */
-.tc > .tcnew{position:absolute!important;z-index:9!important;top:auto;bottom:17%;right:5%;font:900 7px/1 var(--title,Unbounded),system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;background:rgba(255,30,45,.72);color:#fff;padding:.45em .75em;border-radius:99px;border:1px solid rgba(255,255,255,.25);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);pointer-events:none;white-space:nowrap}
-.tc > .tcnew.v{background:rgba(245,200,74,.8);color:#1a1206}
-.tc.lx > .tcnew{bottom:27%}.tc.arp > .tcnew{bottom:auto;top:15%}.tc.ob > .tcnew{bottom:auto;top:41%;right:9%}
-.kfl .tc > .tcnew,.tccine .tc > .tcnew,.tcview .tc > .tcnew{font-size:10px}
+/* ruban « Nouvelle » (choix B de l'utilisateur, 1er nov. 2026) : bande en diagonale dans le coin haut droit, en relief, filets dorés, reflet qui passe ; doré « Version » pour une version inédite */
+.tc > .tcnew{position:absolute!important;z-index:9!important;top:16px;right:-31px;bottom:auto;width:118px;padding:3.5px 0 3px;text-align:center;font-size:0;color:#fff;background:linear-gradient(180deg,#ff6b75 0%,#ff1e2d 42%,#b50c1e 100%);border-top:1px solid #ffd987;border-bottom:1px solid #c99a3a;box-shadow:0 3px 8px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.45),inset 0 -1px 0 rgba(0,0,0,.3);transform:rotate(45deg);overflow:hidden;pointer-events:none;animation:tcribIn .55s cubic-bezier(.2,1.5,.4,1) both}
+.tc > .tcnew::before{content:"Nouvelle";position:relative;font:900 7px/1 Unbounded,system-ui,sans-serif;letter-spacing:.17em;text-transform:uppercase;text-shadow:0 1px 0 rgba(0,0,0,.45)}
+.tc > .tcnew::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.8) 48%,transparent 64%);transform:translateX(-130%);animation:tcribSh 3.2s ease-in-out .7s infinite}
+.tc > .tcnew.v{color:#2a1a05;background:linear-gradient(180deg,#fff6cf 0%,#f5c84a 45%,#a8791a 100%);border-top-color:#fffbe8;border-bottom-color:#7a5510}
+.tc > .tcnew.v::before{content:"Version";text-shadow:0 1px 0 rgba(255,255,255,.5)}
+.kfl .tc > .tcnew,.tccine .tc > .tcnew,.tcview .tc > .tcnew{top:28px;right:-44px;width:176px;padding:6px 0 5px}
+.kfl .tc > .tcnew::before,.tccine .tc > .tcnew::before,.tcview .tc > .tcnew::before{font-size:10.5px}
+@keyframes tcribIn{from{transform:translate(26px,-26px) rotate(45deg);opacity:0}to{transform:rotate(45deg);opacity:1}}
+@keyframes tcribSh{0%{transform:translateX(-130%)}45%,100%{transform:translateX(130%)}}
+@media (prefers-reduced-motion:reduce){.tc > .tcnew,.tc > .tcnew::after{animation:none}}
 .tc.new .nw{position:absolute;left:6px;top:24px;z-index:2;font-family:var(--brand);font-weight:900;font-size:12px;background:var(--accent);color:#0e0d12;border-radius:6px;padding:2px 6px}
 .tcbars{display:grid;gap:8px;margin-bottom:14px}
 .tcbars div{display:grid;grid-template-columns:104px 1fr 62px;gap:10px;align-items:center;font-size:13.5px}
