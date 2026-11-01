@@ -13321,6 +13321,19 @@ setInterval(() => { try { if (!frParse(lsGet(FR_PEND, "")) || !frsOn() || !frMe(
 /* porte d'entrée : sur le site, il faut un compte pour jouer */
 .cpgate{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;overflow:auto;padding:calc(24px + env(safe-area-inset-top,0px)) 16px calc(24px + env(safe-area-inset-bottom,0px));background:radial-gradient(ellipse 60% 40% at 18% 0,rgba(63,224,168,.2),transparent 70%),radial-gradient(ellipse 55% 38% at 92% 6%,rgba(143,123,255,.18),transparent 70%),radial-gradient(ellipse 70% 34% at 60% 104%,rgba(63,216,255,.12),transparent 70%),var(--bg)}
 .cpgate .in{width:min(100%,420px);display:grid;gap:14px;justify-items:center;text-align:center}
+.cpgate .cpshow{display:none}
+@media (min-width:1000px){
+  .cpgate{grid-template-columns:minmax(0,520px) minmax(0,420px);justify-content:center;align-content:center;column-gap:72px}
+  .cpgate .cpshow{display:grid;gap:34px;justify-items:center}
+  .cpgate .cpshow .fan{position:relative;width:420px;height:330px}
+  .cpgate .cpshow .f{position:absolute;top:10px;left:50%;width:190px;filter:drop-shadow(0 18px 30px #000c)}
+  .cpgate .cpshow .f .tc{width:100%!important;margin:0!important;pointer-events:none}
+  .cpgate .cpshow .f0{transform:translateX(-50%) translateX(-130px) rotate(-12deg);top:30px}
+  .cpgate .cpshow .f1{transform:translateX(-50%);z-index:2}
+  .cpgate .cpshow .f2{transform:translateX(-50%) translateX(130px) rotate(12deg);top:30px}
+  .cpgate .cpshow ul{list-style:none;margin:0;padding:0;display:grid;gap:10px;max-width:440px;color:var(--muted);font-size:15px}
+  .cpgate .cpshow li{position:relative;padding-left:22px}.cpgate .cpshow li::before{content:"";position:absolute;left:4px;top:.55em;width:8px;height:8px;background:#ff1e2d;transform:rotate(45deg)}
+  .cpgate .cpshow li b{color:var(--text)}}
 .cpgate svg{width:76px;height:76px}
 .cpgate h1{font-family:var(--title);font-weight:900;font-size:clamp(34px,10vw,46px);letter-spacing:-.03em;line-height:1;background:var(--grad-aurora,linear-gradient(115deg,#3fe0a8,#c9f26b));-webkit-background-clip:text;background-clip:text;color:transparent}
 .cpgate p{color:var(--muted);font-size:15px;max-width:34ch}
@@ -13445,7 +13458,10 @@ function cpRender(){ const box = $("#cpBox"); if (!box) return;
 // Elle ne s'affiche pas sur claude.ai, où le compte ne peut pas fonctionner. Une session déjà ouverte est relue dans le navigateur, sans réseau.
 function cpGate(loading){ if (!cpReady() || !cpOnSite() || window.__INVITE) return; let g = document.querySelector(".cpgate");
   if (CP.user){ if (g){ g.remove(); document.body.classList.remove("cplock"); } return; }
-  if (!g){ document.body.insertAdjacentHTML("beforeend", `<div class="cpgate" role="dialog" aria-modal="true" aria-label="Connexion"><div class="in"></div></div>`); g = document.querySelector(".cpgate"); document.body.classList.add("cplock"); }
+  if (!g){ document.body.insertAdjacentHTML("beforeend", `<div class="cpgate" role="dialog" aria-modal="true" aria-label="Connexion"><div class="cpshow" aria-hidden="true"></div><div class="in"></div></div>`); g = document.querySelector(".cpgate"); document.body.classList.add("cplock");
+    /* 1er nov. 2026 : sur PC, une vitrine à gauche (trois cartes du jeu en éventail + ce qu'on y fait) */
+    try { const pick = n => tcCards().find(c => c.n === n && !c.obj), L = ["Satoru Gojo", "Monkey D. Luffy", "Son Goku"].map(pick).filter(Boolean), sh = g.querySelector(".cpshow");
+      sh.innerHTML = `<div class="fan">${L.map((c, k) => `<div class="f f${k}">${tcCard(c, {f: tcVersOf(c).includes("B") ? "B" : undefined})}</div>`).join("")}</div><ul><li><b>640 personnages</b> à collectionner en boosters</li><li><b>6 univers</b> : One Piece, Naruto, Dragon Ball, Jujutsu Kaisen, Demon Slayer, My Hero Academia</li><li><b>Jeux entre amis</b> : Mercato, Undercover, Grand Tournoi…</li><li><b>Mode Carrière</b> et marché entre joueurs</li></ul>`; } catch {} }
   const logo = document.querySelector(".hlogo")?.outerHTML.replace(/hlg/g, "hlg2") || "";
   if (loading){ g.querySelector(".in").innerHTML = `${logo}<h1>HANKO</h1><p>Chargement…</p>`; return; }
   if (g.querySelector("form")) return;
@@ -15121,6 +15137,12 @@ if (matchMedia("(hover: none) and (pointer: coarse)").matches) document.addEvent
 .gxf .gxc.gxtc .tc{width:100%;margin:0;pointer-events:none}
 /* 1er nov. 2026 : les anciennes règles des vignettes (img/span en absolu) déformaient les vraies cartes (objets, Éveil) ; elles ne visent plus que l'ancienne vignette. Titre déjà posé par l'accueil */
 #nvPulls .gxf h3{display:none}
+/* 1er nov. 2026 : sur PC, flèches pour faire défiler et fondu sur les bords (au doigt, on glisse) */
+.gxf .gxsc{position:relative}.gxf .gxar{display:none}
+@media (min-width:761px) and (hover:hover){
+  .gxf .gxar{display:grid;place-items:center;position:absolute;z-index:3;top:calc(50% - 30px);width:40px;height:40px;padding:0;border-radius:50%;border:1px solid #ffffff30;background:#0b0a0ee6;color:#fff;font:700 24px/1 system-ui;cursor:pointer;box-shadow:0 6px 16px #000a;transition:background .15s,transform .15s}
+  .gxf .gxar:hover{background:#ff1e2d;transform:scale(1.08)}.gxf .gxar.l{left:-14px}.gxf .gxar.r{right:-14px}
+  .gxf .gxsc ul{-webkit-mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 70px),transparent);mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 70px),transparent)}}
 .gxf .gxw{display:block;margin-top:6px;font-size:12px;font-weight:700;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .gxf .gxw[data-kjp]{cursor:pointer;text-decoration:underline;text-underline-offset:2px}
 .gxf .gxa{display:block;font:500 10.5px var(--mono,monospace);color:var(--muted)}
@@ -15142,9 +15164,10 @@ function gxItem(r, byId){
 }
 function gxDraw(){
   const byId = new Map(tcCards().map(c => [c.id, c])), rows = GX.rows.map(r => gxItem(r, byId)).filter(Boolean).slice(0, 20);
-  const html = rows.length ? `<div class="gxt"><i></i>En direct · Les plus belles cartes</div><h3>Gros tirages</h3><ul>${rows.map((x, k) => `<li style="--rc:${x.col}">${x.card ? `<button class="gxc gxtc" data-k="${k}" aria-label="${esc(x.n + " · " + x.lab)}">${tcCard(x.card, {f: x.f || undefined})}</button>` : `<button class="gxc" data-k="${k}" aria-label="${esc(x.n)}"><img src="${x.img}" alt="" loading="lazy"><span class="gxl">${x.lab}</span><span class="gxn">${esc(x.n)}</span></button>`}<span class="gxw" ${x.r.handle ? `data-kjp="${esc(x.r.handle)}"` : ""}>${esc(x.r.name)}</span><span class="gxa">${gxAgo(x.r.at)}</span></li>`).join("")}</ul>${CP.user ? `<button class="gxo">${gxOff() ? "Afficher mes tirages ici" : "Ne pas afficher mes tirages ici"}</button>` : ""}` : "";
+  const html = rows.length ? `<div class="gxt"><i></i>En direct · Les plus belles cartes</div><h3>Gros tirages</h3><div class="gxsc"><button class="gxar l" aria-label="Précédents">‹</button><button class="gxar r" aria-label="Suivants">›</button><ul>${rows.map((x, k) => `<li style="--rc:${x.col}">${x.card ? `<button class="gxc gxtc" data-k="${k}" aria-label="${esc(x.n + " · " + x.lab)}">${tcCard(x.card, {f: x.f || undefined})}</button>` : `<button class="gxc" data-k="${k}" aria-label="${esc(x.n)}"><img src="${x.img}" alt="" loading="lazy"><span class="gxl">${x.lab}</span><span class="gxn">${esc(x.n)}</span></button>`}<span class="gxw" ${x.r.handle ? `data-kjp="${esc(x.r.handle)}"` : ""}>${esc(x.r.name)}</span><span class="gxa">${gxAgo(x.r.at)}</span></li>`).join("")}</ul></div>${CP.user ? `<button class="gxo">${gxOff() ? "Afficher mes tirages ici" : "Ne pas afficher mes tirages ici"}</button>` : ""}` : "";
   const box = document.querySelector(".gxf"); if (!box) return; box.hidden = !window.NV_ON && TC_TAB !== "packs"; if (box.dataset.h === html) return; const x = box.querySelector("ul")?.scrollLeft || 0; box.dataset.h = html; box.innerHTML = html; const u = box.querySelector("ul"); if (u) u.scrollLeft = x;
   box.querySelectorAll(".gxc").forEach(b => b.onclick = () => rows[+b.dataset.k].open());
+  box.querySelectorAll(".gxar").forEach(b => b.onclick = () => { const u = box.querySelector("ul"); u.scrollBy({left: (b.classList.contains("l") ? -1 : 1) * u.clientWidth * .8, behavior: "smooth"}); });
   const o = box.querySelector(".gxo"); if (o) o.onclick = () => { const s = tcLoad(); s.noFeed = !s.noFeed; tcSave(s); delete box.dataset.h; gxDraw(); };
 }
 const gxSeen = () => !document.hidden && !!document.querySelector(window.NV_ON ? "#home:not(.hidden)" : "#tcg:not(.hidden)");
@@ -19772,7 +19795,7 @@ body.nv #launch button.primary{background:var(--nvr);box-shadow:none;text-transf
   #nvTab{position:static;inset:auto;flex:0 1 auto;min-width:0;display:none;background:none;border:0;padding:0;height:auto;align-items:center;-webkit-backdrop-filter:none;backdrop-filter:none}
   #nvTop #nvTab{order:1}#nvTop #nvLogo{order:0}#nvTop .hpill{order:2}#nvTop #nvBell{order:3}#nvTop > :not(#nvLogo):not(#nvTab):not(.hpill):not(#nvBell){order:4}
   body.nv[data-nvs="home"] #nvTab,body.nv[data-nvs="tcg"] #nvTab,body.nv[data-nvs="launch"] #nvTab{display:flex;gap:4px}
-  #nvTab button{display:flex;gap:7px;min-height:40px;padding:0 13px;border-radius:10px;font-size:14px;font-weight:700}
+  #nvTab button{display:flex;align-items:center;gap:7px;min-height:40px;padding:0 13px;border-radius:10px;font-size:14px;font-weight:700;line-height:1}
   #nvTab button:hover{background:var(--nvs2);color:var(--text)}
   #nvTab i{font-size:15px}#nvTab .on{background:color-mix(in srgb,var(--nvr) 16%,transparent)}
   #nvTab .go{order:9;margin:0 0 0 8px;padding:0 13px 0 6px;background:var(--nvr);color:#fff;border-radius:99px}
@@ -19786,6 +19809,14 @@ body.nv #launch button.primary{background:var(--nvr);box-shadow:none;text-transf
   .nvtwo .nv2:first-child{margin-top:0}.nvtwo .nvhero{min-height:340px;padding:24px}.nvtwo .nvhero b{font-size:32px}.nvtwo .nvhero u{max-width:240px}
   .nvgs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 24px}
   .nvg:hover,.nvli:hover{background:var(--nvs2)}.nvg{border-radius:10px;padding-inline:8px}
+  /* 1er nov. 2026 : sur PC, les jeux deviennent des tuiles illustrées (au lieu de la liste du téléphone) */
+  #nvPlay .nvgs{grid-template-columns:repeat(auto-fit,minmax(188px,1fr));gap:14px}
+  #nvPlay .nvg{grid-template-columns:1fr;grid-template-rows:auto 1fr;gap:0;align-items:stretch;min-height:0;padding:0;border:1px solid var(--nvl);border-radius:16px;overflow:hidden;background:var(--nvs);transition:transform .18s,border-color .18s,box-shadow .18s}
+  #nvPlay .nvg:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--nvr) 70%,transparent);box-shadow:0 10px 26px #0008;background:var(--nvs)}
+  #nvPlay .nvg>i{width:100%;height:auto;aspect-ratio:4/3;border-radius:0}
+  #nvPlay .nvg>i img{object-position:50% 0%}
+  #nvPlay .nvg>div{padding:12px 14px 14px}#nvPlay .nvg b{font-size:17px;margin-bottom:3px}#nvPlay .nvg u{display:none}
+  #nvPlay .nvhero{min-height:230px}
   #nvMe{max-width:640px}
 }
 </style>
@@ -19806,7 +19837,7 @@ window.NV_ON = true;   /* false : retour à l'ancienne interface */
   const lnb = $1("#lnBack"); if (lnb) lnb.onclick = () => nvGo("play");
   const uni = u => { try { return tcCards().filter(c => c.u === u && (c.r === "M" || c.r === "L")); } catch { return []; } };
   const ART = {op: "Monkey D. Luffy", na: "Naruto Uzumaki", db: "Son Goku", jjk: "Satoru Gojo", ds: "Tanjiro Kamado", mha: "Izuku Midoriya"};
-  const art = u => { try { const c = tcCards().find(x => x.u === u && x.n === ART[u]), a = c && tcArt(c); if (a) return a; } catch {} const l = uni(u); for (const c of l){ try { const a = tcArt(c); if (a) return a; } catch {} } return ""; };
+  const art = u => { try { const c = tcCards().find(x => x.u === u && x.n === ART[u]), v = c ? tcVersOf(c) : [], a = c && (["B", "C", "A"].map(f => v.includes(f) && tcArt(c, f)).find(Boolean) || tcArt(c)); if (a) return a; } catch {}   /* 1er nov. 2026 : version HD de l'illustration pour les grandes bannières (la base fait souvent 225 px, floue sur PC) */ const l = uni(u); for (const c of l){ try { const a = tcArt(c); if (a) return a; } catch {} } return ""; };
   const games = () => [...document.querySelectorAll("#home .gcards .mode")];
   const pickGame = c => c.dispatchEvent(new MouseEvent("click", {bubbles: true, detail: 7}));
   const drawHome = () => { const box = $1("#nvHome"); let S = null; try { const r = crLoad(); S = r.cur && r.saves[r.cur]; } catch {} const me = frMe(), g = games()[0];
