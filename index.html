@@ -20095,6 +20095,17 @@ body:has(.tcview) .cofm{visibility:hidden}
 <script>
 /* Coffrets : chaque produit existe dans les 6 univers ; il donne des boosters de l'univers choisi et la carte Promo du personnage (version « P », jamais en booster). */
 const COF_U = ["op", "db", "na", "jjk", "ds", "mha"];
+/* 2 nov. 2026 : plus de temps de chargement d'image. Les images en fichiers séparés (bannières, coffrets, cartes Promo) sont téléchargées
+   et décodées en tâche de fond, quatre à la fois ; hkPre(urls) renvoie une promesse résolue quand elles sont prêtes (gardées en mémoire) */
+const HK_PRE = new Map();
+function hkPre(urls){ return Promise.all(urls.map(u => { if (!HK_PRE.has(u)){ const i = new Image(); i.decoding = "async"; i.src = u; HK_PRE.set(u, (i.decode ? i.decode() : new Promise(r => { i.onload = i.onerror = r; })).catch(() => {}).then(() => i)); } return HK_PRE.get(u); })); }
+window.hkPre = hkPre;
+/* cache des images (sw.js) : enregistré pour tous sur le site en ligne, pas seulement quand les notifications sont activées */
+try { if ("serviceWorker" in navigator && /(^|\.)github\.io$/.test(location.hostname)) addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {})); } catch {}
+const cofImgs = pid => COF_U.flatMap(u => [`coffret-${pid}-${u}.webp`, ...(TC_PROMO ? Object.values(TC_PROMO).filter(v => v === pid + "-" + u).map(v => "promo-" + v + ".webp") : [])]);
+(() => { const idle = window.requestIdleCallback || (f => setTimeout(f, 1500)), L = [...COF_U.map(u => "banniere-" + u + ".webp"), ...["P1", "P2", "P3", "P4", "P5", "P6"].flatMap(cofImgs)];
+  const go = async () => { for (let k = 0; k < L.length; k += 4) await hkPre(L.slice(k, k + 4)); };
+  addEventListener("load", () => idle(go, {timeout: 4000})); if (document.readyState === "complete") idle(go, {timeout: 4000}); })();
 const COF = [
   {id: "P1", n: "Display 24 boosters", p: 2000, packs: [[0, 19], [2, 4], [3, 1]], lim: "w", d: "24 boosters de l'univers, dont 4 Or (Épique garantie) et 1 Divin (Légendaire garantie), et la carte « box topper » en Promo."},
   {id: "P2", n: "Coffret Capitaine", p: 1100, packs: [[0, 9]], d: "9 boosters de l'univers et la carte Promo du héros."},
@@ -20114,7 +20125,7 @@ function cofState(s, P, u){ const L = (s.cof = s.cof || {})[P.id + ":" + u] || {
   return {ok: true, price, free}; }
 function cofOpen(pid){ const P = COF.find(x => x.id === pid); if (!P) return; let u = "op", ask = false;
   document.querySelector(".cofm")?.remove(); document.body.insertAdjacentHTML("beforeend", `<div class="cofm" role="dialog" aria-modal="true"><div></div></div>`); const M = document.body.lastElementChild, box = M.firstElementChild;
-  COF_U.forEach(x => { const i = new Image(); i.src = `coffret-${P.id}-${x}.webp`; });   /* les six univers préchargés : le changement d'onglet est immédiat */
+  hkPre(cofImgs(P.id));   /* les six univers (coffret et carte Promo) préchargés : le changement d'onglet est immédiat */
   const draw = () => { const s = tcLoad(), c = cofCard(P.id, u), st = cofState(s, P, u), price = st.price ?? P.p, oldW = box.querySelector(".cimgw"), sy = box.scrollTop;
     box.innerHTML = `<h2>${esc(P.n)}</h2><div class="cimgw"><img class="cimg" src="coffret-${P.id}-${u}.webp" alt=""></div><div class="cu">${COF_U.map(x => `<button data-u="${x}" class="${x === u ? "on" : ""}">${esc(TC_PACKS[x][0])}</button>`).join("")}</div>
       <p style="margin:0;color:#d5cfdc">${esc(P.d)}</p>${c ? `<div class="cpro">${tcCard(c, {f: "P"})}<div><b>Carte Promo : ${esc(c.n)}</b><p class="cnote">Illustration exclusive, introuvable dans les boosters.</p></div></div>` : ""}
@@ -20123,7 +20134,7 @@ function cofOpen(pid){ const P = COF.find(x => x.id === pid); if (!P) return; le
     /* on garde l'image affichée (et son animation) ; la nouvelle la remplace une fois décodée */
     if (oldW){ const nw = box.querySelector(".cimgw"), oi = oldW.querySelector("img"), src = `coffret-${P.id}-${u}.webp`; nw.replaceWith(oldW); box._want = src; if (!oi.src.endsWith(src)){ const n = new Image(); n.src = src; (n.decode ? n.decode() : Promise.resolve()).catch(() => {}).then(() => { if (oi.isConnected && box._want === src) oi.src = src; }); } }
     box.scrollTop = sy;
-    box.querySelectorAll("[data-u]").forEach(b => b.onclick = () => { u = b.dataset.u; ask = false; draw(); });
+    box.querySelectorAll("[data-u]").forEach(b => b.onclick = () => { const nu = b.dataset.u; box._nu = nu; const t = setTimeout(() => go(), 700), go = () => { clearTimeout(t); if (box._nu !== nu) return; u = nu; ask = false; draw(); }; hkPre([`coffret-${P.id}-${nu}.webp`, ...cofImgs(P.id).filter(x => x.startsWith("promo-" + P.id + "-" + nu))]).then(go); });   /* on change d'univers quand ses images sont prêtes (au plus 0,7 s) : jamais de case vide */
     /* la carte Promo s'ouvre en grand ; le coffret s'incline sous le doigt ou la souris */
     const pc = box.querySelector(".cpro .tc"); if (pc && c){ pc.style.cursor = "zoom-in"; pc.onclick = () => tcView(c, "P"); }
     const w = box.querySelector(".cimgw"), im = w && w.querySelector("img"); if (w){ w.onpointermove = e => { const r = w.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5; im.style.animation = "none"; im.style.transform = `rotateY(${x * 22}deg) rotateX(${-y * 16}deg) scale(1.04)`; }; w.onpointerleave = () => { im.style.transform = ""; im.style.animation = ""; }; }
@@ -20142,12 +20153,12 @@ function cofBuy(P, u){ const s = tcLoad(), st = cofState(s, P, u); if (!st.ok) r
   if (c) setTimeout(() => { try { tcView(c, "P"); } catch {} }, 300); }
 /* section Coffrets en tête de l'onglet Boutique du panneau « Ouvrir » */
 document.addEventListener("click", e => { const b = e.target.closest && e.target.closest("[data-cof]"); if (b){ e.stopPropagation(); cofOpen(b.dataset.cof); } }, true);
-const cofGrid = s => `<p class="cofh">Coffrets · dans les 6 univers</p><div class="cofs">${COF.map(P => `<button data-cof="${P.id}"><img src="coffret-${P.id}-op.webp" alt="" loading="lazy"><b>${esc(P.n)}</b><small>${P.soon ? P.soon : P.deck && !s.cofDeckFree && tcLvl(s.xp || 0) >= 3 ? "Offert" : P.p.toLocaleString("fr-FR") + " ◆"}</small></button>`).join("")}</div>`;
+const cofGrid = s => `<p class="cofh">Coffrets · dans les 6 univers</p><div class="cofs">${COF.map(P => `<button data-cof="${P.id}"><img src="coffret-${P.id}-op.webp" alt=""><b>${esc(P.n)}</b><small>${P.soon ? P.soon : P.deck && !s.cofDeckFree && tcLvl(s.xp || 0) >= 3 ? "Offert" : P.p.toLocaleString("fr-FR") + " ◆"}</small></button>`).join("")}</div>`;
 /* aussi dans la Boutique de l'écran des boosters (onglets « Gratuits et gagnés / Boutique ») */
 new MutationObserver(() => { const t = document.querySelector('#tcg .tcsub [data-tcsub="shop"].sel'); if (!t) return; const sub = t.closest(".tcsub"); if (sub.nextElementSibling && sub.nextElementSibling.classList.contains("cofw")) return;
   sub.insertAdjacentHTML("afterend", `<div class="cofw">${cofGrid(tcLoad())}<p class="cofh">Boosters</p></div>`); }).observe(document.body, {childList: true, subtree: true});
 new MutationObserver(() => { const sh = document.querySelector("#nvPk .nvsh>div"), on = sh && sh.querySelector('.nvtb [data-tb="2"].on'); if (!on || sh.querySelector(".cofs")) return;
-  const s = tcLoad(); sh.querySelector(".nvtb").insertAdjacentHTML("afterend", `<p class="cofh">Coffrets · dans les 6 univers</p><div class="cofs">${COF.map(P => `<button data-cof="${P.id}"><img src="coffret-${P.id}-op.webp" alt="" loading="lazy"><b>${esc(P.n)}</b><small>${P.soon ? P.soon : P.deck && !s.cofDeckFree && tcLvl(s.xp || 0) >= 3 ? "Offert" : P.p.toLocaleString("fr-FR") + " ◆"}</small></button>`).join("")}</div><p class="cofh">Boosters</p>`); }).observe(document.body, {childList: true, subtree: true});
+  const s = tcLoad(); sh.querySelector(".nvtb").insertAdjacentHTML("afterend", `<p class="cofh">Coffrets · dans les 6 univers</p><div class="cofs">${COF.map(P => `<button data-cof="${P.id}"><img src="coffret-${P.id}-op.webp" alt=""><b>${esc(P.n)}</b><small>${P.soon ? P.soon : P.deck && !s.cofDeckFree && tcLvl(s.xp || 0) >= 3 ? "Offert" : P.p.toLocaleString("fr-FR") + " ◆"}</small></button>`).join("")}</div><p class="cofh">Boosters</p>`); }).observe(document.body, {childList: true, subtree: true});
 </script>
 
 </body>
