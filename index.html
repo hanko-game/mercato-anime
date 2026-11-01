@@ -20053,8 +20053,13 @@ setInterval(hkBellPoll, 6e4); setTimeout(hkBellPoll, 5000); setInterval(hkBellDr
 
 <style>
 /* ---- Coffrets (1er nov. 2026) : produits spéciaux de la boutique, déclinés par univers, avec leur carte Promo ---- */
-.tc.f-P{border:0;padding:0;background:conic-gradient(from var(--pa,0deg),#fff,#9aa3b8,#e9ecf2,#4b5262,#dfe3ec,#fff) border-box;box-shadow:0 0 18px #c9d2ff55}
-.tc.f-P > img{position:absolute;inset:3px;width:calc(100% - 6px)!important;height:calc(100% - 6px)!important;object-fit:cover;object-position:50% 25%;border-radius:inherit}
+@property --ppa{syntax:"<angle>";inherits:false;initial-value:0deg}
+/* cadre des Promo : verre irisé qui tourne (comme les AR), illustration nette à l'intérieur ; tranche et voile de la rareté neutralisés */
+.tc.f-P{border:0!important;padding:0;background:conic-gradient(from var(--ppa),#ffffff,#9fd8ff,#c9a2ff,#ffd6f0,#fff3b0,#9fd8ff,#ffffff) border-box!important;box-shadow:0 0 0 1px #ffffff55,0 0 22px #b9c8ff66!important;animation:ppaR 8s linear infinite;--tr:#cfd6e8;--rc:#cfd6e8}
+@keyframes ppaR{to{--ppa:360deg}}
+.tc.f-P > img{position:absolute;inset:4.5px;width:calc(100% - 9px)!important;height:calc(100% - 9px)!important;object-fit:cover;object-position:50% 25%;border-radius:calc(12px - 4px);transform:none!important}
+.tc.f-P::before{opacity:.18!important}
+.tc.f-P .fx{opacity:.25!important}
 .tc.f-P .tp,.tc.f-P .tx,.tc.f-P .sk,.tc.f-P .ky,.tc.f-P .kg{display:none!important}
 .tc.f-P::after{display:none!important}
 .tc.f-P .nm{position:absolute;top:9%;bottom:auto;left:0;right:0}.tc.f-P .ft .fin,.tc.f-P .ft b{display:none}
@@ -20066,6 +20071,11 @@ setInterval(hkBellPoll, 6e4); setTimeout(hkBellPoll, 5000); setInterval(hkBellDr
 .cofh{font:700 11px var(--mono,monospace);letter-spacing:.08em;text-transform:uppercase;color:#a7a0b1;margin:4px 0 8px}
 .cofm{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:16px;background:#000c}
 .cofm>div{width:min(100%,520px);max-height:92dvh;overflow:auto;border-radius:20px;border:1px solid #2a2531;background:#121017;padding:18px}
+.cofm .cimgw{perspective:900px;display:grid;place-items:center}
+.cofm .cimg{transition:transform .25s ease-out;animation:cofflt 5s ease-in-out infinite;filter:drop-shadow(0 16px 26px #000c)}
+@keyframes cofflt{0%,100%{transform:rotateY(-9deg) rotateX(3deg) translateY(0)}50%{transform:rotateY(9deg) rotateX(-2deg) translateY(-6px)}}
+@media (prefers-reduced-motion:reduce){.cofm .cimg{animation:none}}
+body:has(.tcview) .cofm{visibility:hidden}
 .cofm h2{font:900 21px var(--title,system-ui);margin:0 0 4px}.cofm .cimg{width:100%;max-height:230px;object-fit:contain}
 .cofm .cu{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}.cofm .cu button{padding:7px 12px;border-radius:99px;border:1px solid #2a2531;background:#0b0a0e;color:#ddd;font:700 12px var(--body,system-ui);cursor:pointer}
 .cofm .cu button.on{background:#ff1e2d;border-color:#ff1e2d;color:#fff}
@@ -20084,8 +20094,7 @@ const COF = [
   {id: "P3", n: "Boîte métal", p: 450, packs: [[0, 4]], d: "4 boosters de l'univers et la carte Promo du personnage star."},
   {id: "P4", n: "Tripack", p: 320, packs: [[0, 2], [1, 1]], lim: "d", d: "3 boosters de l'univers (dont 1 Argent) et une carte Promo."},
   {id: "P5", n: "Deck de départ", p: 400, packs: [[0, 2]], deck: 10, d: "10 cartes du même univers, 2 boosters et le leader en carte Promo. Le premier est offert à partir du niveau 3."},
-  {id: "P6", n: "Coffret Légende", p: 6000, packs: [[0, 11], [2, 4], [3, 1]], lim: "once", d: "16 boosters, dont 4 Or et 1 Divin, et la carte Promo de prestige. Édition limitée : un seul par compte et par univers."},
-  {id: "P9", n: "Calendrier de l'Avent", p: 0, soon: "Du 1er au 25 décembre", d: "Une case par jour de connexion en décembre, avec une carte de Noël exclusive le 25."}];
+  {id: "P6", n: "Coffret Légende", p: 6000, packs: [[0, 11], [2, 4], [3, 1]], lim: "once", d: "16 boosters, dont 4 Or et 1 Divin, et la carte Promo de prestige. Édition limitée : un seul par compte et par univers."}];
 const cofCard = (pid, u) => { const id = Object.keys(TC_PROMO).find(k => TC_PROMO[k] === pid + "-" + u); return id ? tcCards().find(c => c.id === id) : null; };
 const cofWeek = () => Math.floor((Date.now() + 3 * 864e5) / 6048e5);
 function cofState(s, P, u){ const L = (s.cof = s.cof || {})[P.id + ":" + u] || {};
@@ -20099,11 +20108,14 @@ function cofState(s, P, u){ const L = (s.cof = s.cof || {})[P.id + ":" + u] || {
 function cofOpen(pid){ const P = COF.find(x => x.id === pid); if (!P) return; let u = "op", ask = false;
   document.querySelector(".cofm")?.remove(); document.body.insertAdjacentHTML("beforeend", `<div class="cofm" role="dialog" aria-modal="true"><div></div></div>`); const M = document.body.lastElementChild, box = M.firstElementChild;
   const draw = () => { const s = tcLoad(), c = cofCard(P.id, u), st = cofState(s, P, u), price = st.price ?? P.p;
-    box.innerHTML = `<h2>${esc(P.n)}</h2><img class="cimg" src="coffret-${P.id}.webp" alt=""><div class="cu">${COF_U.map(x => `<button data-u="${x}" class="${x === u ? "on" : ""}">${esc(TC_PACKS[x][0])}</button>`).join("")}</div>
+    box.innerHTML = `<h2>${esc(P.n)}</h2><div class="cimgw"><img class="cimg" src="coffret-${P.id}-${u}.webp" alt=""></div><div class="cu">${COF_U.map(x => `<button data-u="${x}" class="${x === u ? "on" : ""}">${esc(TC_PACKS[x][0])}</button>`).join("")}</div>
       <p style="margin:0;color:#d5cfdc">${esc(P.d)}</p>${c ? `<div class="cpro">${tcCard(c, {f: "P"})}<div><b>Carte Promo : ${esc(c.n)}</b><p class="cnote">Illustration exclusive, introuvable dans les boosters.</p></div></div>` : ""}
       ${P.soon ? "" : `<div class="crow"><button data-x>Fermer</button><button class="go" ${st.ok ? "" : "disabled"}>${!st.ok ? esc(st.why) : ask ? `Confirmer : ${price ? price.toLocaleString("fr-FR") + " ◆" : "gratuit"}` : price ? `Acheter · ${price.toLocaleString("fr-FR")} ◆` : "Recevoir (offert)"}</button></div>${ask ? `<p class="cnote">Touche encore pour confirmer l'achat. Tu as ${s.gems.toLocaleString("fr-FR")} ◆.</p>` : ""}`}
       ${P.soon ? `<div class="crow"><button data-x>Fermer</button><button class="go" disabled>${esc(P.soon)}</button></div>` : ""}`;
     box.querySelectorAll("[data-u]").forEach(b => b.onclick = () => { u = b.dataset.u; ask = false; draw(); });
+    /* la carte Promo s'ouvre en grand ; le coffret s'incline sous le doigt ou la souris */
+    const pc = box.querySelector(".cpro .tc"); if (pc && c){ pc.style.cursor = "zoom-in"; pc.onclick = () => tcView(c, "P"); }
+    const w = box.querySelector(".cimgw"), im = w && w.querySelector("img"); if (w){ w.onpointermove = e => { const r = w.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5; im.style.animation = "none"; im.style.transform = `rotateY(${x * 22}deg) rotateX(${-y * 16}deg) scale(1.04)`; }; w.onpointerleave = () => { im.style.transform = ""; im.style.animation = ""; }; }
     box.querySelector("[data-x]").onclick = () => M.remove();
     const g = box.querySelector(".go"); if (g && st.ok) g.onclick = () => { if (!ask){ ask = true; return draw(); } cofBuy(P, u); M.remove(); }; };
   M.onclick = e => { if (e.target === M) M.remove(); }; draw(); }
@@ -20119,12 +20131,12 @@ function cofBuy(P, u){ const s = tcLoad(), st = cofState(s, P, u); if (!st.ok) r
   if (c) setTimeout(() => { try { tcView(c, "P"); } catch {} }, 300); }
 /* section Coffrets en tête de l'onglet Boutique du panneau « Ouvrir » */
 document.addEventListener("click", e => { const b = e.target.closest && e.target.closest("[data-cof]"); if (b){ e.stopPropagation(); cofOpen(b.dataset.cof); } }, true);
-const cofGrid = s => `<p class="cofh">Coffrets · dans les 6 univers</p><div class="cofs">${COF.map(P => `<button data-cof="${P.id}"><img src="coffret-${P.id}.webp" alt="" loading="lazy"><b>${esc(P.n)}</b><small>${P.soon ? P.soon : P.deck && !s.cofDeckFree && tcLvl(s.xp || 0) >= 3 ? "Offert" : P.p.toLocaleString("fr-FR") + " ◆"}</small></button>`).join("")}</div>`;
+const cofGrid = s => `<p class="cofh">Coffrets · dans les 6 univers</p><div class="cofs">${COF.map(P => `<button data-cof="${P.id}"><img src="coffret-${P.id}-op.webp" alt="" loading="lazy"><b>${esc(P.n)}</b><small>${P.soon ? P.soon : P.deck && !s.cofDeckFree && tcLvl(s.xp || 0) >= 3 ? "Offert" : P.p.toLocaleString("fr-FR") + " ◆"}</small></button>`).join("")}</div>`;
 /* aussi dans la Boutique de l'écran des boosters (onglets « Gratuits et gagnés / Boutique ») */
 new MutationObserver(() => { const t = document.querySelector('#tcg .tcsub [data-tcsub="shop"].sel'); if (!t) return; const sub = t.closest(".tcsub"); if (sub.nextElementSibling && sub.nextElementSibling.classList.contains("cofw")) return;
   sub.insertAdjacentHTML("afterend", `<div class="cofw">${cofGrid(tcLoad())}<p class="cofh">Boosters</p></div>`); }).observe(document.body, {childList: true, subtree: true});
 new MutationObserver(() => { const sh = document.querySelector("#nvPk .nvsh>div"), on = sh && sh.querySelector('.nvtb [data-tb="2"].on'); if (!on || sh.querySelector(".cofs")) return;
-  const s = tcLoad(); sh.querySelector(".nvtb").insertAdjacentHTML("afterend", `<p class="cofh">Coffrets · dans les 6 univers</p><div class="cofs">${COF.map(P => `<button data-cof="${P.id}"><img src="coffret-${P.id}.webp" alt="" loading="lazy"><b>${esc(P.n)}</b><small>${P.soon ? P.soon : P.deck && !s.cofDeckFree && tcLvl(s.xp || 0) >= 3 ? "Offert" : P.p.toLocaleString("fr-FR") + " ◆"}</small></button>`).join("")}</div><p class="cofh">Boosters</p>`); }).observe(document.body, {childList: true, subtree: true});
+  const s = tcLoad(); sh.querySelector(".nvtb").insertAdjacentHTML("afterend", `<p class="cofh">Coffrets · dans les 6 univers</p><div class="cofs">${COF.map(P => `<button data-cof="${P.id}"><img src="coffret-${P.id}-op.webp" alt="" loading="lazy"><b>${esc(P.n)}</b><small>${P.soon ? P.soon : P.deck && !s.cofDeckFree && tcLvl(s.xp || 0) >= 3 ? "Offert" : P.p.toLocaleString("fr-FR") + " ◆"}</small></button>`).join("")}</div><p class="cofh">Boosters</p>`); }).observe(document.body, {childList: true, subtree: true});
 </script>
 
 </body>
