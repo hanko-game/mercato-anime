@@ -11960,7 +11960,7 @@ function tcOpening(key, got){
     mid.innerHTML = sumRow(); bot.innerHTML = ""; done(); };
   // 25 oct. 2026 : bilan léger. Jusqu'à 10 cartes, toutes sont montrées ; au-delà, seulement les cartes qui comptent (nouvelles, Épique ou mieux,
   // versions rares), les meilleures d'abord, par paquets de 30. 250 cartes complètes d'un coup faisaient planter les téléphones (11 Mo de page).
-  const E0 = TC_ORDER.indexOf("E"), hot = c => TC_ORDER.indexOf(c.r) >= E0 || (c.f && c.f !== "H") || c.hype, many = got.length > 10;
+  const E0 = TC_ORDER.indexOf("E"), epq = c => TC_ORDER.indexOf(c.r) >= E0 || (c.f && c.f !== "H"), hot = c => TC_ORDER.indexOf(c.r) >= E0 || (c.f && c.f !== "H") || c.hype, many = got.length > 10;
   const SIDX = many ? [...got.keys()].filter(k => got[k].isNew || got[k].newFin || hot(got[k])).sort((a, b) => sc0(got[b]) - sc0(got[a])) : [...got.keys()];
   const sumCards = (a, b) => SIDX.slice(a, b).map(k => tcCard(got[k], {isNew: got[k].isNew, newFin: got[k].newFin, f: got[k].f})).join("");
   const sumRow = () => `<div class="tcrow ${got.length > 5 ? "many" : ""}">${sumCards(0, many ? 30 : got.length)}</div>`;
@@ -12011,7 +12011,8 @@ function tcOpening(key, got){
   const cur = () => mid.querySelector(`.kfl[data-k="${i}"]:not(.gone)`);
   const cardHTML = k => { const c = got[k], down = true;   /* 26 oct. 2026 : toutes les cartes arrivent de dos, comme dans un vrai booster ; on les retourne une à une */ return `<div class="kfl ${down ? "" : "up nofl r-" + c.r}" data-k="${k}" style="z-index:${N - k}"><div class="in"><div class="bkf">${tcBackU("C", {u: c.u, cls: "tcback", attr: `aria-label="Retourner la carte ${k + 1}"`})}</div><div class="fa">${tcCard(c, {isNew: c.isNew, newFin: c.newFin, f: c.f})}</div></div></div>`; };
   const msg = t => { const m = bot.querySelector(".kmsg"); if (m) m.textContent = t; };
-  const stack = () => { const dk = mid.querySelector(".kdeck"); if (!dk) return;
+  const stack = () => { const nb = $("#tcNext"); if (nb) nb.hidden = !got.slice(i).some(epq);   /* 1er nov. 2026 : plus d'Épique ou + à venir, le bouton disparaît */
+    const dk = mid.querySelector(".kdeck"); if (!dk) return;
     dk.querySelectorAll(".kfl:not(.gone)").forEach(e => { if (+e.dataset.k < i) e.remove(); });
     for (const k of [i, i + 1]) if (k < N && !dk.querySelector(`.kfl[data-k="${k}"]:not(.gone)`)) dk.insertAdjacentHTML("beforeend", cardHTML(k));
     const left = N - i; dk.querySelectorAll(".gh").forEach((g, k) => g.style.opacity = k < left - 2 ? 1 : 0);
@@ -12045,7 +12046,7 @@ function tcOpening(key, got){
     mid.innerHTML = `<div class="kcnt" aria-live="polite"><span><b class="kc">1</b><small class="kt">/${N}</small></span>${NP > 1 ? `<span class="kpk">Booster <b>1</b>/${NP}</span>` : ""}</div><div class="kdeck">${[3, 2, 1].map(k => `<div class="gh" style="transform:translate(${k * 6}px,${-k * 5}px) rotate(${k * 1.3}deg);z-index:${-k}">${tcBackU("C", {u: got[Math.min(N - 1, k)].u})}</div>`).join("")}</div>`;
     const cn = {}; got.forEach(c => cn[c.r] = 1);
     bot.innerHTML = `<div class="kfoot">${TAL ? `<div class="ktal">${[...TC_ORDER].reverse().filter(r => cn[r]).map(r => `<span class="r-${r}" data-r="${r}" hidden><b>0</b><em> ${TC_R[r][3] || TC_R[r][0]}</em></span>`).join("")}</div>` : `<div class="kslots">${got.map(() => "<i></i>").join("")}</div>`}
-      <p class="kmsg"></p><div class="kbtns">${got.some(hot) && N > 1 ? `<button id="tcNext">Passer à la prochaine Épique ou +</button>` : ""}<button id="tcAll">Tout révéler</button></div><p class="khint">Espace : suivante · maintenir : avance rapide</p></div>`;
+      <p class="kmsg"></p><div class="kbtns">${got.some(epq) && N > 1 ? `<button id="tcNext">Passer à la prochaine Épique ou +</button>` : ""}<button id="tcAll">Tout révéler</button></div><p class="khint">Espace : suivante · maintenir : avance rapide</p></div>`;
     stack(); tcSnd("deal");
     // clavier, comme chez Kyara : Espace pour la carte suivante, maintenu pour l'avance rapide
     { const key = e => { if (!O.isConnected || O.classList.contains("res") || fin) return document.removeEventListener("keydown", key); if (e.code !== "Space" || /INPUT|TEXTAREA/.test(e.target.tagName)) return; e.preventDefault(); document.activeElement?.blur?.(); kfast = e.repeat; adv(0); }; document.addEventListener("keydown", key); }
@@ -12062,7 +12063,7 @@ function tcOpening(key, got){
     // jusqu'à la prochaine Épique, Légendaire, Mythique, Éveil ou version rare : les cartes d'avant vont dans leurs cases, la suivante attend face cachée
     $("#tcNext") && ($("#tcNext").onclick = () => { if (busy || fin) return; const el = cur();
       if (el && !el.classList.contains("up")) return flipC();
-      fill(i); i++; while (i < N && !hot(got[i])) fill(i++);
+      fill(i); i++; while (i < N && !epq(got[i])) fill(i++);
       mid.querySelectorAll(".kfl").forEach(e => e.remove());
       if (i < N) stack(); else finish(); });
     $("#tcAll").onclick = async () => { if (busy || fin) return; const b = $("#tcAll"); b.disabled = true;
@@ -12643,7 +12644,8 @@ function hsOpenUI(id, q = 1){
   const next = () => { const el = stack[i]; el.classList.add("gone"); fill(i); i++; if (i < N) show(); else end(); };
   const step = () => { const el = stack[i]; if (!el || done) return; el.classList.contains("up") ? next() : flip(); };
   const end = () => { if (done) return; done = true; if (god) ov.classList.add("god"); setTimeout(summary, 380); };
-  ov.querySelector("[data-skip]").onclick = () => { if (!stack.length || done) return; if (stack[i].classList.contains("up")) next(); while (i < N && !hsHit(got[i])){ stack[i].classList.add("up", "gone"); fill(i); i++; } if (i < N){ show(); msg.textContent = "Touche la carte pour la retourner"; } else end(); };
+  if (!got.some(hsHit)) ov.querySelector("[data-skip]").remove();   /* 1er nov. 2026 : pas d'Épique ou + dans le tirage, pas de bouton pour y sauter */
+  ov.querySelector("[data-skip]") && (ov.querySelector("[data-skip]").onclick = () => { if (!stack.length || done) return; if (stack[i].classList.contains("up")) next(); while (i < N && !hsHit(got[i])){ stack[i].classList.add("up", "gone"); fill(i); i++; } if (i < N){ show(); msg.textContent = "Touche la carte pour la retourner"; } else end(); });
   ov.querySelector("[data-all]").onclick = () => { if (!stack.length || done) return; for (; i < N; i++){ stack[i].classList.add("up", "gone"); fill(i); } end(); };
   ov.querySelector(".x").onclick = () => { ov.remove(); hsDraw(); };
   const pouch = mid.querySelector(".hs-pouch");
@@ -19766,7 +19768,9 @@ body.nv #launch #modeName{text-shadow:none;color:var(--text)}
 body.nv #launch button.primary{background:var(--nvr);box-shadow:none;text-transform:none;letter-spacing:0;min-height:50px;border-radius:13px}
 @media (min-width:761px){
   #nvTop{padding:10px max(20px,calc(50% - 540px));gap:12px}
-  #nvTab{position:fixed;z-index:46;inset:0 auto auto max(68px,calc(50% - 488px));display:none;background:none;border:0;padding:0;height:60px;align-items:center;-webkit-backdrop-filter:none;backdrop-filter:none}
+  /* 1er nov. 2026 : sur ordinateur, les onglets sont DANS l'en-tête (déplacés par le script) : logo · onglets · Ouvrir … compteur · cloche · profil ; plus de chevauchement avec le compteur */
+  #nvTab{position:static;inset:auto;flex:0 1 auto;min-width:0;display:none;background:none;border:0;padding:0;height:auto;align-items:center;-webkit-backdrop-filter:none;backdrop-filter:none}
+  #nvTop #nvTab{order:1}#nvTop #nvLogo{order:0}#nvTop .hpill{order:2}#nvTop #nvBell{order:3}#nvTop > :not(#nvLogo):not(#nvTab):not(.hpill):not(#nvBell){order:4}
   body.nv[data-nvs="home"] #nvTab,body.nv[data-nvs="tcg"] #nvTab,body.nv[data-nvs="launch"] #nvTab{display:flex;gap:4px}
   #nvTab button{display:flex;gap:7px;min-height:40px;padding:0 13px;border-radius:10px;font-size:14px;font-weight:700}
   #nvTab button:hover{background:var(--nvs2);color:var(--text)}
@@ -19775,6 +19779,8 @@ body.nv #launch button.primary{background:var(--nvr);box-shadow:none;text-transf
   #nvTab .go:hover{background:var(--nvr);filter:brightness(1.12);color:#fff}
   #nvTab .go i{width:26px;height:26px;font-size:14px;background:none;box-shadow:none}
   #nvTab .go b{position:static}
+  @media (max-width:1180px){#nvTab button{padding:0 9px;font-size:13px}#nvTab .go{margin-left:4px}}
+  @media (max-width:980px){#nvTab button:not(.go) i{display:none}#nvTab button{padding:0 8px}#nvTop{gap:8px}}
   body.nv[data-nvs="home"] .wrap,body.nv[data-nvs="tcg"] .wrap,body.nv[data-nvs="launch"] .wrap{padding-top:84px;padding-bottom:48px}
   .nvtwo{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:28px;align-items:stretch}
   .nvtwo .nv2:first-child{margin-top:0}.nvtwo .nvhero{min-height:340px;padding:24px}.nvtwo .nvhero b{font-size:32px}.nvtwo .nvhero u{max-width:240px}
@@ -19792,6 +19798,9 @@ window.NV_ON = true;   /* false : retour à l'ancienne interface */
   document.body.insertAdjacentHTML("beforeend", `<header id="nvTop"><button id="nvLogo" aria-label="Accueil"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M50 3l40.7 23.5v47L50 97 9.3 73.5v-47z" fill="#ff1e2d"/><path d="M50 12l32.9 19v38L50 88 17.1 69V31z" fill="#120506"/><rect x="31" y="28" width="11" height="44" rx="2.5" fill="#ff1e2d"/><rect x="58" y="28" width="11" height="44" rx="2.5" fill="#ff1e2d"/><path d="M27 60l46-21v10L27 70z" fill="#ff1e2d"/></svg></button><button class="hpill"></button><button id="nvBell" aria-label="Notifications"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 6 2 7 2 7H4s2-1 2-7"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><b hidden></b></button><button class="mnbtn" id="nvAv" aria-label="Moi"></button></header>
     <nav id="nvTab" aria-label="Navigation principale"><button data-t="home"><i>家</i>Accueil</button><button data-t="play"><i>遊</i>Jouer</button><button data-t="packs" class="go"><i>札</i>Ouvrir<b id="nvNb"></b></button><button data-t="coll"><i>集</i>Collection</button><button data-t="market"><i>市</i>Marché</button></nav>`);
   $1("#tcg .topbar")?.insertAdjacentHTML("afterend", `<div id="nvSeg"></div><div id="nvPk"></div>`);
+  /* 1er nov. 2026 : sur ordinateur, la barre d'onglets passe dans l'en-tête ; sur téléphone elle redevient la barre du bas */
+  { const mq = matchMedia("(min-width:761px)"), place = () => { const t = $1("#nvTab"), top = $1("#nvTop"); if (!t || !top) return; if (mq.matches){ if (t.parentElement !== top) top.insertBefore(t, top.querySelector(".hpill")); } else if (t.parentElement !== document.body) document.body.appendChild(t); };
+    place(); try { mq.addEventListener("change", place); } catch { mq.addListener(place); } }
   $1("#nvTop .hpill").onclick = e => { e.stopPropagation(); hudPop(e.currentTarget); };
   $1("#nvAv").onclick = () => nvGo("me"); $1("#nvLogo").onclick = () => nvGo("home");
   const lnb = $1("#lnBack"); if (lnb) lnb.onclick = () => nvGo("play");
