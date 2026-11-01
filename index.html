@@ -11127,7 +11127,8 @@ function tcEmblem(kind, c, d){
     bolt: `${rot(8, `<path d="M50 2 L57 26 L50 21 L43 26 Z" fill="${c}"/>`)}<circle cx="50" cy="50" r="30" fill="none" stroke="${c}" stroke-width="3"/><path d="M56 26 L38 53 L49 53 L43 76 L64 45 L52 45 Z" fill="${c}"/>`}[kind];
   return `<svg viewBox="0 0 100 100" aria-hidden="true">${body}</svg>`;
 }
-const TC_BKC = {C: ["#b9b4c0", "#1b1a20"], P: ["#6fdc9f", "#0e2018"], R: ["#6db6ff", "#0c1a2e"], E: ["#c39bff", "#1a1030"], L: ["#f7c64a", "#12163a"], M: ["#ff6a48", "#2a0d10"], X: ["#8fe9ff", "#0a1c2a"]};
+// 1er nov. 2026 : dos tous de la même couleur (rouge Hanko), la rareté ne passe plus par la couleur du dos
+const TC_BKC = {C: ["#ff1e2d", "#1a0608"], P: ["#ff1e2d", "#1a0608"], R: ["#ff1e2d", "#1a0608"], E: ["#ff1e2d", "#1a0608"], L: ["#ff1e2d", "#1a0608"], M: ["#ff1e2d", "#1a0608"], X: ["#ff1e2d", "#1a0608"]};
 const tcBack = (r, o = {}) => `<${o.btn ? "button" : "div"} class="tcbk r-${r} ${o.cls || ""}" ${o.attr || ""} style="--bc:${TC_BKC[r][0]};--bd:${TC_BKC[r][1]};${o.style || ""}">${tcEmblem(TC_EMB[r], TC_BKC[r][0], TC_BKC[r][1])}</${o.btn ? "button" : "div"}>`;
 // carte « objet » : bandeau de type, illustration dans une fenêtre, encadré de texte (sur le modèle des cartes Objet et Dresseur)
 const tcObjCard = (c, o = {}) => `<${o.btn ? "button" : "div"} class="tc ob r-${c.r} u-${c.u} ${o.f === "H" ? "f-H" : ""} ${o.no ? "no" : ""} ${o.isNew ? "new" : ""} ${o.cls || ""}" style="${tcPalSt(c, o.f)}" ${o.btn ? `data-tc="${esc(c.id)}" data-v="${o.v ?? ""}"` : ""}>
@@ -19156,9 +19157,7 @@ document.addEventListener("click", e => { const b = e.target.closest(".pfchips b
 .kb .vH::before{content:"";position:absolute;inset:-14cqi;background:repeating-conic-gradient(from 0deg,color-mix(in oklab,var(--foil) 70%,transparent) 0 1deg,transparent 1deg 60deg);-webkit-mask:radial-gradient(circle,#0000 52%,#000 56%,#0000 72%);mask:radial-gradient(circle,#0000 52%,#000 56%,#0000 72%)}
 .kb .vHl{position:absolute;inset:11cqi;filter:drop-shadow(0 0 4cqi color-mix(in oklab,var(--t) 80%,transparent))}
 .kb .vHl .lg{--lga:var(--t);--lgb:var(--ink);--lgc:color-mix(in oklab,var(--t) 40%,#fff)}
-/* halo serré sur les dos : contour net + lueur courte, pour distinguer des cartes collées (20 oct.) */
-.tcbk2.r-P > .hlx{box-shadow:0 0 0 3px #e9edf3,0 0 10px 1px rgba(230,234,240,.55)}
-.tcbk2.r-R > .hlx{box-shadow:0 0 0 3.5px #4da3ff,0 0 12px 2px rgba(77,163,255,.65)}
+/* halo serré sur les dos : contour net + lueur courte (20 oct.). 1er nov. 2026 : seulement à partir d'Épique (Commune, Peu commune et Rare restent sans halo) */
 .tcbk2.r-E > .hlx{box-shadow:0 0 0 3.5px #b07cff,0 0 12px 2px rgba(176,124,255,.7)}
 .tcbk2.r-L > .hlx{box-shadow:0 0 0 3.5px #ffc93a,0 0 14px 2px rgba(255,201,58,.7)}
 .tcbk2.r-M > .hlx{box-shadow:0 0 0 4px #ff3d5a,0 0 14px 3px rgba(255,61,90,.75)}
@@ -19202,7 +19201,9 @@ document.addEventListener("click", e => { const b = e.target.closest(".pfchips b
 </style>
 <script>
 // dos d'une carte de booster : teinte, motif doré, kanji et nom de l'univers ; halo selon la rareté
-const TC_BKU = {op: "#ff5a36", db: "#ff9f1c", na: "#ff8a1c", jjk: "#a98bff", ds: "#3fc9a0", mha: "#ffd84a", mix: "#f5c518"};
+// 1er nov. 2026 : tous les dos de la même couleur (rouge branding Hanko). Les couleurs par univers prêtaient à confusion (un dos jaune pris pour un Légendaire).
+// L'univers reste identifiable par son nom, son kanji et son motif dynamique ; la rareté se lit au halo (à partir d'Épique) et à la pierre.
+const TC_BKU = {op: "#ff1e2d", db: "#ff1e2d", na: "#ff1e2d", jjk: "#ff1e2d", ds: "#ff1e2d", mha: "#ff1e2d", mix: "#ff1e2d"};
 const TC_BKP = (() => { const s = {
   op: '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="16"><path d="M0 12q4-8 8 0t8 0 8 0 8 0M0 4q4-8 8 0t8 0 8 0 8 0" fill="none" stroke="#fff" stroke-width="1"/></svg>',
   db: '<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30"><path d="M8 2l1.5 3.4 3.7.3-2.8 2.4.9 3.6L8 9.8 4.7 11.7l.9-3.6L2.8 5.7l3.7-.3z" fill="#fff"/><circle cx="23" cy="21" r="5" fill="none" stroke="#fff" stroke-width=".9"/><circle cx="23" cy="21" r="1.4" fill="#fff"/></svg>',
