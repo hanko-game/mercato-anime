@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://hanko-game.github.io/mercato-anime/sitemap.xml
