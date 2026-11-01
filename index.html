@@ -2196,6 +2196,19 @@ function netWatch(game){
   }, 1000));
 }
 function ffEnd(loser){ if (!G || G.ff) return; G.ff = {l: loser}; G.over = true; render(); sendState(); }
+// 1er nov. 2026 : même règle dans les jeux à plusieurs. L'hôte retire le joueur absent depuis 1 minute ; si c'est l'hôte qui disparaît, la partie s'arrête pour tout le monde.
+function groupWatch(o){ const away = new Map(); let tick = Date.now(), seen = Date.now(), told = false, done = false;
+  o.game.onPeers(ch => { ch.left.forEach(p => away.set(p.peer, Date.now())); ch.joined.forEach(p => away.delete(p.peer)); });
+  if (!o.host) o.game.on(o.topic, m => { if (!m.sameTab){ seen = Date.now(); told = false; } });
+  o.timers.push(setInterval(() => { const now = Date.now(), gap = now - tick; tick = now; if (done) return;
+    if (gap > 5000){ seen = now; away.forEach((t, k) => away.set(k, t + gap)); }   // téléphone en veille : ce temps ne compte pas contre les autres
+    if (!o.live()) return;
+    if (o.host) return o.players().forEach((p, i) => { const t = p.peer ? away.get(p.peer) : null; if (!i) return; if (t == null){ p.told = 0; return; } if (!o.active(i)) return;
+      if (!p.told){ p.told = 1; frToast(`${p.name} est déconnecté : forfait dans moins d'une minute s'il ne revient pas.`); } if (now - t >= NET_FF){ away.delete(p.peer); o.drop(i); } });
+    const g = now - Math.max(seen, o.game.seen?.() || 0), off = navigator.onLine === false;
+    if (g >= 15000 && !told){ told = true; frToast(off ? "Connexion perdue : forfait dans moins d'une minute si elle ne revient pas." : "L'hôte ne répond plus : la partie s'arrête dans moins d'une minute s'il ne revient pas."); }
+    if (g >= NET_FF){ done = true; lobby(`<h2>${off ? "Défaite par forfait" : "Victoire par forfait"}</h2><p class="muted">${off ? "Tu as été déconnecté plus d'une minute." : "L'hôte s'est déconnecté plus d'une minute : la partie s'arrête, les joueurs restants gagnent."}</p><button class="primary" id="grpHome">Retour à l'accueil</button>`); $("#grpHome").onclick = () => { o.stop(); show("home"); }; }
+  }, 1000)); }
 // l'invité revient après une coupure : il retrouve sa place, ses mises comptent de nouveau
 function netBack(){ NET.guestPeer = NET.lastGuest; NET.lastGuest = null; NET.seen = Date.now(); setNet(`En ligne · ${NET.code}`, true); }
 
@@ -3609,13 +3622,7 @@ function ucApply(actor, a){
         const t = +a.v;
         if (!P[t]?.alive || t === actor) break;
         UC.votes[actor] = t;
-        if (ucAlive().every(i => UC.votes[i] != null)){
-          const count = {};
-          Object.values(UC.votes).forEach(v => count[v] = (count[v] || 0) + 1);
-          const max = Math.max(...Object.values(count));
-          const top = Object.keys(count).filter(k => count[k] === max).map(Number);
-          ucEliminate(top[Math.floor(Math.random() * top.length)], top.length > 1);
-        } else ucCommit();
+        if (ucAlive().every(i => UC.votes[i] != null)) ucTally(); else ucCommit();
       }
       break;
     case "guess":
@@ -3635,6 +3642,27 @@ function ucApply(actor, a){
       if (a.t === "again" && actor === 0) ucNew(UC.u, P.map(p => p.name), UC.white);
       break;
   }
+}
+function ucTally(){
+  const count = {};
+  Object.values(UC.votes).forEach(v => count[v] = (count[v] || 0) + 1);
+  const max = Math.max(...Object.values(count));
+  const top = Object.keys(count).filter(k => count[k] === max).map(Number);
+  ucEliminate(top[Math.floor(Math.random() * top.length)], top.length > 1);
+}
+// 1er nov. 2026 : joueur absent plus d'une minute : il sort de la partie, comme éliminé, et la manche reprend sans lui
+function ucDrop(i){
+  if (!UC || UC.phase === "over") return;
+  const p = UC.players[i]; if (!p) return;
+  if (!p.alive){ if (UC.phase === "guess" && UC.last?.p === i) ucAfterElim(); return; }
+  p.alive = false; p.ready = true; UC.note = `${p.name} est déconnecté : forfait.`;
+  const alive = ucAlive().map(k => UC.players[k]), imp = alive.filter(x => x.role !== "civil"), civ = alive.filter(x => x.role === "civil");
+  if (!imp.length){ UC.winner = {side:"civil"}; UC.phase = "over"; return ucCommit(); }
+  if (civ.length <= 1){ UC.winner = {side:"imp", who: ucAlive().filter(k => UC.players[k].role !== "civil")}; UC.phase = "over"; return ucCommit(); }
+  if (UC.phase === "reveal" && UC.players.every(x => x.ready)){ UC.phase = "clues"; UC.pos = ucNextPos(0); }
+  else if (UC.phase === "clues"){ const said = new Set(UC.clues.filter(c => c.round === UC.round).map(c => c.p)); if (ucAlive().every(k => said.has(k))){ UC.phase = "vote"; UC.votes = {}; } else if (UC.order[UC.pos] === i) UC.pos = ucNextPos(UC.pos + 1); }
+  else if (UC.phase === "vote"){ delete UC.votes[i]; for (const k in UC.votes) if (UC.votes[k] === i) delete UC.votes[k]; if (ucAlive().length && ucAlive().every(k => UC.votes[k] != null)) return ucTally(); }
+  ucCommit();
 }
 function ucEliminate(t, tie){
   const p = UC.players[t];
@@ -3666,6 +3694,7 @@ function ucAct(t, v, who){
 function ucPublic(){
   const over = UC.phase === "over";
   return {id:UC.id, u:UC.u, seq:UC.seq, round:UC.round, phase:UC.phase, order:UC.order, pos:UC.pos, white:UC.white, nUnder:UC.nUnder, clues:UC.clues, winner:UC.winner,
+    note: UC.note || "",
     last: UC.last ? {p:UC.last.p, role:UC.last.role, tie:UC.last.tie, guess:UC.last.guess, guessOk:UC.last.guessOk, votes:UC.last.votes} : null,
     voted: Object.keys(UC.votes).map(Number),
     pair: over ? UC.pair : null,
@@ -3706,7 +3735,7 @@ function ucRender(){
   const myCard = () => V.word == null ? ucWhiteCard() : ucCard(u, ucCardOf(u, V.word));
   const peek = !local && P[V.me]?.alive && pub.phase !== "over" ? `<details style="margin-top:12px"><summary class="small">Revoir mon personnage</summary><div style="margin-top:8px">${myCard()}</div></details>` : "";
   let h = "";
-  const intro = `<p class="small">Manche ${pub.round} · ${P.filter(p => p.alive).length} joueurs en vie · ${pub.nUnder} undercover${pub.nUnder > 1 ? "s" : ""}${pub.white ? " · 1 Mr White" : ""}</p>`;
+  const intro = `<p class="small">Manche ${pub.round} · ${P.filter(p => p.alive).length} joueurs en vie · ${pub.nUnder} undercover${pub.nUnder > 1 ? "s" : ""}${pub.white ? " · 1 Mr White" : ""}</p>${pub.note ? `<p class="small"><b>${esc(pub.note)}</b></p>` : ""}`;
 
   if (pub.phase === "reveal"){
     if (local){
@@ -3934,6 +3963,7 @@ async function ucHost(){
     if (!UC && ch.left.length){ UCN.lobby = UCN.lobby.filter((p, i) => i === 0 || !ch.left.some(l => l.peer === p.peer)); ucBroadcastLobby(); }
   }));
   UCN.timers.push(setInterval(() => UC ? ucSendAll() : ucBroadcastLobby(), 4000));
+  groupWatch({game, host: true, timers: UCN.timers, players: () => UCN.lobby, live: () => !!UC && UC.phase !== "over", active: i => !!UC.players[i] && UC.players[i].alive, drop: ucDrop});
   ucBroadcastLobby();
 }
 function ucBroadcastLobby(){
@@ -3979,6 +4009,7 @@ async function ucJoin(){
   };
   hello();
   UCN.timers.push(setInterval(hello, 2000));
+  groupWatch({game, host: false, topic: "ustate", timers: UCN.timers, live: () => !!UV && UV.pub.phase !== "over", stop: ucLeave});
 }
 ucInitHome();
 </script>
@@ -4301,8 +4332,8 @@ function gsNetLeave(){
   Object.assign(GN, {role:null, game:null, code:null, lobby:[], answered:false});
 }
 function gdPublic(){
-  return {id:GD.id, u:GD.u, sty:GD.sty, ans:GD.ans, round:GD.round, phase:GD.phase, k:GD.k, opts:GD.opts, left: Math.max(0, (GD.ends - Date.now()) / 1000),
-    players: GD.players.map(p => ({name:p.name, score:p.score, answered: p.a != null, ...(GD.phase !== "play" ? {ok:p.a?.ok, pts:p.a?.pts} : {})}))};
+  return {id:GD.id, u:GD.u, sty:GD.sty, ans:GD.ans, round:GD.round, phase:GD.phase, k:GD.k, opts:GD.opts, ff:GD.ff || "", left: Math.max(0, (GD.ends - Date.now()) / 1000),
+    players: GD.players.map(p => ({name:p.name, score:p.score, gone:!!p.gone, answered: p.a != null, ...(GD.phase !== "play" ? {ok:p.a?.ok, pts:p.a?.pts} : {})}))};
 }
 function gdSend(){
   if (GN.role !== "host" || !GD) return;
@@ -4313,7 +4344,7 @@ function gdSend(){
 function gdRound(){
   const k = gsPick(GD.u, GD.round, GD.used, GD.sty); GD.used.add(k); gsRemember(GD.u, gE(GD.u, k).n, GD.sty);
   Object.assign(GD, {phase:"play", k, opts: GD.ans === "choice" ? gsOptions(GD.u, k) : null, ends: Date.now() + GS_TIME * 1000, first:false});
-  GD.players.forEach(p => p.a = null);
+  GD.players.forEach(p => p.a = p.gone ? {ok: false, pts: 0} : null);
   GN.answered = false;
   clearTimeout(GD.to); GD.to = setTimeout(gdEndRound, GS_TIME * 1000 + 300);
   gdSend();
@@ -4363,6 +4394,7 @@ async function gsHostOnline(){
   }));
   GN.unsub.push(game.onPeers(ch => { if (!GD && ch.left.length){ GN.lobby = GN.lobby.filter((p, i) => i === 0 || !ch.left.some(l => l.peer === p.peer)); gsLobbyBroadcast(u, ans); } }));
   GN.timers.push(setInterval(() => GD ? gdSend() : gsLobbyBroadcast(u, ans), 3000));
+  groupWatch({game, host: true, timers: GN.timers, players: () => GN.lobby, live: () => !!GD && GD.phase !== "over", active: i => !!GD.players[i] && !GD.players[i].gone, drop: gdDrop});
   gsLobbyBroadcast(u, ans);
 }
 function gsLobbyBroadcast(u, ans){
@@ -4387,6 +4419,10 @@ function gsLobbyRender(u, ans){
     document.body.dataset.u = u; show("gs"); gdRound();
   };
 }
+// 1er nov. 2026 : joueur absent plus d'une minute : il ne compte plus ; seul en lice, le dernier gagne par forfait
+function gdDrop(i){ if (!GD || GD.phase === "over") return; const p = GD.players[i]; if (!p || p.gone) return; p.gone = true; if (!p.a) p.a = {ok: false, pts: 0};
+  const left = GD.players.filter(x => !x.gone); if (left.length <= 1){ clearTimeout(GD.to); GD.phase = "over"; GD.ff = left[0] ? left[0].name : ""; return gdSend(); }
+  if (GD.phase === "play" && GD.players.every(x => x.a)) return gdEndRound(); gdSend(); }
 async function gsJoinOnline(){
   const err = t => $("#gsErr").textContent = t; err("");
   const code = $("#gsCode").value.trim().toUpperCase();
@@ -4423,6 +4459,7 @@ async function gsJoinOnline(){
     game.emit("ghello", {name: GN.myName}).catch(() => {});
   };
   hello(); GN.timers.push(setInterval(hello, 2000));
+  groupWatch({game, host: false, topic: "gstate", timers: GN.timers, live: () => !!GV && GV.phase !== "over", stop: gsLeave});
 }
 // affichage commun (hôte et invités) ; le compte à rebours est local
 let GV_KEY = null;
@@ -4441,10 +4478,10 @@ function gsOnlineRender(){
   }
   const hud = `<div class="gshud"><span class="pill">Manche ${lvl}/${GS_ROUNDS}</span><span class="pill">Niveau ${lvl}/8</span><span class="pill">${esc(me?.name || "")} : ${me?.score || 0} pts</span></div>`;
   if (V.phase === "over"){
-    const top = [...V.players].sort((a, b) => b.score - a.score)[0];
+    const top = V.ff ? V.players.find(p => p.name === V.ff) || V.players[0] : [...V.players].sort((a, b) => b.score - a.score)[0], meOut = V.players[V.me]?.gone;
     $("#gsBoard").innerHTML = `${hud}<div class="gsbox"><canvas id="gsCan" class="gscan" width="320" height="400"></canvas><div class="panel">
-      <p class="muted">Dernière image : <b style="color:var(--text)">${esc(e.n)}</b></p><h2>${esc(top.name)} gagne !</h2>${gsBoardHTML(V.players, V.me)}
-      <div class="row">${GN.role === "host" ? `<button class="primary" id="gsReOn">Rejouer</button>` : ""}<button id="gsMenu">Menu</button></div></div></div>`;
+      <p class="muted">Dernière image : <b style="color:var(--text)">${esc(e.n)}</b></p><h2>${meOut ? "Défaite par forfait" : V.ff ? (top.name === V.players[V.me]?.name ? "Victoire par forfait\u00a0!" : esc(top.name) + " gagne par forfait") : esc(top.name) + " gagne !"}</h2>${gsBoardHTML(V.players, V.me)}
+      <div class="row">${GN.role === "host" && !V.players.some(p => p.gone) ? `<button class="primary" id="gsReOn">Rejouer</button>` : ""}<button id="gsMenu">Menu</button></div></div></div>`;
     gsPaint(u, V.k, im => gsDraw(im, V.round, 0, 1, sty), sty);
     if (fresh) SFX.play("fanfare");
     histAdd("gs-" + V.id, (sty === "sil" ? "Silhouettes" : "Perso pixelisé") + " · " + U.name, V.players.map(p => p.name), "Gagnant : " + top.name, {win: [top.name]});
@@ -15396,7 +15433,7 @@ const MJ_HOME = {n: 2, fmt: "melee"};
 const mjS = () => MJN.role === "guest" ? MV && MV.st : MJ;
 const mjMe = () => MJN.role === "guest" ? MV && MV.me : MJN.role === "host" ? 0 : null;
 const mjCard = (u, i) => DATA[u][i];
-const mjFull = p => p.team.length >= MAX;
+const mjFull = p => p.out || p.team.length >= MAX;   /* un joueur parti par forfait ne tire plus et n'enchérit plus */
 const mjMax = p => mjFull(p) ? 0 : Math.floor(p.budget / STEP) * STEP;
 const mjMin = p => Math.min(MIN, p.budget);
 const mjTeamOf = (st, i) => st.nt ? st.players[i].t : -1;
@@ -15461,6 +15498,14 @@ function mjApply(actor, a){
     case "over": if (a.t === "again" && actor === 0){ const names = P.map(p => p.name); mjNew(MJ.u, names, MJ.fmt, MJ.mode); } break;
   }
 }
+// 1er nov. 2026 : joueur absent plus d'une minute. S'il tenait la main, le personnage retourne dans la pioche ; s'il ne reste qu'un joueur (ou une équipe), victoire par forfait.
+function mjDrop(i){ const P = MJ && MJ.players, p = P && P[i]; if (!p || p.out || MJ.over) return; p.out = true; mjLog(`🚪 ${esc(p.name)} est déconnecté : forfait.`);
+  const act = P.filter(x => !x.out), rest = MJ.nt ? new Set(act.map(x => x.t)).size : act.length;
+  if (rest <= 1){ MJ.over = true; MJ.ph = {k: "over"}; MJ.cur = null; MJ.ff = act.map(x => x.name); return mjCommit(); }
+  const ph = MJ.ph, back = () => { if (MJ.cur != null) MJ.pool.push(MJ.cur); MJ.cur = null; mjNext(); };
+  if ((ph.k === "open" || ph.k === "solo") && ph.who === i) return back();
+  if (ph.k === "bid"){ if (ph.leader === i) return back(); if (ph.who === i) return mjApply(i, {t: "pass", seq: MJ.seq}); MJ.ph = {...ph, out: [...ph.out, i]}; }
+  mjCommit(); }
 function mjCommit(){ MJ.seq++; mjRender(); if (MJN.role === "host") mjSendAll(); }
 function mjAct(t, v){ const st = mjS(); if (!st) return; const a = {t, v, seq: st.seq};
   if (MJN.role === "guest"){ MJN.game?.emit("uact", a).catch(() => {}); return; }
@@ -15474,7 +15519,7 @@ function mjFight(st, i, j){ const save = G;
 const MJ_RES = new Map();
 function mjResults(st){ const key = st.id + ":" + st.seq; if (MJ_RES.has(key)) return MJ_RES.get(key);
   const n = st.players.length, M = [];
-  for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) if (!st.nt || st.players[i].t !== st.players[j].t) M.push(mjFight(st, i, j));
+  for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) if ((!st.nt || st.players[i].t !== st.players[j].t) && !st.players[i].out && !st.players[j].out) M.push(mjFight(st, i, j));
   const lv = p => p.team.reduce((s, [k]) => s + DATA[st.u][k].p, 0);
   const T = st.players.map((p, i) => ({i, pts: 0, w: 0, d: 0, l: 0, surv: 0, lv: lv(p)}));
   M.forEach(m => { if (m.w < 0){ T[m.a].pts++; T[m.b].pts++; T[m.a].d++; T[m.b].d++; return; } const l = m.w === m.a ? m.b : m.a; T[m.w].pts += 3; T[m.w].w++; T[l].l++; T[m.w].surv += m.surv; });
@@ -15490,7 +15535,7 @@ function mjPlayersHTML(st){ const ph = st.ph || {}, me = mjMe();
   return `<div class="mjpl">${st.players.map((p, i) => { const tc = st.nt ? MJ_TC[p.t % MJ_TC.length][1] : null;
     return `<div class="${ph.who === i && ph.k !== "done" ? "on" : ""} ${ph.k === "bid" && (ph.out.includes(i) || mjFull(p)) ? "out" : ""} ${ph.k === "bid" && ph.leader === i ? "lead" : ""}">
       <div class="nm">${tc ? `<i class="mjdot" style="--tc:${tc}"></i>` : ""}<span>${esc(p.name)}</span>${i === me ? `<span class="you">toi</span>` : ""}</div>
-      <div class="mo">${p.budget}M · ${p.team.length}/${MAX}</div>
+      <div class="mo">${p.out ? "Forfait" : `${p.budget}M · ${p.team.length}/${MAX}`}</div>
       <div class="sl">${Array.from({length: MAX}, (_, k) => `<i>${p.team[k] ? img(DATA[st.u][p.team[k][0]]) : ""}</i>`).join("")}</div></div>`; }).join("")}</div>`; }
 function mjRender(){
   const st = mjS(); if (!st) return;
@@ -15499,6 +15544,9 @@ function mjRender(){
   const P = st.players, ph = st.ph, me = mjMe(), local = MJN.role == null, u = UNI[st.u];
   const mine = i => local || i === me;
   $("#mjTitle").textContent = `MERCATO À ${P.length} · ${u.name.toUpperCase()}`;
+  if (!local && P[me] && P[me].out){ $("#mjBoard").innerHTML = `<div class="panel" style="text-align:center"><div class="bang" style="font-size:clamp(30px,8vw,44px);color:var(--accent)">Défaite par forfait</div><p class="muted">Tu as été déconnecté plus d'une minute.</p><button class="primary" id="mjHome">Retour à l'accueil</button></div>`; $("#mjHome").onclick = () => { mjLeave(); show("home"); }; return; }
+  if (st.ff){ const won = st.ff.includes(P[me]?.name); if (!MJ_RES.has("h" + st.id)){ MJ_RES.set("h" + st.id, 1); try { histAdd("mj-" + st.id, "Mercato à " + P.length + " · " + u.name, P.map(p => p.name), "Gagnant : " + st.ff.join(", ") + " (forfait)", {win: st.ff}); } catch {} }
+    $("#mjBoard").innerHTML = `<div class="panel" style="text-align:center"><div class="bang" style="font-size:clamp(30px,8vw,44px);color:var(--accent)">${won ? "Victoire par forfait\u00a0!" : esc(st.ff.join(", ")) + " gagne par forfait"}</div><p class="muted">Les autres joueurs se sont déconnectés plus d'une minute.</p><button class="primary" id="mjHome">Retour à l'accueil</button></div>`; $("#mjHome").onclick = () => { mjLeave(); show("home"); }; return; }
   if (st.over) return mjRenderEnd(st);
   const c = st.cur != null ? mjCard(st.u, st.cur) : null; let h = "", wire = null;
   // bluff : pendant l'enchère, seul le tireur voit le personnage (en ligne, les autres ne le reçoivent même pas)
@@ -15551,7 +15599,7 @@ function mjRenderEnd(st){
     <div class="mjrank">${R.rank.map((t, k) => `<div class="${k === 0 && !st.nt ? "w" : ""}"><b class="pos">${k + 1}</b><div class="who"><b>${nm(t.i)}</b><small>${t.w}V · ${t.d}N · ${t.l}D · niveau cumulé ${t.lv} · ${P[t.i].budget}M restants</small><div class="tmini" style="display:flex;gap:3px;margin-top:4px">${P[t.i].team.map(([kk]) => `<span style="width:24px;height:32px;border-radius:4px;overflow:hidden;display:block">${img(DATA[st.u][kk])}</span>`).join("")}</div></div><span class="pts">${t.pts}<small>pts</small></span></div>`).join("")}</div>
     <h3 style="margin:14px 0 4px">Les ${R.M.length} combats</h3><p class="small">Touche un combat pour voir ses duels.</p>
     ${R.M.map(m => `<details class="mjmatch"><summary><span class="${m.w === m.a ? "w" : ""}">${nm(m.a)}</span><i>${m.w < 0 ? "nul" : "VS"}</i><span class="${m.w === m.b ? "w" : ""}">${nm(m.b)}</span></summary>${mjDuels(st, m)}</details>`).join("")}
-    <div class="row" style="margin-top:16px;justify-content:center">${local || MJN.role === "host" ? `<button class="primary" id="mjAgain">Rejouer</button>` : waitHTML("L'hôte peut relancer une partie")}<button id="mjHome">Menu</button></div>`;
+    <div class="row" style="margin-top:16px;justify-content:center">${P.some(p => p.out) ? "" : local || MJN.role === "host" ? `<button class="primary" id="mjAgain">Rejouer</button>` : waitHTML("L'hôte peut relancer une partie")}<button id="mjHome">Menu</button></div>`;
   $("#mjAgain") && ($("#mjAgain").onclick = () => mjAct("again"));
   $("#mjHome").onclick = () => { mjLeave(); show("home"); };
 }
@@ -15589,6 +15637,7 @@ async function mjHost(name){ const err = t => $("#onlineErr").textContent = t; e
   MJN.unsub.push(game.on("uact", msg => { if (msg.sameTab || !MJ) return; const i = MJN.lobby.findIndex(p => p.peer === msg.peer); if (i <= 0) return; const a = msg.data || {}; mjApply(i, {t: String(a.t), v: a.v, seq: Number(a.seq)}); }));
   MJN.unsub.push(game.onPeers(ch => { if (!MJ && ch.left.length){ MJN.lobby = MJN.lobby.filter((p, i) => i === 0 || !ch.left.some(l => l.peer === p.peer)); mjBroadcastLobby(); } }));
   MJN.timers.push(setInterval(() => MJ ? mjSendAll() : mjBroadcastLobby(), 4000));
+  groupWatch({game, host: true, timers: MJN.timers, players: () => MJN.lobby, live: () => !!MJ && !MJ.over, active: i => !!MJ.players[i] && !MJ.players[i].out, drop: mjDrop});
   mjBroadcastLobby(); }
 async function mjJoin(code, name){ const err = t => $("#onlineErr").textContent = t; err("");
   MJN.myName = cleanName(name, "Joueur"); let game;
@@ -15603,7 +15652,7 @@ async function mjJoin(code, name){ const err = t => $("#onlineErr").textContent 
   MJN.unsub.push(game.on("ustate", msg => { const d = msg.data; if (msg.sameTab || !d?.st || !DATA[d.st.u]) return; if (d.to && d.to !== MJN.myPeer) return; got = true; MV = {st: d.st, me: d.me}; mjRender(); }));
   let tries = 0; const inLobby = () => MJN.lobby.some(p => p.name === MJN.myName || p.name.startsWith(MJN.myName + " ("));
   const hello = () => { if (MV || inLobby()) return; if (!got && ++tries > 12){ mjLeave(); show("home"); return err(`Aucune partie trouvée avec le code ${code}.`); } game.emit("uhello", {name: MJN.myName}).catch(() => {}); };
-  hello(); MJN.timers.push(setInterval(hello, 2000)); }
+  hello(); MJN.timers.push(setInterval(hello, 2000)); groupWatch({game, host: false, topic: "ustate", timers: MJN.timers, live: () => !!MV && !MV.st.over, stop: mjLeave}); }
 
 /* ---------- accueil du Mercato : nombre de joueurs et format ---------- */
 (function mjInit(){
@@ -19460,7 +19509,7 @@ const HK_NEWS = [["1er novembre 2026", [
   ["n", "Cette page Nouveautés, et une cloche pour retrouver toutes tes notifications."],
   ["n", "Mon activité : tes ventes, achats, ordres et échanges au même endroit."],
   ["n", "Échanges : filtre « Contre mes doublons », pastille « Il te manque » et nombre d'exemplaires sur chaque carte."],
-  ["n", "Mercato en ligne à 2 joueurs : un joueur absent plus d'une minute perd par forfait."],
+  ["n", "Forfait dans tous les jeux en ligne : un joueur absent plus d'une minute quitte la partie, et les autres continuent."],
   ["n", "Cartes Kizuna : des cartes exclusives au parrainage, à partager avec ton filleul."],
   ["n", "Nouvelle page pour ouvrir ses boosters, avec tes envies."],
   ["a", "Parrainage plus simple : tous les boosters comptent, et le jeu te dit combien de temps il reste."],
