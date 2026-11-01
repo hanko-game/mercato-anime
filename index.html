@@ -16062,10 +16062,15 @@ const crLinksOf = (u, i) => (CR_LINK[u] || []).filter(g => g[1].includes(DATA[u]
 /* ---------- matchs à règle spéciale : environ un sur trois, annoncée avant la composition ; la prime de match y est majorée de moitié ---------- */
 const CR_RULES = {three: ["Duel à trois", "Chaque équipe n'aligne que 3 combattants."], random: ["Ordre tiré au sort", "L'ordre de passage des deux équipes est tiré au sort au coup d'envoi."],
   nostar: ["Vedette suspendue", "Ton meilleur combattant disponible ne peut pas jouer ce match."], bench: ["Place aux remplaçants", "Tu dois aligner au moins deux de tes trois combattants les plus faibles."],
-  cap: ["Plafond de niveau", "Le niveau cumulé de ton équipe ne doit pas dépasser la limite."]};
+  cap: ["Plafond de niveau", "Le niveau cumulé de chaque équipe ne doit pas dépasser la limite : l'adversaire aligne lui aussi une équipe sous le plafond."]};
 const crByP = (S, l, desc) => [...l].sort((a, b) => ((crCard(S.u, a).p - crCard(S.u, b).p) || crCard(S.u, a).n.localeCompare(crCard(S.u, b).n)) * (desc ? -1 : 1));   /* à niveau égal, ordre fixe (sinon la vedette suspendue changeait d'un écran à l'autre) */
 // la règle du jour, seulement si elle reste jouable avec les combattants disponibles
 function crRule(S){ const r = S.rule; if (!r) return null; const av = crByP(S, crAvail(S)); if ((r.k === "nostar" || r.k === "bench") && av.length < 6) return null; if (r.k === "cap" && (av.length < 5 || crSum(S.u, av.slice(0, 5)) > r.x)) return null; return r; }
+// 1er nov. 2026 : le plafond vaut aussi pour l'adversaire, le temps du match (son effectif ne change pas). Ses meilleurs cèdent leur place à plus faibles, poste par poste, pour rester le plus près possible de la limite ; même résultat à chaque calcul.
+function crCapTeam(u, team, x){ const D = DATA[u], t = [...team], sum = () => t.reduce((a, i) => a + D[i].p, 0), P = crPool(u).ix;
+  for (let k = 0; k < 12 && sum() > x; k++){ const pos = t.reduce((b, i, j) => D[i].p > D[t[b]].p ? j : b, 0), who = t[pos], max = D[who].p - (sum() - x), L = P.filter(i => !t.includes(i) && D[i].p < D[who].p).sort((a, b) => (D[b].p - D[a].p) || D[a].n.localeCompare(D[b].n)); if (!L.length) break; t[pos] = L.find(i => D[i].p <= max) ?? L[L.length - 1]; }
+  return t; }
+const crOT = (S, opp, rule) => rule && rule.k === "cap" ? crCapTeam(S.u, opp.team, rule.x) : opp.team;
 const crN = S => { const r = crRule(S); return r && r.k === "three" ? 3 : 5; };
 function crRuleOk(S, pick){ const r = crRule(S), n = crN(S), u = S.u, av = crByP(S, crAvail(S)); if (pick.length !== n) return `Aligne ${n} combattants (${pick.length}/${n})`; if (!r) return "";
   if (r.k === "nostar" && pick.includes(av[av.length - 1])) return `${crCard(u, av[av.length - 1]).n} est suspendu pour ce match`;
@@ -16117,7 +16122,7 @@ function crMis(S, k, n = 1, set){ const got = []; for (const m of S.mis){ if (m.
 
 /* ---------- le match ---------- */
 function crFight(S, mine, boost, opp, oppOrd, rule){
-  const three = rule && rule.k === "three", ot = three ? opp.team.slice(-3) : opp.team; let oo = three ? oppOrd.filter(k => k >= 2).map(k => k - 2) : [...oppOrd];
+  const three = rule && rule.k === "three", ot = three ? opp.team.slice(-3) : crOT(S, opp, rule); let oo = three ? oppOrd.filter(k => k >= 2).map(k => k - 2) : [...oppOrd];
   if (rule && rule.k === "random"){ mine = crShuffle(mine); oo = crShuffle(oo); }
   const af = [crAff(S.u, mine), crAff(S.u, ot)], bonus = (a, i) => a && a.ids.includes(i) ? a.b : 0;
   const g = {u: S.u, mode: "live", id: "cr" + Math.random().toString(36).slice(2, 9), round: 0, cur: null, log: [], over: true, phase: {k: "over"}, opts: {anim: true}, event: null, drawer: 0, aff: af, ot,
@@ -16260,7 +16265,7 @@ function crRender(){
   crWire(S); $("#crHelpQ") && ($("#crHelpQ").onclick = () => crTourStart(S, true)); if (S.tuto < 5) setTimeout(crTourMaybe, 80);
 }
 const crRuleBox = S => { const r = crRule(S); return r ? `<div class="crrule"><i>Règle spéciale · prime +50 %</i><b>${CR_RULES[r.k][0]}</b><p>${CR_RULES[r.k][1]}${r.k === "cap" ? ` Limite : <b>${r.x}</b>.` : ""}</p></div>` : ""; };
-function crMatchHTML(S){ const cup = S.cup.pend, opp = crOpp(S), u = S.u, n = crN(S), three = n === 3, mine = crByP(S, crAvail(S), true).slice(0, n), ev = S.ev, ot = three ? opp.team.slice(-3) : opp.team, rule = crRule(S);
+function crMatchHTML(S){ const cup = S.cup.pend, opp = crOpp(S), u = S.u, n = crN(S), three = n === 3, mine = crByP(S, crAvail(S), true).slice(0, n), ev = S.ev, rule = crRule(S), ot = three ? opp.team.slice(-3) : crOT(S, opp, rule);
   const oo = three ? S.oppOrd.filter(k => k >= 2).map(k => k - 2) : S.oppOrd, show = S.spy ? oo.map(k => ot[k]) : ot, af = crAff(u, ot), pk = (S.pick || []).filter(i => !S.squad.includes(i));
   return `${pk.length ? `<div class="crbox"><div class="crrow"><div><h3>Récompense de la coupe</h3><p>${S.squad.length >= CR_MAXSQ ? "Ton effectif est complet : vends un personnage pour pouvoir choisir." : "Choisis le personnage qui rejoint ton club, gratuitement."}</p></div></div><div class="crgrid">${pk.map(i => crTile(S, i, {sub: "Valeur " + crVal(u, i) + "M", foot: `<button class="crbuy primary" data-crpk="${i}" ${S.squad.length >= CR_MAXSQ ? "disabled" : ""}>Choisir</button>`})).join("")}</div></div>` : ""}
     ${ev && ev.k === "offer" && S.squad.includes(ev.i) ? `<div class="crbox"><div class="crrow"><div><h3>Offre de rachat</h3><p>${esc(ev.club)} propose ${crMoney(S, ev.price)} pour ${esc(crCard(u, ev.i).n)} (valeur ${crMoney(S, crVal(u, ev.i))}).</p></div><span class="row"><button class="primary" id="crEvYes">Accepter</button><button class="ghost" id="crEvNo">Refuser</button></span></div></div>` : ""}
@@ -19426,6 +19431,7 @@ const HK_NEWS = [["1er novembre 2026", [
   ["a", "Marché mieux protégé contre les doubles comptes : ouvert après 24 h, limites entre deux mêmes joueurs."],
   ["a", "Tournois : forfait après 1 minute d'absence au lieu de 90 secondes."],
   ["a", "Les annonces passent l'une après l'autre au lieu de s'effacer."],
+  ["c", "Carrière : le plafond de niveau s'applique maintenant aussi à l'adversaire."],
   ["c", "En ligne : après une coupure, les boutons Surenchérir et Passer de l'invité ne répondaient plus."],
   ["c", "Les liens d'ami annonçaient « ajouté » sans envoyer de demande."],
   ["c", "Les invitations restaient cachées derrière l'écran de connexion."]]],
