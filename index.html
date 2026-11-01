@@ -15179,6 +15179,15 @@ const KZ_IMG = {"db": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAASABIAAD/4QBMRX
 .kz.k-20{background:conic-gradient(from 210deg,#ff5f8f,#ffd34d,#5fe3a1,#5fb7ff,#b98cff,#ff5f8f);box-shadow:0 0 18px #ffffff40,0 10px 26px #0009}
 .kz .in{position:relative;display:block;width:100%;height:100%;border-radius:12px;overflow:hidden;background:#0b0a0e}
 .kz .in>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:var(--op,50% 30%)}
+.kz .sh{position:absolute;inset:0;z-index:4;pointer-events:none;mix-blend-mode:screen;opacity:0;background:linear-gradient(115deg,transparent 34%,#ffffff55 46%,#ffffffcc 50%,#ffffff55 54%,transparent 66%);background-size:260% 100%;background-position:120% 0}
+.kz.k-3 .sh{opacity:.45}.kz.k-10 .sh{opacity:.6}.kz.k-20 .sh{opacity:.7;background:linear-gradient(115deg,transparent 30%,#ff8fd2 44%,#8fd2ff 50%,#ffe68f 56%,transparent 70%);background-size:260% 100%}
+@media (prefers-reduced-motion:no-preference){.kz.k-10 .sh{animation:kzsh 3.4s ease-in-out infinite}.kz.k-20 .sh{animation:kzsh 2.4s ease-in-out infinite}}
+@keyframes kzsh{0%,100%{background-position:120% 0}50%{background-position:-60% 0}}
+.kz .tr{position:absolute;z-index:6;top:3.2cqw;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:1cqw;padding:1.5cqw 3.6cqw;border-radius:99px;font:900 3.5cqw/1 var(--title);letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;color:#2a2410;background:linear-gradient(145deg,#fff3c4,#d9a93f);box-shadow:0 .6cqw 2cqw #0008,inset 0 0 0 .3cqw #ffffffaa}
+.kz .tr b{font-size:3cqw;letter-spacing:-.08em}
+.kz.k-3 .tr{background:linear-gradient(145deg,#ffffff,#aeb6c2);color:#2b3240}
+.kz.k-10 .tr{background:linear-gradient(145deg,#ffe9a0,#ffb300);color:#3a2600}
+.kz.k-20 .tr{background:conic-gradient(from 210deg,#ff5f8f,#ffd34d,#5fe3a1,#5fb7ff,#b98cff,#ff5f8f);color:#1a1020;box-shadow:0 .6cqw 2cqw #0008,inset 0 0 0 .3cqw #ffffffcc,0 0 3cqw #ffffff66}
 .kz .in::after{content:"";position:absolute;inset:2.4cqw;border:1px solid #f7dc8cb3;border-radius:2.6cqw;pointer-events:none;z-index:3}
 .kz.k-3 .in::after{border-color:#e6eaf0b3}
 .kz .sl{position:absolute;z-index:4;left:50%;bottom:25cqw;margin-left:-6.5cqw;width:13cqw;height:13cqw;border-radius:2cqw;display:grid;place-items:center;background:#c8102e;color:#fff;font:900 8.6cqw/1 var(--brand);font-style:normal;transform:rotate(-4deg);box-shadow:0 0 0 .5cqw #f7dc8c,0 .8cqw 2.4cqw #000a}
@@ -15201,8 +15210,9 @@ const KZ_IMG = {"db": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAASABIAAD/4QBMRX
 <script>
 const KZ_DUOS = {lz: ["Luffy & Zoro", "50% 34%"], ns: ["Naruto & Sasuke", "50% 30%"], gv: ["Goku & Vegeta", "50% 22%"], tn: ["Tanjiro & Nezuko", "50% 34%"], gg: ["Gojo & Geto", "50% 42%"], db: ["Deku & Bakugo", "50% 22%"]};
 const KZ_TN = {1: "KIZUNA", 3: "KIZUNA ARGENT", 10: "KIZUNA OR", 20: "KIZUNA LÉGENDE"};
+const KZ_LBL = {1: "Kizuna", 3: "Argent", 10: "Or", 20: "Légende"}, KZ_ST = {1: 0, 3: 1, 10: 2, 20: 3};
 const KZ = {st: null, err: false};
-const kzCard = (d, tier, sub) => `<span class="kz k-${tier}" style="--op:${KZ_DUOS[d][1]}"><span class="in"><img src="${KZ_IMG[d]}" alt="" loading="lazy"><i class="sl">絆</i><svg viewBox="0 0 200 18" preserveAspectRatio="none" aria-hidden="true"><path d="M0 13 C 40 3 70 15 100 9 C 130 3 164 15 200 7" fill="none" stroke="#ff2d3a" stroke-width="1.5" vector-effect="non-scaling-stroke" style="filter:drop-shadow(0 0 3px #ff2d3a)"/></svg><span class="tx"><em>${KZ_TN[tier]}</em><b>${esc(KZ_DUOS[d][0])}</b><span>${esc(sub)}</span></span></span></span>`;
+const kzCard = (d, tier, sub) => `<span class="kz k-${tier}" style="--op:${KZ_DUOS[d][1]}"><span class="in"><img src="${KZ_IMG[d]}" alt="" loading="lazy"><i class="sh" aria-hidden="true"></i><i class="tr">${KZ_LBL[tier] || "Kizuna"}${KZ_ST[tier] ? ` <b>${"★".repeat(KZ_ST[tier])}</b>` : ""}</i><i class="sl">絆</i><svg viewBox="0 0 200 18" preserveAspectRatio="none" aria-hidden="true"><path d="M0 13 C 40 3 70 15 100 9 C 130 3 164 15 200 7" fill="none" stroke="#ff2d3a" stroke-width="1.5" vector-effect="non-scaling-stroke" style="filter:drop-shadow(0 0 3px #ff2d3a)"/></svg><span class="tx"><b>${esc(KZ_DUOS[d][0])}</b><span>${esc(sub)}</span></span></span></span>`;
 const kzMe = () => (frMe() || {name: "Toi"}).name;
 async function kzLoad(){ try { const sb = typeof cpClient === "function" ? await cpClient() : null; if (!sb || !CP.user){ KZ.st = null; return null; } const {data, error} = await sb.rpc("kizuna_state"); KZ.err = !!error; KZ.st = error ? null : data; } catch { KZ.err = true; } return KZ.st; }
 const kzShare = (d, partner) => { const txt = `${kzMe()}${partner ? " et " + partner : ""} : notre carte Kizuna ${KZ_DUOS[d][0]} sur Hanko !`; try { if (navigator.share) return navigator.share({title: "Hanko", text: txt, url: FR_SITE}).catch(() => {}); navigator.clipboard.writeText(txt + " " + FR_SITE); frToast("Message copié"); } catch {} };
@@ -19727,7 +19737,7 @@ window.NV_ON = true;   /* false : retour à l'ancienne interface */
     const rest = miss ? `${price.toLocaleString("fr-FR")} ◆` : key === "mix:0" && s.free.n ? `Gratuit · ${s.free.n} restant${s.free.n > 1 ? "s" : ""}` : `${n} en réserve`;
     const x = b.querySelector(".nvsh>div")?.scrollTop || 0;
     b.innerHTML = `<div class="nvky" style="--uc:${UC_BG[PK.u] || UC_BG.mix}"><div class="nvkt"><button class="nvb" aria-label="Retour">‹</button><button class="hpill"></button></div><div class="nvks">${sh ? `<img src="${sh}" alt="">` : tcPouch3D(key)}</div><p class="nvki">${esc(tcName(key))} · 5 cartes · ${T.g} garantie</p>${wishLine(s, key)}
-      <div class="nvkq">${[1, 5, 10].map(q => `<button data-pq="${q}" class="${PK.q === q ? "on" : ""}">×${q}</button>`).join("")}${n >= 2 ? `<button data-pq="all" class="tcall ${PK.q === "all" ? "on" : ""}">Tout · ${Math.min(TC_ALLMAX, n)}</button>` : ""}</div>
+      <div class="nvkq">${[1, 5, 10].map(q => `<button data-pq="${q}" class="${PK.q === q ? "on" : ""}">×${q}</button>`).join("")}${n >= 2 ? `<button data-pq="all" class="tcall ${PK.q === "all" ? "on" : ""}">Tout ouvrir · ${Math.min(TC_ALLMAX, n)}</button>` : ""}</div>
       <button class="nvkg" id="nvGoPk" ${ok ? "" : "disabled"}>Ouvrir<small>${rest}</small></button>
       <p class="nvkn">${ok ? `Mythique garantie dans ${Math.max(0, TC_PITY.M - (P.M || 0))} boosters au plus` : `Il te manque ${(price - s.gems).toLocaleString("fr-FR")} ◆`}</p><div class="nvkb"><button class="nvkl" id="nvCh">Changer de booster</button><button class="nvkl" id="nvShop">Boutique</button></div></div>${PK.sh ? sheet(s, keys) : ""}`;
     { const y = b.querySelector(".nvsh>div"); if (y) y.scrollTop = x; } try { mnRefresh(); } catch {}
