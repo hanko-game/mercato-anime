@@ -9546,6 +9546,9 @@ setInterval(voxRender, 2000);
 .tc.no img{filter:grayscale(1) blur(7px) brightness(.5);opacity:.7;transform:scale(1.15)}
 .tc.no .nm{color:var(--muted)}
 .tc .qm{position:absolute;inset:0;z-index:4;display:grid;place-items:center;padding-bottom:8%;font-family:var(--title);font-weight:900;font-size:clamp(26px,34cqw,64px);font-size:clamp(26px,9vw,54px);line-height:1;color:var(--rc);text-shadow:0 3px 12px #000,0 0 22px rgba(0,0,0,.8);pointer-events:none}
+.tc .tcnew{position:absolute;z-index:9;top:11%;right:5%;font:900 8.5px/1 var(--title,Unbounded),system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;background:#ff1e2d;color:#fff;padding:.55em .9em;border-radius:99px;box-shadow:0 3px 10px #000a;pointer-events:none;white-space:nowrap}
+.tc .tcnew.v{background:#f5c84a;color:#1a1206}
+.kfl .tc .tcnew,.tccine .tc .tcnew,.tcview .tc .tcnew{font-size:12px}
 .tc.new .nw{position:absolute;left:6px;top:24px;z-index:2;font-family:var(--brand);font-weight:900;font-size:12px;background:var(--accent);color:#0e0d12;border-radius:6px;padding:2px 6px}
 .tcbars{display:grid;gap:8px;margin-bottom:14px}
 .tcbars div{display:grid;grid-template-columns:104px 1fr 62px;gap:10px;align-items:center;font-size:13.5px}
@@ -10939,6 +10942,8 @@ const TC_FRM = (() => { let t = 0, m = {}; const f = () => { if (Date.now() - t 
 const tcCard = (c, o = {}) => { let h = tcCard0(c, o); if (o.no) return h.replace(/<\/(button|div)>\s*$/, `<span class="qm" aria-hidden="true">?</span></$1>`);
   const fk = o.x ? TC_FRM()[c.id] : null, F = fk && TC_FRAMES[fk];
   if (F){ const col = F[2] || (TC_PACKS[c.u] ? TC_PACKS[c.u][2] : "#fff"); h = h.replace(/^(\s*<(?:button|div)[^>]*class=")/, `$1frm frm-${fk} `).replace(/^(\s*<(?:button|div)[^>]*?)(style=")/, `$1$2--frm:${col};`); if (!/--frm:/.test(h)) h = h.replace(/^(\s*<(?:button|div))/, `$1 style="--frm:${col}"`); h = h.replace(/<\/(button|div)>\s*$/, `<i class="tcfrm" aria-hidden="true">${F[1]}</i></$1>`); }
+  /* 1er nov. 2026 : pastille « Nouvelle » (comme sur la série HOP-01) sur une carte qu'on ne possédait pas, « Nouvelle version » pour une version inédite */
+  if (o.isNew || o.newFin) h = h.replace(/<\/(button|div)>\s*$/, `<span class="tcnew${o.isNew ? "" : " v"}">${o.isNew ? "Nouvelle" : "Nouvelle version"}</span></$1>`);
   return h; };
 // cadrage propre à la carte (c.fr, calculé par tools/frame_cards.py) : seulement pour l'illustration de base, versions Normale et Holo
 const tcFr = (c, src, f) => c.fr && (!f || f === "H") && src === c.i ? ` style="inset:${c.fr[1]}% auto auto ${c.fr[0]}%;width:${c.fr[2]}%;height:${c.fr[3]}%;max-width:none${c.fr[4] ? ";box-shadow:0 -80px 0 0 " + c.fr[4] : ""}"` : "";
@@ -11392,14 +11397,16 @@ function tcView(c, want){
   const s = tcLoad(), fins = ["", ...Object.keys(TC_FIN).filter(k => s.fin[c.id] && s.fin[c.id][k] && tcVersOf(c).includes(k))]; let f = tcBestFin(s, c), back = false; if (want != null && want !== "*" && tcHas(s, c, want)) f = want;
   document.querySelector(".tcview")?.remove();
   document.body.insertAdjacentHTML("beforeend", `<div class="tcview r-${c.r}" role="dialog" aria-modal="true" aria-label="${esc(c.n)}"><button class="ghost vx" id="tcvX">✕ Fermer</button><div class="v3d"><div class="vcard"><div class="vf"></div><div class="vb">${tcBack(c.r)}<div class="tcfiche-w">${tcSheet(c, s, f)}</div></div></div></div>
-    <div class="vbar">${fins.length > 1 ? `<div class="tcchips">${fins.map(k => `<button data-tcf="${k}">${k ? TC_FIN[k][0] + (k === "B" ? " · 2e illustration" : k === "C" ? " · 3e illustration" : "") : "Normale"}</button>`).join("")}</div>` : ""}<div class="row" style="justify-content:center"><button id="tcvSheet">Lire la fiche</button>${s.own[c.id] ? `<button class="ghost" id="tcvLock" aria-pressed="${!!(s.lock || {})[c.id]}">${(s.lock || {})[c.id] ? "🔒 Verrouillée" : "🔓 Verrouiller"}</button>` : ""}</div><p class="small">Fais glisser pour incliner la carte, touche-la pour lire sa fiche.</p></div></div>`);
+    <div class="vbar">${fins.length > 1 ? `<div class="tcchips">${fins.map(k => `<button data-tcf="${k}">${k ? TC_FIN[k][0] + (k === "B" ? " · 2e illustration" : k === "C" ? " · 3e illustration" : "") : "Normale"}</button>`).join("")}</div>` : ""}<div class="row" style="justify-content:center"><button id="tcvSheet">Lire la fiche</button>${s.own[c.id] ? `<button class="ghost" id="tcvLock" aria-pressed="${!!(s.lock || {})[c.id]}">${(s.lock || {})[c.id] ? "🔒 Verrouillée" : "🔓 Verrouiller"}</button>` : ""}${s.own[c.id] && typeof hvSellForm === "function" ? `<button class="ghost" id="tcvSell" ${(s.lock || {})[c.id] ? "hidden" : ""}>◆ Vendre au marché</button>` : ""}</div><p class="small">Fais glisser pour incliner la carte, touche-la pour lire sa fiche.</p></div></div>`);
   const V = document.querySelector(".tcview"), box = V.querySelector(".v3d"), card = V.querySelector(".vcard");
   const face = () => { V.querySelector(".vf").innerHTML = tcCard(c, {f, x: s.own[c.id]}); V.querySelector(".tcfiche-w").innerHTML = tcSheet(c, s, f); queueMicrotask(() => { try { ficheEdge(); } catch {} });   /* contour du dos posé dans la même image que la face : animations (Légende) synchronisées */ V.querySelectorAll("[data-tcf]").forEach(b => b.classList.toggle("sel", b.dataset.tcf === f)); };
   const tilt = (rx, ry, mx = 50, my = 50) => { card.style.setProperty("--rx", rx + "deg"); card.style.setProperty("--ry", (ry + (back ? 180 : 0)) + "deg"); card.style.setProperty("--mx", mx + "%"); card.style.setProperty("--my", my + "%"); card.style.setProperty("--px", mx + "%"); card.style.setProperty("--py", my + "%"); card.style.setProperty("--ph", Math.min(1, Math.hypot(mx - 50, my - 50) / 50).toFixed(2)); card.style.setProperty("--ex", (-ry * .15).toFixed(2) + "px"); card.style.setProperty("--ey", (rx * .15).toFixed(2) + "px"); };   // --ex/--ey : tranche de la carte, du côté qui s'éloigne
   face(); tilt(0, 0);
+  /* 1er nov. 2026 : vendre la version affichée depuis la fiche (le formulaire du marché demande une confirmation à cocher) */
+  { const sb = V.querySelector("#tcvSell"); if (sb) sb.onclick = () => { const s2 = tcLoad(); if ((s2.lock || {})[c.id]) return frToast(c.n + " est sous cadenas : retire le cadenas pour la vendre."); if (typeof CP !== "undefined" && !CP.user) return frToast("Connecte-toi à ton compte pour vendre au marché."); if (!tcHas(s2, c, f || "")) return frToast("Tu n'as pas cette version."); V.remove(); hvSellForm(c.id, f || ""); }; }
   // cadenas (19 oct. 2026) : une carte verrouillée n'est ni recyclée (même « Recycler tout ») ni proposée à la vente
   { const lb = V.querySelector("#tcvLock"); if (lb) lb.onclick = () => { const s2 = tcLoad(); s2.lock = s2.lock || {}; if (s2.lock[c.id]) delete s2.lock[c.id]; else s2.lock[c.id] = 1; tcSave(s2);
-      const on = !!s2.lock[c.id]; lb.textContent = on ? "🔒 Verrouillée" : "🔓 Verrouiller"; lb.setAttribute("aria-pressed", on); SFX.play("pop"); try { frToast(on ? c.n + " est sous cadenas : ni recyclée ni vendue." : c.n + " n'est plus sous cadenas."); } catch {} }; }
+      const on = !!s2.lock[c.id]; lb.textContent = on ? "🔒 Verrouillée" : "🔓 Verrouiller"; V.querySelector("#tcvSell")?.toggleAttribute("hidden", on); lb.setAttribute("aria-pressed", on); SFX.play("pop"); try { frToast(on ? c.n + " est sous cadenas : ni recyclée ni vendue." : c.n + " n'est plus sous cadenas."); } catch {} }; }
   box.onpointermove = e => { if (back) return;   /* 19 oct. 2026 : le dos (la fiche) ne s'incline pas */
     const r = card.getBoundingClientRect(), k = e.pointerType === "touch" ? 1.5 : 1, cl = v => Math.max(0, Math.min(1, v)), x = cl(.5 + ((e.clientX - r.left) / r.width - .5) * k), y = cl(.5 + ((e.clientY - r.top) / r.height - .5) * k);   /* au doigt, un petit geste suffit pour incliner autant qu'à la souris */
     card.classList.add("live"); tilt((.5 - y) * 44, (x - .5) * 56, x * 100, y * 100); };   // inclinaison plus ample (17 oct. 2026) : ±22° / ±28°
@@ -11506,7 +11513,7 @@ function tcCine(c, o = {}){
       <div class="hero" aria-hidden="true"><img src="${img}" alt=""></div>
       <div class="fl"></div><div class="rays"></div>${myth ? `<div class="rays two"></div>` : ""}<div class="ring"></div>${myth ? `<div class="ring two"></div>` : ""}
       <div class="sp">${Array.from({length: TC_LITE ? (myth ? 18 : 12) : myth ? 46 : 28}, (_, k) => `<i style="--a:${Math.round(Math.random() * 360)}deg;--d:${30 + Math.round(Math.random() * 46)}vmin;--t:${(.7 + Math.random() * 1.1).toFixed(2)}s;--w:${(Math.random() * .5).toFixed(2)}s"></i>`).join("")}</div>
-      <div class="seal">${c.f === "Z" ? "伝説" : c.r === "X" ? "覚醒" : c.f === "G" ? "黄金" : c.f === "K" ? "鮮血" : c.f === "S" ? "特別" : c.f === "W" ? "手配" : c.r === "M" ? "神話" : c.r === "L" ? "伝説" : "叙事"}</div>${o.key ? tcOddsOf(c, o.key) : ""}<div class="lab">${TC_R[tcER(c, c.f)][0]}${c.f ? " · " + TC_FIN[c.f][0] : ""}</div><div class="cardw">${tcCard(c, {isNew: c.isNew, f: c.f})}</div><div class="who"><b>${esc(c.n)}</b><span>${c.isNew ? "Nouvelle carte" : c.newFin ? "Nouvelle version" : "Doublon"} · ${TC_PACKS[c.u][0]}</span></div><div class="tap">Touche pour continuer</div></div>`);
+      <div class="seal">${c.f === "Z" ? "伝説" : c.r === "X" ? "覚醒" : c.f === "G" ? "黄金" : c.f === "K" ? "鮮血" : c.f === "S" ? "特別" : c.f === "W" ? "手配" : c.r === "M" ? "神話" : c.r === "L" ? "伝説" : "叙事"}</div>${o.key ? tcOddsOf(c, o.key) : ""}<div class="lab">${TC_R[tcER(c, c.f)][0]}${c.f ? " · " + TC_FIN[c.f][0] : ""}</div><div class="cardw">${tcCard(c, {isNew: c.isNew, newFin: c.newFin, f: c.f})}</div><div class="who"><b>${esc(c.n)}</b><span>${c.isNew ? "Nouvelle carte" : c.newFin ? "Nouvelle version" : "Doublon"} · ${TC_PACKS[c.u][0]}</span></div><div class="tap">Touche pour continuer</div></div>`);
     const el = document.querySelector(".tccine"), timers = []; let final = 0;
     const GLc = tcCineGL(el, TC_YC[sty] || "#b07cff", myth), G = !calm && window.gsap;
     // révélation : la carte arrive du fond en tournant sur elle-même, puis flotte et suit le doigt ou la souris (reflets compris)
@@ -11944,7 +11951,7 @@ function tcOpening(key, got){
   // versions rares), les meilleures d'abord, par paquets de 30. 250 cartes complètes d'un coup faisaient planter les téléphones (11 Mo de page).
   const E0 = TC_ORDER.indexOf("E"), hot = c => TC_ORDER.indexOf(c.r) >= E0 || (c.f && c.f !== "H") || c.hype, many = got.length > 10;
   const SIDX = many ? [...got.keys()].filter(k => got[k].isNew || got[k].newFin || hot(got[k])).sort((a, b) => sc0(got[b]) - sc0(got[a])) : [...got.keys()];
-  const sumCards = (a, b) => SIDX.slice(a, b).map(k => tcCard(got[k], {isNew: got[k].isNew, f: got[k].f})).join("");
+  const sumCards = (a, b) => SIDX.slice(a, b).map(k => tcCard(got[k], {isNew: got[k].isNew, newFin: got[k].newFin, f: got[k].f})).join("");
   const sumRow = () => `<div class="tcrow ${got.length > 5 ? "many" : ""}">${sumCards(0, many ? 30 : got.length)}</div>`;
   O._got = got;   /* les envies (kyara2) lisent le tirage complet, même les cartes non affichées */
   // écran de résultat : titre du booster, bilan, les cartes en éventail avec la meilleure au centre, puis les actions
@@ -11990,7 +11997,7 @@ function tcOpening(key, got){
   const N = got.length, TAL = N > 60, PB = got.pb && got.pb.length ? got.pb : [0], NP = PB.length; let i = 0, lastP = -1, kfast = false;
   const packOf = k => { let p = 0; while (p + 1 < NP && PB[p + 1] <= k) p++; return p; }, packEnd = p => p + 1 < NP ? PB[p + 1] : N;
   const cur = () => mid.querySelector(`.kfl[data-k="${i}"]:not(.gone)`);
-  const cardHTML = k => { const c = got[k], down = true;   /* 26 oct. 2026 : toutes les cartes arrivent de dos, comme dans un vrai booster ; on les retourne une à une */ return `<div class="kfl ${down ? "" : "up nofl r-" + c.r}" data-k="${k}" style="z-index:${N - k}"><div class="in"><div class="bkf">${tcBackU("C", {u: c.u, cls: "tcback", attr: `aria-label="Retourner la carte ${k + 1}"`})}</div><div class="fa">${tcCard(c, {isNew: c.isNew, f: c.f})}</div></div></div>`; };
+  const cardHTML = k => { const c = got[k], down = true;   /* 26 oct. 2026 : toutes les cartes arrivent de dos, comme dans un vrai booster ; on les retourne une à une */ return `<div class="kfl ${down ? "" : "up nofl r-" + c.r}" data-k="${k}" style="z-index:${N - k}"><div class="in"><div class="bkf">${tcBackU("C", {u: c.u, cls: "tcback", attr: `aria-label="Retourner la carte ${k + 1}"`})}</div><div class="fa">${tcCard(c, {isNew: c.isNew, newFin: c.newFin, f: c.f})}</div></div></div>`; };
   const msg = t => { const m = bot.querySelector(".kmsg"); if (m) m.textContent = t; };
   const stack = () => { const dk = mid.querySelector(".kdeck"); if (!dk) return;
     dk.querySelectorAll(".kfl:not(.gone)").forEach(e => { if (+e.dataset.k < i) e.remove(); });
@@ -13967,6 +13974,9 @@ function hccHook(room){ if (!room || room.__hcc || typeof room.on !== "function"
 .hvt h2{text-align:center}
 .hvt p{margin:0;color:#d6d2da;font-size:15px;line-height:1.5}
 .hvt ul{margin:0;padding-left:20px;color:#d6d2da;font-size:14.5px;line-height:1.5;display:grid;gap:4px}
+.hv-ok{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border:1.5px solid #ff1e2d66;border-radius:12px;background:#ff1e2d12;font-size:13.5px;line-height:1.4;cursor:pointer}
+.hv-ok input{flex:none;width:20px;height:20px;margin:1px 0 0;accent-color:#ff1e2d}
+#hvGo:disabled{opacity:.45;cursor:not-allowed}
 </style>
 <script>
 // ===================== Marché (lot 4, 18 oct. 2026) =====================
@@ -14326,8 +14336,9 @@ async function hvListing(id){ let l = HV.data.list.find(x => x.id === id) || HV.
 
 // mise en vente : prix fixe ou enchère, durée 1 à 24 h, résumé avec la commission
 async function hvSellForm(id, v){ const c = hvCard(id); if (!c) return; const s = tcLoad(), n = hvCount(s, id, v), er = tcER(c, v);
-  let mode = "fixed", hours = 24, price = TC_R[er][2] || 50, buyout = "", med = null, hh = null; hvHistory(id, v).then(h => { hh = h || []; const e = M.querySelector("#hvHist"); if (e) e.innerHTML = hvHistHTML(hh); });
+  let ok = false, mode = "fixed", hours = 24, price = TC_R[er][2] || 50, buyout = "", med = null, hh = null; hvHistory(id, v).then(h => { hh = h || []; const e = M.querySelector("#hvHist"); if (e) e.innerHTML = hvHistHTML(hh); });
   const {M, close} = hvModal(`<div class="head"><h2>Mettre en vente</h2><button class="ghost" data-close>✕ Fermer</button></div><div id="hvSF"></div>`);
+  const okTxt = p => `Je confirme mettre en vente <b>${esc(c.n)}</b> (${esc(hvVer(v))}) ${mode === "fixed" ? "à" : "aux enchères dès"} <b>${hvN(p)} ◆</b> pendant ${hours} h.${n <= 1 ? " C'est mon seul exemplaire." : ""}`;
   const draw = () => { const p = Math.max(1, Math.floor(+price || 0)), b = Math.floor(+buyout || 0);
     M.querySelector("#hvSF").innerHTML = `<div class="top">${tcCard(c, {f: v})}<dl><div><dt>Carte</dt><dd>${esc(c.n)}</dd></div><div><dt>Rareté · version</dt><dd>${TC_R[er][0]} · ${esc(hvVer(v))}</dd></div><div><dt>Tu en as</dt><dd>${n}</dd></div><div><dt>Prix médian des ventes</dt><dd>${med == null ? "…" : med ? hvN(med) + " ◆" : "pas encore de vente"}</dd></div></dl></div>
       ${hvTip("sellform", "Prix fixe : le premier acheteur l'emporte. Enchère : le plus offrant à la fin gagne ; tu peux ajouter un prix d'achat immédiat. Une commission de 5 % est retirée de ce que tu touches.")}
@@ -14339,12 +14350,15 @@ async function hvSellForm(id, v){ const c = hvCard(id); if (!c) return; const s 
       ${n <= 1 ? `<p class="warn">C'est ton seul exemplaire de cette version : il quittera ta collection pendant la vente.</p>` : ""}
       <div id="hvHist">${hvHistHTML(hh)}</div>
       <p class="hv-note">Pendant la vente, la carte quitte ta collection. Si personne ne l'achète, elle te revient. Une carte reçue au marché ne peut pas être revendue avant 48 h.</p>
-      <p class="err" id="hvErr"></p><button class="hv-g" id="hvGo">Mettre en vente</button>`;
-    M.querySelectorAll("[data-m]").forEach(b => b.onclick = () => { mode = b.dataset.m; draw(); }); M.querySelectorAll("[data-h]").forEach(b => b.onclick = () => { hours = +b.dataset.h; draw(); });
-    const P = M.querySelector("#hvP"); P.oninput = () => { price = P.value; const q = Math.max(1, Math.floor(+price || 0)); M.querySelector(".sum").innerHTML = `<span>Commission (5 %)</span><b>−${hvN(hvFee(q))} ◆</b><span>${mode === "fixed" ? "Tu recevras" : "Tu recevras au moins"}</span><b style="color:#1fae5b">${hvN(q - hvFee(q))} ◆</b>`; };
-    const B = M.querySelector("#hvB"); if (B) B.oninput = () => buyout = B.value;
+      <label class="hv-ok"><input type="checkbox" id="hvOk" ${ok ? "checked" : ""}><span id="hvOkT">${okTxt(p)}</span></label>
+      <p class="err" id="hvErr"></p><button class="hv-g" id="hvGo" ${ok ? "" : "disabled"}>Mettre en vente</button>`;
+    /* 1er nov. 2026 : case à cocher obligatoire avant la mise en vente (évite les clics par erreur) ; elle se décoche si le prix, le mode ou la durée change */
+    const okB = M.querySelector("#hvOk"); okB.onchange = () => { ok = okB.checked; M.querySelector("#hvGo").disabled = !ok; };
+    M.querySelectorAll("[data-m]").forEach(b => b.onclick = () => { mode = b.dataset.m; ok = false; draw(); }); M.querySelectorAll("[data-h]").forEach(b => b.onclick = () => { hours = +b.dataset.h; ok = false; draw(); });
+    const P = M.querySelector("#hvP"); P.oninput = () => { price = P.value; const q = Math.max(1, Math.floor(+price || 0)); ok = false; okB.checked = false; M.querySelector("#hvGo").disabled = true; M.querySelector("#hvOkT").innerHTML = okTxt(q); M.querySelector(".sum").innerHTML = `<span>Commission (5 %)</span><b>−${hvN(hvFee(q))} ◆</b><span>${mode === "fixed" ? "Tu recevras" : "Tu recevras au moins"}</span><b style="color:#1fae5b">${hvN(q - hvFee(q))} ◆</b>`; };
+    const B = M.querySelector("#hvB"); if (B) B.oninput = () => { buyout = B.value; ok = false; okB.checked = false; M.querySelector("#hvGo").disabled = true; };
     M.querySelectorAll("[data-hvtip] button").forEach(x => x.onclick = () => { lsSet("mercato-hv-tip-sellform", true); x.closest("[data-hvtip]").remove(); });
-    M.querySelector("#hvGo").onclick = async e => { const pp = Math.floor(+price || 0), bb = mode === "auction" && buyout !== "" ? Math.floor(+buyout) : null, err = t => M.querySelector("#hvErr").textContent = t;
+    M.querySelector("#hvGo").onclick = async e => { if (!ok) return; const pp = Math.floor(+price || 0), bb = mode === "auction" && buyout !== "" ? Math.floor(+buyout) : null, err = t => M.querySelector("#hvErr").textContent = t;
       if (pp < 1) return err("Indique un prix d'au moins 1 ◆."); if (bb != null && bb <= pp) return err("L'achat immédiat doit être plus élevé que la mise de départ.");
       if (HV.data && HV.data.mine.filter(l => l.status === "open").length >= 20) return err("Tu as déjà 20 ventes en cours : attends qu'une se termine.");
       e.target.disabled = true; try { await hvAct("market_list", {card: id, v: v || "", mode, price: pp, buyout: bb, hours}, s => hvTake(s, id, v || "")); lsSet("mercato-hv-tip-sell", true); SFX.play("win");
@@ -14668,9 +14682,12 @@ document.addEventListener("contextmenu", e => { if (e.target.closest && !e.targe
     L.sort((a, b) => sc(b) - sc(a)); L = L.slice(0, 30);
     const imgs = await Promise.all(L.map(x => load(x.src || tcArt(x.c, x.fin) || tcBase(x.c))));
     const items = L.map((x, i) => ({img: imgs[i], col: colOf(x.c.r, x.fin), frm: frameOf(x.c.r, x.fin), name: x.c.n, lab: x.ar ? "AR" : (x.fin && TC_FIN[x.fin] ? TC_FIN[x.fin][0] : (TC_R[x.c.r] ? TC_R[x.c.r][0] : x.c.r))}));
-    const uni = TC_PACKS[L[0].c.u] || TC_PACKS.mix, O = document.querySelector(".tcopen.res");
-    const key = O && O.dataset.key; let pouch = null; try { pouch = key ? await load(tcPouchShot(key) || tcPouchImg(key)) : null; } catch {}
-    return {items, rev: [...items].reverse(), uni: {k: uni[1], n: uni[0]}, title: key ? tcName(key) : "Booster " + uni[0], pouch, best: items[0], oddsp: O && O.dataset.oddsp ? parseFloat(O.dataset.oddsp) : null, oddslab: (O && O.dataset.oddslab) || ""};
+    const O = document.querySelector(".tcopen.res"), key = O && O.dataset.key;
+    /* 1er nov. 2026 : le nom et l'univers viennent du booster réellement ouvert (en-tête de l'écran d'ouverture), jamais de la meilleure carte */
+    let ku = null; try { ku = key ? tcParse(key).u : null; } catch {} const uni = TC_PACKS[ku] || TC_PACKS.mix;
+    const hb = O && O.querySelector(".otop b"), shown = hb ? [...hb.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join("").trim() : "";
+    let pouch = null; try { pouch = key ? await load(tcPouchShot(key) || tcPouchImg(key)) : null; } catch {}
+    return {items, rev: [...items].reverse(), uni: {k: uni[1], n: uni[0]}, title: shown || (key ? tcName(key) : "Booster " + uni[0]), pouch, best: items[0], oddsp: O && O.dataset.oddsp ? parseFloat(O.dataset.oddsp) : null, oddslab: (O && O.dataset.oddslab) || ""};
   }
   function drawMini(g, cx, cy, w, it, o){ o = o || {}; const h = w * 666 / 450, x = cx - w / 2, y = cy - h / 2;
     g.save(); if (o.rot){ g.translate(cx, cy); g.rotate(o.rot); g.translate(-cx, -cy); } g.globalAlpha = o.alpha == null ? 1 : o.alpha;
@@ -14964,7 +14981,7 @@ if (matchMedia("(hover: none) and (pointer: coarse)").matches) document.addEvent
       if (pend){ const {data, error} = await CP.sb.rpc("referral_join", {referrer_handle: pend, dev: dev()});
         if (!error){ try { localStorage.removeItem(PK); } catch {}
           const why = {"trop tard": "ton compte a été créé il y a plus de 48 h", deja: "tu as déjà un parrain", inconnu: "ce joueur est introuvable", "soi-meme": "tu ne peux pas te parrainer toi-même", appareil: "cet appareil a déjà servi à un parrainage", connexion: "cette connexion a déjà servi à un parrainage de ce joueur"}[data];
-          if (data === "ok") frToast(`Parrainage enregistré avec ${pend} : ouvre 10 boosters et vous recevez chacun 3 boosters.`);
+          if (data === "ok"){ frToast(`Parrainage enregistré : ${pend} est maintenant ton ami. Ouvre 10 boosters et vous recevez chacun 3 boosters.`); try { frsLoad().then(() => { try { tabDot(); } catch {} }); } catch {} }   /* 1er nov. 2026 : amitié créée par le serveur (parrainage-amis-supabase.sql) */
           else if (why) frToast(`Le lien de parrainage de ${pend} n'a pas été pris en compte : ${why}.`); } }   /* comme Kyara : on dit pourquoi */
       const {data: st} = await CP.sb.rpc("referral_state"); if (st) RF.st = st;
       if (st && st.todo > 0){ const {data: R} = await CP.sb.rpc("referral_claim"); const n = R && R.boosters || 0;
@@ -15078,16 +15095,18 @@ if (matchMedia("(hover: none) and (pointer: coarse)").matches) document.addEvent
 .gxf ul::-webkit-scrollbar{display:none}
 .gxf li{flex:0 0 112px;min-width:0;scroll-snap-align:start}
 .gxf .gxc{position:relative;display:block;width:112px;height:157px;padding:0;overflow:hidden;border:1.5px solid var(--rc);border-radius:10px;background:#0b0a0e;box-shadow:0 0 12px color-mix(in srgb,var(--rc) 35%,transparent);cursor:pointer}
-.gxf .gxc img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 18%}
-.gxf .gxc::after{content:"";position:absolute;inset:40% 0 0;background:linear-gradient(transparent,#000d)}
-.gxf .gxc span{position:absolute;z-index:1;left:7px;right:7px;text-align:left;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.gxf .gxl{bottom:23px;font:800 9.5px var(--mono,monospace);letter-spacing:.05em;text-transform:uppercase;color:var(--rc)}
-.gxf .gxn{bottom:7px;font-weight:800;font-size:12.5px;color:#fff}
+.gxf .gxc:not(.gxtc) > img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 18%}
+.gxf .gxc:not(.gxtc)::after{content:"";position:absolute;inset:40% 0 0;background:linear-gradient(transparent,#000d)}
+.gxf .gxc:not(.gxtc) > span{position:absolute;z-index:1;left:7px;right:7px;text-align:left;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.gxf .gxc > .gxl{bottom:23px;font:800 9.5px var(--mono,monospace);letter-spacing:.05em;text-transform:uppercase;color:var(--rc)}
+.gxf .gxc > .gxn{bottom:7px;font-weight:800;font-size:12.5px;color:#fff}
 /* 1er nov. 2026 : la vignette est la vraie carte, dans la version tirée (comme en cliquant dessus) */
 .gxf li:has(.gxtc){flex-basis:138px}
 .gxf .gxc.gxtc{width:138px;height:auto;border:0;background:none;overflow:visible;box-shadow:none;border-radius:10px;filter:drop-shadow(0 0 7px color-mix(in srgb,var(--rc) 55%,transparent))}
 .gxf .gxc.gxtc::after{display:none}
 .gxf .gxc.gxtc .tc{width:100%;margin:0;pointer-events:none}
+/* 1er nov. 2026 : les anciennes règles des vignettes (img/span en absolu) déformaient les vraies cartes (objets, Éveil) ; elles ne visent plus que l'ancienne vignette. Titre déjà posé par l'accueil */
+#nvPulls .gxf h3{display:none}
 .gxf .gxw{display:block;margin-top:6px;font-size:12px;font-weight:700;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .gxf .gxw[data-kjp]{cursor:pointer;text-decoration:underline;text-underline-offset:2px}
 .gxf .gxa{display:block;font:500 10.5px var(--mono,monospace);color:var(--muted)}
@@ -16442,7 +16461,7 @@ function crNews(S, k, x = {}){ const d = crDivN(S); S.news = ({
 // 1er nov. 2026 : le didacticiel ne se joue qu'une fois dans la vie du joueur, pas à chaque nouvel univers
 const crTutoDone = () => { try { return localStorage.getItem("hanko-cr-tuto") === "1"; } catch { return false; } };
 function crStart(u, club){
-  const P = crPool(u), S = {u, club: cleanName(club, "Mon club"), rival: CR_RIVALS[u], div: 0, sub: 0, season: 1, money: CR_ECO.start, prestige: 0, squad: [], out: {}, items: {spy: 1, boost: 0}, mis: [], streak: 0, tuto: crTutoDone() ? 5 : 0, legend: 0, ev: null,
+  const P = crPool(u), S = {u, club: cleanName(club, "Mon club"), rival: CR_RIVALS[u], div: 0, sub: 0, season: 1, money: CR_ECO.start, prestige: 0, squad: [], out: {}, items: {spy: 1, boost: 0}, mis: [], streak: 0, tuto: crTutoDone() ? 5 : 0, first: !crTutoDone(), legend: 0, ev: null,
     stat: {played: 0, wins: 0, titles: 0, top: 0, ups: 0, cups: 0, best: 0, sale: 0, buy: 0, ex: 0, exN: ""}, reach: {}, news: "", eco: 2};
   // effectif de départ : six personnages parmi les plus faibles de l'univers
   S.squad = [1, 3, 5, 7, 9, 11].map(k => P.ix[k]);   /* un sur deux parmi les douze plus faibles : les six autres forment le tout premier adversaire, un cran en dessous */
@@ -18620,7 +18639,9 @@ body.crret:has(#cr:not(.hidden)) .crwel #crWelGo,body.crret:has(#cr:not(.hidden)
     if (CR.view === "compose") return rule && ok("rule") ? "rule" : null;
     if (CR.tab === "match"){ if (S.cup && S.cup.pend && ok("cup")) return "cup"; if (rule && ok("rule")) return "rule"; let left = 1; try { left = crCapLeft(); } catch {} if (left <= 0 && ok("cap")) return "cap"; return ok("spy") ? "spy" : null; }
     const byTab = {squad: "aff", shop: "scout", table: "table", mis: "mis", club: "club"}[CR.tab]; return byTab && ok(byTab) ? byTab : null; };
-  const tip = () => { try { const el = document.querySelector("#cr"), S = CR.S; if (!el || !S || S.tuto < 5 || el.querySelector(".crcoach")) return; const k = pick(S); if (!k) return;
+  const tip = () => { try { const el = document.querySelector("#cr"), S = CR.S; if (!el || !S || S.tuto < 5 || el.querySelector(".crcoach")) return;
+      /* 1er nov. 2026 : bulles réservées à la toute première carrière du joueur (anciennes sauvegardes : première = seule carrière enregistrée) */
+      if (S.first === false || (S.first == null && Object.keys(crLoad().saves || {}).length > 1)) return; const k = pick(S); if (!k) return;
       const at = el.querySelector(".crtabs") || el.querySelector(".crhead"); if (!at) return;
       at.insertAdjacentHTML("afterend", `<div class="crcoach crtip" data-tip="${k}"><div><i>Bon à savoir</i><b>${TIPS[k][0]}</b><p>${TIPS[k][1]}</p></div><button class="primary">Compris</button></div>`);
       el.querySelector(".crtip button").onclick = () => { const s = seen(); s[k] = 1; try { lsSet("hanko-cr-tips", s); } catch {} el.querySelector(".crtip")?.remove(); tip(); }; } catch {} };
