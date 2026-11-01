@@ -13326,11 +13326,17 @@ setInterval(() => { try { if (!frParse(lsGet(FR_PEND, "")) || !frsOn() || !frMe(
   .cpgate{grid-template-columns:minmax(0,520px) minmax(0,420px);justify-content:center;align-content:center;column-gap:72px}
   .cpgate .cpshow{display:grid;gap:34px;justify-items:center}
   .cpgate .cpshow .fan{position:relative;width:420px;height:330px}
-  .cpgate .cpshow .f{position:absolute;top:10px;left:50%;width:190px;filter:drop-shadow(0 18px 30px #000c)}
-  .cpgate .cpshow .f .tc{width:100%!important;margin:0!important;pointer-events:none}
-  .cpgate .cpshow .f0{transform:translateX(-50%) translateX(-130px) rotate(-12deg);top:30px}
-  .cpgate .cpshow .f1{transform:translateX(-50%);z-index:2}
-  .cpgate .cpshow .f2{transform:translateX(-50%) translateX(130px) rotate(12deg);top:30px}
+  .cpgate .cpshow .cpf{position:absolute;top:10px;left:50%;width:190px;filter:drop-shadow(0 18px 30px #000c)}
+  /* carte simple : illustration entière (les gabarits Mythiques attendent une animation qui n'a pas lieu ici) */
+  .cpgate .cpshow .cps{position:relative;aspect-ratio:450/666;border-radius:14px;overflow:hidden;background:#0b0a0e;box-shadow:0 0 0 2px #ff6a48,0 0 24px #ff1e2d80}
+  .cpgate .cpshow .cps img{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:cover;object-position:50% 20%;transform:none!important;rotate:none!important;translate:none!important;animation:none!important;max-width:none}
+  .cpgate .cpshow .cps::after{content:"";position:absolute;inset:55% 0 0;background:linear-gradient(transparent,#000c)}
+  .cpgate .cpshow .cpn{position:absolute;z-index:1;left:12px;right:12px;bottom:12px;text-align:left}
+  .cpgate .cpshow .cpn b{display:block;font:900 15px/1.1 var(--title);color:#fff;text-shadow:0 1px 3px #000}
+  .cpgate .cpshow .cpn i{font:700 10px var(--mono);font-style:normal;letter-spacing:.1em;text-transform:uppercase;color:#ff9a7a}
+  .cpgate .cpshow .cpf0{transform:translateX(-50%) translateX(-130px) rotate(-12deg);top:30px}
+  .cpgate .cpshow .cpf1{transform:translateX(-50%);z-index:2}
+  .cpgate .cpshow .cpf2{transform:translateX(-50%) translateX(130px) rotate(12deg);top:30px}
   .cpgate .cpshow ul{list-style:none;margin:0;padding:0;display:grid;gap:10px;max-width:440px;color:var(--muted);font-size:15px}
   .cpgate .cpshow li{position:relative;padding-left:22px}.cpgate .cpshow li::before{content:"";position:absolute;left:4px;top:.55em;width:8px;height:8px;background:#ff1e2d;transform:rotate(45deg)}
   .cpgate .cpshow li b{color:var(--text)}}
@@ -13461,7 +13467,8 @@ function cpGate(loading){ if (!cpReady() || !cpOnSite() || window.__INVITE) retu
   if (!g){ document.body.insertAdjacentHTML("beforeend", `<div class="cpgate" role="dialog" aria-modal="true" aria-label="Connexion"><div class="cpshow" aria-hidden="true"></div><div class="in"></div></div>`); g = document.querySelector(".cpgate"); document.body.classList.add("cplock");
     /* 1er nov. 2026 : sur PC, une vitrine à gauche (trois cartes du jeu en éventail + ce qu'on y fait) */
     try { const pick = n => tcCards().find(c => c.n === n && !c.obj), L = ["Satoru Gojo", "Monkey D. Luffy", "Son Goku"].map(pick).filter(Boolean), sh = g.querySelector(".cpshow");
-      sh.innerHTML = `<div class="fan">${L.map((c, k) => `<div class="f f${k}">${tcCard(c, {f: tcVersOf(c).includes("B") ? "B" : undefined})}</div>`).join("")}</div><ul><li><b>640 personnages</b> à collectionner en boosters</li><li><b>6 univers</b> : One Piece, Naruto, Dragon Ball, Jujutsu Kaisen, Demon Slayer, My Hero Academia</li><li><b>Jeux entre amis</b> : Mercato, Undercover, Grand Tournoi…</li><li><b>Mode Carrière</b> et marché entre joueurs</li></ul>`; } catch {} }
+      const src = c => { const v = tcVersOf(c); for (const f of ["A", "C", "B"]) if (v.includes(f)){ const a = tcArt(c, f); if (a) return a; } return tcArt(c) || c.i; };
+      sh.innerHTML = `<div class="fan">${L.map((c, k) => `<div class="cpf cpf${k}"><div class="cps"><img src="${src(c)}" alt=""><span class="cpn"><b>${esc(c.n)}</b><i>${TC_R[c.r][0]}</i></span></div></div>`).join("")}</div><ul><li><b>640 personnages</b> à collectionner en boosters</li><li><b>6 univers</b> : One Piece, Naruto, Dragon Ball, Jujutsu Kaisen, Demon Slayer, My Hero Academia</li><li><b>Jeux entre amis</b> : Mercato, Undercover, Grand Tournoi…</li><li><b>Mode Carrière</b> et marché entre joueurs</li></ul>`; addEventListener("tcalt", () => sh.querySelectorAll(".cps img").forEach((im, k) => { const n = src(L[k]); if (n && im.src !== n) im.src = n; })); } catch {} }
   const logo = document.querySelector(".hlogo")?.outerHTML.replace(/hlg/g, "hlg2") || "";
   if (loading){ g.querySelector(".in").innerHTML = `${logo}<h1>HANKO</h1><p>Chargement…</p>`; return; }
   if (g.querySelector("form")) return;
