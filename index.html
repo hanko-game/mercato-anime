@@ -14652,6 +14652,10 @@ document.addEventListener("contextmenu", e => { if (e.target.closest && !e.targe
   // ---- Rejoue toute l'ouverture en vidéo : booster -> révélation carte par carte -> récap (1er nov. 2026) ----
   const TTL = "Unbounded, Inter, system-ui, sans-serif", MONO = "'JetBrains Mono', Inter, monospace";
   const RCOL = {C: "#b9b4c0", P: "#6fdc9f", R: "#6db6ff", E: "#c39bff", L: "#f7c64a", M: "#ff6a48", X: "#8fe9ff"};
+  /* 1er nov. 2026 : contours d'origine des cartes du jeu (couleur de rareté --rc, cadres des versions) pour reconnaître la rareté d'un coup d'œil */
+  const FRC = {C: "#8f8a97", P: "#5fbf8f", R: "#5aa9ff", E: "#b07cff", L: "#f5b53a", M: "#ff5a36", X: "#7de3ff"};
+  const frameOf = (r, f) => f === "H" ? ["#ffe2a0", "#e3a22c", "#fff6cf", "#e3a22c"] : "ABC".includes(f || "-") ? ["#fdfbff", "#bfe9ff", "#ffd9f0", "#e9ecf2"] : f === "S" || f === "K" ? ["#c9a24a", "#c8102e", "#c9a24a"] : f === "W" ? ["#b07a35", "#3a2a14", "#b07a35"] : f === "G" ? ["#fff1b8", "#f5c84a", "#b8891c", "#f5c84a"] : f === "Z" ? ["#ff5a8a", "#fff275", "#6ee7a8", "#5a9bff", "#b07cff"] : r === "X" ? ["#7de3ff", "#ffffff", "#b07cff", "#7de3ff"] : [FRC[r] || "#cccccc"];
+  const colOf = (r, f) => f === "S" || f === "K" ? "#ff3b3b" : f === "G" ? "#f5c84a" : f === "W" ? "#d9a066" : f === "H" ? "#e3a22c" : "ABC".includes(f || "-") ? "#e9ecf2" : f === "Z" ? "#b07cff" : FRC[r] || "#cccccc";
   /* moment où la carte j apparaît : au-delà de 5 cartes, les autres défilent vite et la meilleure garde 1,3 s seule à l'écran */
   const revAt = (j, N) => N <= 5 ? 1750 + j * 4250 / N : j === N - 1 ? 4700 : 1750 + j * 2250 / Math.max(1, N - 2);
   async function collectReplay(){
@@ -14663,18 +14667,18 @@ document.addEventListener("contextmenu", e => { if (e.target.closest && !e.targe
     const sc = x => RANK.indexOf(x.c.r) * 10 + (x.fin && x.fin !== "H" ? 5 : x.fin ? 1 : 0);
     L.sort((a, b) => sc(b) - sc(a)); L = L.slice(0, 30);
     const imgs = await Promise.all(L.map(x => load(x.src || tcArt(x.c, x.fin) || tcBase(x.c))));
-    const items = L.map((x, i) => ({img: imgs[i], col: RCOL[x.c.r] || "#ccc", name: x.c.n, lab: x.ar ? "AR" : (x.fin && TC_FIN[x.fin] ? TC_FIN[x.fin][0] : (TC_R[x.c.r] ? TC_R[x.c.r][0] : x.c.r))}));
+    const items = L.map((x, i) => ({img: imgs[i], col: colOf(x.c.r, x.fin), frm: frameOf(x.c.r, x.fin), name: x.c.n, lab: x.ar ? "AR" : (x.fin && TC_FIN[x.fin] ? TC_FIN[x.fin][0] : (TC_R[x.c.r] ? TC_R[x.c.r][0] : x.c.r))}));
     const uni = TC_PACKS[L[0].c.u] || TC_PACKS.mix, O = document.querySelector(".tcopen.res");
     const key = O && O.dataset.key; let pouch = null; try { pouch = key ? await load(tcPouchShot(key) || tcPouchImg(key)) : null; } catch {}
     return {items, rev: [...items].reverse(), uni: {k: uni[1], n: uni[0]}, title: key ? tcName(key) : "Booster " + uni[0], pouch, best: items[0], oddsp: O && O.dataset.oddsp ? parseFloat(O.dataset.oddsp) : null, oddslab: (O && O.dataset.oddslab) || ""};
   }
   function drawMini(g, cx, cy, w, it, o){ o = o || {}; const h = w * 666 / 450, x = cx - w / 2, y = cy - h / 2;
     g.save(); if (o.rot){ g.translate(cx, cy); g.rotate(o.rot); g.translate(-cx, -cy); } g.globalAlpha = o.alpha == null ? 1 : o.alpha;
-    if (o.glow){ g.save(); g.shadowColor = it.col; g.shadowBlur = o.glow; rr(g, x, y, w, h, 14); g.fillStyle = it.col; g.fill(); g.restore(); }
+    const gw = o.glow || w * .06; { g.save(); g.shadowColor = it.col; g.shadowBlur = gw; rr(g, x, y, w, h, 14); g.fillStyle = it.col; g.fill(); g.restore(); }
     g.save(); rr(g, x, y, w, h, 14); g.fillStyle = "#0e0e12"; g.fill(); g.clip();
     if (it.img){ const s = Math.max(w / it.img.naturalWidth, h / it.img.naturalHeight), iw = it.img.naturalWidth * s, ih = it.img.naturalHeight * s; g.drawImage(it.img, x + (w - iw) / 2, y + (h - ih) * .1, iw, ih); }
     const sh = g.createLinearGradient(0, y + h * .5, 0, y + h); sh.addColorStop(0, "transparent"); sh.addColorStop(1, "rgba(0,0,0,.92)"); g.fillStyle = sh; g.fillRect(x, y, w, h); g.restore();
-    g.save(); rr(g, x + 1.5, y + 1.5, w - 3, h - 3, 12.5); g.lineWidth = 3; g.strokeStyle = it.col; g.stroke(); g.restore();
+    { const lw = Math.max(3, w * .032), F = it.frm || [it.col]; let st = F[0]; if (F.length > 1){ st = g.createLinearGradient(x, y, x + w, y + h); F.forEach((c, i) => st.addColorStop(i / (F.length - 1), c)); } g.save(); rr(g, x + lw / 2, y + lw / 2, w - lw, h - lw, 14 - lw / 2); g.lineWidth = lw; g.strokeStyle = st; g.stroke(); g.restore(); }
     g.textAlign = "left"; g.fillStyle = "#fff"; g.font = `900 ${w * .092 | 0}px ${TTL}`; g.fillText(fit(g, it.name, w - 22, w * .092 | 0, 900, TTL), x + 12, y + h - 28 * (w / 230));
     g.fillStyle = it.col; g.font = `800 ${w * .058 | 0}px ${MONO}`; g.fillText((it.lab || "").toUpperCase(), x + 12, y + h - 11 * (w / 230)); g.textAlign = "center"; g.restore(); }
   function drawOpening(g, D, poster, t, W, H){ const RED = "#ff1e2d", B = 1750, Cs = 1750, Cend = 6000;
