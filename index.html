@@ -10535,11 +10535,13 @@ let TC_SET = "full";   // en-tête de la collection : « full » (set complet) o
 const TC_R = {C: ["Commune", 2, 25], P: ["Peu commune", 4, 50, "Peu com."], R: ["Rare", 10, 120], E: ["Épique", 30, 350], L: ["Légendaire", 100, 1200], M: ["Mythique", 300, 3500], X: ["Éveil", 100, 600]};   // nom, éclats au recyclage, prix de départ proposé au marché, nom court
 // finitions façon cartes à collectionner : chaque carte peut sortir en version brillante, « art » pleine carte, « art spécial » ou dorée.
 // [nom, sigle, chance en % par carte tirée, multiplicateur de valeur au recyclage, expérience pour une première]
-const TC_FIN = {H: ["Holo", "HOLO", 8, 3, 20], A: ["Art rare", "AR", 2, 8, 60], B: ["Art rare", "AR", 1.4, 10, 80], C: ["Art rare", "AR", 1.2, 10, 80], S: ["Art spécial", "SAR", .5, 20, 150], K: ["Red Blood", "RED BLOOD", .35, 20, 220], W: ["Wanted", "WANTED", .8, 6, 120], G: ["UR", "UR", .15, 22, 300], Z: ["Légende", "LÉGENDE", .04, 30, 500]};
+const TC_FIN = {P: ["Promo", "PROMO", 0, 12, 200], H: ["Holo", "HOLO", 8, 3, 20], A: ["Art rare", "AR", 2, 8, 60], B: ["Art rare", "AR", 1.4, 10, 80], C: ["Art rare", "AR", 1.2, 10, 80], S: ["Art spécial", "SAR", .5, 20, 150], K: ["Red Blood", "RED BLOOD", .35, 20, 220], W: ["Wanted", "WANTED", .8, 6, 120], G: ["UR", "UR", .15, 22, 300], Z: ["Légende", "LÉGENDE", .04, 30, 500]};
 // la version Légende, la plus rare du jeu : sept personnages emblématiques seulement
 const TC_LEG = ["Monkey D. Luffy", "Shanks", "Son Goku", "Vegeta", "Naruto Uzumaki", "Sasuke Uchiwa", "Itachi Uchiwa", "Satoru Gojo", "Ryomen Sukuna", "Tanjiro Kamado", "Muzan Kibutsuji", "Izuku Midoriya", "All Might"];
 // illustration propre à chaque version (rang dans TCALT) : une version n'existe pour un personnage que s'il a cette illustration
 // K (Red Blood) reprend l'illustration et l'habillage rouge des anciennes SAR. Les SAR attendent leurs nouvelles illustrations de scène (rang 5, aucune pour l'instant).
+/* 1er nov. 2026 : version Promo (cartes des coffrets) : illustration inédite publiée à côté du site (promo-<id>.webp), jamais tirée en booster */
+const TC_PROMO = {"op:Shanks": "P1-op", "db:Vegeta": "P1-db", "na:Itachi Uchiwa": "P1-na", "jjk:Ryomen Sukuna": "P1-jjk", "ds:Muzan Kibutsuji": "P1-ds", "mha:All Might": "P1-mha", "op:Monkey D. Luffy": "P2-op", "db:Son Goku": "P2-db", "na:Naruto Uzumaki": "P2-na", "jjk:Yuji Itadori": "P2-jjk", "ds:Tanjiro Kamado": "P2-ds", "mha:Izuku Midoriya": "P2-mha", "op:Portgas D. Ace": "P3-op", "db:Son Gohan": "P3-db", "na:Kakashi Hatake": "P3-na", "jjk:Satoru Gojo": "P3-jjk", "ds:Zenitsu Agatsuma": "P3-ds", "mha:Shoto Todoroki": "P3-mha", "op:Roronoa Zoro": "P4-op", "db:Piccolo": "P4-db", "na:Sasuke Uchiwa": "P4-na", "jjk:Megumi Fushiguro": "P4-jjk", "ds:Nezuko Kamado": "P4-ds", "mha:Katsuki Bakugo": "P4-mha", "op:Trafalgar D. Water Law": "P5-op", "db:Trunks": "P5-db", "na:Jiraya": "P5-na", "jjk:Aoi Todo": "P5-jjk", "ds:Inosuke Hashibira": "P5-ds", "mha:Ochaco Uraraka": "P5-mha", "op:Edward Newgate": "P6-op", "db:Freezer": "P6-db", "na:Madara Uchiwa": "P6-na", "jjk:Toji Fushiguro": "P6-jjk", "ds:Kokushibo": "P6-ds", "mha:All For One": "P6-mha"};
 const TC_ARTK = {A: 0, K: 1, B: 2, G: 3, Z: 4, S: 5, C: 6};   // C : 3e AR (rang 6), ajoutée le 15 oct. 2026 (Tanjiro)
 // version « Wanted » : l'avis de recherche des pirates de One Piece, avec leur prime en berrys. Dernières primes parues dans le manga
 // (revérifiées le 11 octobre 2026 : pas de nouvelles primes annoncées depuis l'après-Wano). À mettre à jour quand le manga en révèle.
@@ -10933,7 +10935,7 @@ const tcWant = c => { try { return (window.__MA.TCWANT || {})[c.n] || ""; } catc
   for (let k = 0; k < 520; k++){ const r = Math.random() < .08 ? 1.1 : Math.random() * .6 + .25; g.fillStyle = `hsla(${Math.random() * 360},90%,${75 + Math.random() * 25}%,${Math.random() * .8 + .2})`; g.beginPath(); g.arc(Math.random() * 170, Math.random() * 170, r, 0, 7); g.fill(); }
   document.documentElement.style.setProperty("--glit", `url(${cv.toDataURL()})`); } catch {} })();
 const tcBase = c => ((window.__MA || {}).TCBASE || {})[c.n] || c.i;   // image de base propre à la carte, si elle existe (data/cardbase)
-const tcArt = (c, f) => f === "W" ? tcBase(c) || tcWant(c) :   // Wanted : photo en couleur (illustration de la carte), validé le 17 oct. 2026 — la mise en page « wreal » reste
+const tcArt = (c, f) => f === "P" ? (TC_PROMO[c.id] ? "promo-" + TC_PROMO[c.id] + ".webp" : tcBase(c)) : f === "W" ? tcBase(c) || tcWant(c) :   // Wanted : photo en couleur (illustration de la carte), validé le 17 oct. 2026 — la mise en page « wreal » reste
    (f in TC_ARTK && tcAlt(c)[TC_ARTK[f]]) || tcBase(c);
 // versions qui existent pour une carte : normale et Holo toujours, les autres seulement avec leur propre illustration
 // Les versions illustrées sont réservées aux personnages forts et populaires, pour rester rares : AR à partir d'Épique,
@@ -10944,7 +10946,7 @@ const TC_NOK = ["Nico Robin", "Nami"];
 // Le tirage, le recyclage et les taux gardent la rareté réelle du personnage (c.r).
 const tcER = (c, v) => v === "W" ? "L" : c.r;
 function tcVersOf(c){ const a = tcAlt(c), r = TC_ORDER.indexOf(c.r), top = r >= 4 && r <= 5 || (c.pop === "S" && r >= 3), v = ["", "H"];
-  if (r >= 3 && r <= 5 && a[0]) v.push("A"); if (top && a[2]) v.push("B"); if (a[6]) v.push("C"); if (top && a[5]) v.push("S"); if (top && a[1] && !TC_NOK.includes(c.n)) v.push("K"); if (r === 5 && a[3]) v.push("G"); if (c.u === "op" && TC_BOUNTY[c.n]) v.push("W"); if (TC_LEG.includes(c.n) && a[4]) v.push("Z"); return v; }
+  if (r >= 3 && r <= 5 && a[0]) v.push("A"); if (top && a[2]) v.push("B"); if (a[6]) v.push("C"); if (top && a[5]) v.push("S"); if (top && a[1] && !TC_NOK.includes(c.n)) v.push("K"); if (r === 5 && a[3]) v.push("G"); if (c.u === "op" && TC_BOUNTY[c.n]) v.push("W"); if (TC_LEG.includes(c.n) && a[4]) v.push("Z"); if (TC_PROMO[c.id]) v.push("P"); return v; }
 const tcBestFin = (s, c) => ["Z", "G", "K", "S", "W", "C", "B", "A", "H"].find(k => s.fin[c.id] && s.fin[c.id][k]) || "";
 // une carte que le joueur n'a pas porte un « ? » (ajouté ici pour les trois gabarits : normal, luxe, objet)
 // cadres de cartes achetés avec l'argent de la Carrière (19 oct. 2026) : posés sur MES cartes (collection, fiche), jamais sur celles des autres
@@ -12062,10 +12064,11 @@ function tcOpening(key, got){
     if (G) G.from(mid.querySelector(".kdeck"), {y: 120, opacity: 0, scale: .6, rotation: -8, duration: .55, ease: "back.out(1.5)", clearProps: "transform,opacity"});
     // jusqu'à la prochaine Épique, Légendaire, Mythique, Éveil ou version rare : les cartes d'avant vont dans leurs cases, la suivante attend face cachée
     $("#tcNext") && ($("#tcNext").onclick = () => { if (busy || fin) return; const el = cur();
-      if (el && !el.classList.contains("up")) return flipC();
+      /* 1er nov. 2026 : un seul clic. La carte affichée (retournée ou non) va dans sa case, on file jusqu'à la prochaine Épique ou + et on la retourne aussitôt */
+      if (el && !el.classList.contains("up") && epq(got[i])) return flipC();
       fill(i); i++; while (i < N && !epq(got[i])) fill(i++);
       mid.querySelectorAll(".kfl").forEach(e => e.remove());
-      if (i < N) stack(); else finish(); });
+      if (i < N){ stack(); setTimeout(() => flipC(), 380); } else finish(); });
     $("#tcAll").onclick = async () => { if (busy || fin) return; const b = $("#tcAll"); b.disabled = true;
       // la meilleure carte garde sa cinématique si elle n'a pas encore été vue
       if (bestK >= i && !mid.querySelector(`.kfl[data-k="${bestK}"].up.hit`)) await cine(bestK);
@@ -19823,7 +19826,7 @@ body.nv #launch button.primary{background:var(--nvr);box-shadow:none;text-transf
   #nvPlay .nvg>i{width:100%;height:auto;aspect-ratio:4/3;border-radius:0}
   #nvPlay .nvg>i img{object-position:50% 0%}
   #nvPlay .nvg>div{padding:12px 14px 14px}#nvPlay .nvg b{font-size:17px;margin-bottom:3px}#nvPlay .nvg u{display:none}
-  #nvPlay .nvhero{min-height:230px}
+  #nvPlay .nvhero{min-height:300px}#nvPlay .nvhero img.crb{object-position:50% 22%}
   #nvMe{max-width:640px}
 }
 </style>
@@ -19844,18 +19847,20 @@ window.NV_ON = true;   /* false : retour à l'ancienne interface */
   const lnb = $1("#lnBack"); if (lnb) lnb.onclick = () => nvGo("play");
   const uni = u => { try { return tcCards().filter(c => c.u === u && (c.r === "M" || c.r === "L")); } catch { return []; } };
   const ART = {op: "Monkey D. Luffy", na: "Naruto Uzumaki", db: "Son Goku", jjk: "Satoru Gojo", ds: "Tanjiro Kamado", mha: "Izuku Midoriya"};
+  /* 1er nov. 2026 : bannières paysage (captures de l'animé recadrées en 16:9, pwa/banniere-<univers>.webp) : un visage entier dans un cadre large ; repli sur l'illustration de carte si le fichier manque */
+  const bann = u => "banniere-" + (["op", "db", "na", "jjk", "ds", "mha"].includes(u) ? u : "op") + ".webp";
   const art = u => { try { const c = tcCards().find(x => x.u === u && x.n === ART[u]), v = c ? tcVersOf(c) : [], a = c && (["A", "C", "B"].map(f => v.includes(f) && tcArt(c, f)).find(Boolean) || tcArt(c));   /* l'Art rare d'abord : visage visible en haut de l'image (la 2e illustration de Luffy le montre de dos) */ if (a) return a; } catch {}   /* 1er nov. 2026 : version HD de l'illustration pour les grandes bannières (la base fait souvent 225 px, floue sur PC) */ const l = uni(u); for (const c of l){ try { const a = tcArt(c); if (a) return a; } catch {} } return ""; };
   const games = () => [...document.querySelectorAll("#home .gcards .mode")];
   const pickGame = c => c.dispatchEvent(new MouseEvent("click", {bubbles: true, detail: 7}));
   const drawHome = () => { const box = $1("#nvHome"); let S = null; try { const r = crLoad(); S = r.cur && r.saves[r.cur]; } catch {} const me = frMe(), g = games()[0];
-    const hero = S ? `<button class="nvhero" id="nvResume"><img src="${art(S.u)}" alt=""><small>Carrière · ${esc(UNI[S.u].name)}</small><b>Reprends ta carrière</b><span>${esc(S.club)} · saison ${S.season}</span><u>Continuer</u></button>`
-      : `<button class="nvhero" id="nvResume"><img src="${art("op")}" alt=""><small>À découvrir</small><b>Lance ta carrière</b><span>Ton équipe, ton univers, ta légende</span><u>Commencer</u></button>`;
+    const hero = S ? `<button class="nvhero" id="nvResume"><img src="${bann(S.u)}" onerror="this.onerror=null;this.src='${art(S.u)}'" alt=""><small>Carrière · ${esc(UNI[S.u].name)}</small><b>Reprends ta carrière</b><span>${esc(S.club)} · saison ${S.season}</span><u>Continuer</u></button>`
+      : `<button class="nvhero" id="nvResume"><img src="${bann("op")}" onerror="this.onerror=null;this.src='${art("op")}'" alt=""><small>À découvrir</small><b>Lance ta carrière</b><span>Ton équipe, ton univers, ta légende</span><u>Commencer</u></button>`;
     if (!box.dataset.init){ box.dataset.init = 1; box.innerHTML = `${hd("Bonjour · 今日", me ? esc(me.name) : "Bienvenue")}<div class="nvtwo"><div id="nvHero"></div><div><div class="nv2">Rejoindre une partie</div><div class="nvjoin"><input id="nvCode" maxlength="4" placeholder="Code à 4 caractères" autocomplete="off"><button id="nvJoin">Entrer</button></div><div class="nverr" id="nvErr"></div><div class="nv2">Ta journée</div><div id="nvDay"></div></div></div><div class="nv2">Gros tirages</div><div id="nvPulls"></div>`;
       const kd = $1(".kjd"), gx = $1(".gxf"); if (kd) $1("#nvDay").appendChild(kd); if (gx) $1("#nvPulls").appendChild(gx);
       $1("#nvJoin").onclick = () => { const v = $1("#nvCode").value.trim().toUpperCase(), er = $1("#nvErr"); er.textContent = ""; if (v.length !== 4) return er.textContent = "Entre les 4 caractères du code."; const m = frMe(); if (!m) return nvGo("me"); $1("#qjName").value = m.name; $1("#qjCode").value = v; $1("#qjGo").click(); setTimeout(() => { const t = $1("#qjErr")?.textContent; if (t) er.textContent = t; }, 400); }; }
     $1("#nvHero").innerHTML = hero; $1("#nvResume").onclick = () => crOpen(); try { kjDayDraw(); } catch {} try { gxDraw(); if (Date.now() - GX.at > 15000) gxTick(true); } catch {} };
   const drawPlay = () => { const box = $1("#nvPlay"); if (box.dataset.init) return; box.dataset.init = 1;
-    box.innerHTML = `${hd("Jouer · 遊ぶ", "À quoi on joue ?")}<button class="nvhero" id="nvCr" style="min-height:150px"><img src="${art("na")}" alt=""><small>Solo · 1 joueur</small><b>Carrière</b><span>Six univers, ton équipe, ta légende</span></button><div class="nv2">Les jeux</div><div class="nvgs">${games().map((c, k) => { const im = c.querySelector(".art img"); return `<button class="nvg" data-k="${k}"><i>${im ? `<img src="${im.src}" alt="">` : c.querySelector(".k")?.textContent || ""}</i><div><b>${esc(c.querySelector("b").textContent)}</b><span>${esc(c.querySelector("span").textContent)}</span></div><u>›</u></button>`; }).join("")}</div>`;
+    box.innerHTML = `${hd("Jouer · 遊ぶ", "À quoi on joue ?")}<button class="nvhero" id="nvCr" style="min-height:150px"><img class="crb" src="${bann("na")}" onerror="this.onerror=null;this.src='${art("na")}'" alt=""><small>Solo · 1 joueur</small><b>Carrière</b><span>Six univers, ton équipe, ta légende</span></button><div class="nv2">Les jeux</div><div class="nvgs">${games().map((c, k) => { const im = c.querySelector(".art img"); return `<button class="nvg" data-k="${k}"><i>${im ? `<img src="${im.src}" alt="">` : c.querySelector(".k")?.textContent || ""}</i><div><b>${esc(c.querySelector("b").textContent)}</b><span>${esc(c.querySelector("span").textContent)}</span></div><u>›</u></button>`; }).join("")}</div>`;
     $1("#nvCr").onclick = () => crOpen(); box.querySelectorAll(".nvg").forEach(b => b.onclick = () => pickGame(games()[+b.dataset.k])); };
   const go = (fn, needName) => () => { if (needName && !frMe()) return nvGo("me"); fn(); };
   const drawMe = () => { const s = tcLoad(), me = frMe(), n = Object.keys(s.own).length, L = [[["絆", "Parrainage", "+3 boosters chacun", go(() => { FR_TAB = "ref"; frShow(); }, 1)], ["友", "Amis", "", go(() => frShow(), 1)]], [["任", "Missions", "", () => tcShow("missions")], ["順", "Classements", "", () => tcShow("rank")], ["飾", "Ma vitrine", "", () => tcShow("vitrine")], ["譜", "Mon profil", "Statistiques et historique", go(() => pfShow(), 1)]], [["設", "Compte et réglages", "", () => mnOpen()]]];
@@ -20044,6 +20049,78 @@ function appNotif(t){ try { if (!t) return; if (t === "free"){ tcShow("packs"); 
 navigator.serviceWorker?.addEventListener("message", e => appNotif(e.data && e.data.notif));
 { const m = location.hash.match(/^#notif=(.+)$/); if (m){ const t = decodeURIComponent(m[1]); history.replaceState(null, "", location.pathname + location.search); const iv = setInterval(() => { if (frsOn()){ clearInterval(iv); appNotif(t); } }, 1000); setTimeout(() => clearInterval(iv), 15000); } }
 setInterval(hkBellPoll, 6e4); setTimeout(hkBellPoll, 5000); setInterval(hkBellDraw, 5000);
+</script>
+
+<style>
+/* ---- Coffrets (1er nov. 2026) : produits spéciaux de la boutique, déclinés par univers, avec leur carte Promo ---- */
+.tc.f-P{border:0;padding:0;background:conic-gradient(from var(--pa,0deg),#fff,#9aa3b8,#e9ecf2,#4b5262,#dfe3ec,#fff) border-box;box-shadow:0 0 18px #c9d2ff55}
+.tc.f-P > img{position:absolute;inset:3px;width:calc(100% - 6px)!important;height:calc(100% - 6px)!important;object-fit:cover;object-position:50% 25%;border-radius:inherit}
+.tc.f-P .tp,.tc.f-P .tx,.tc.f-P .sk,.tc.f-P .ky,.tc.f-P .kg{display:none!important}
+.tc.f-P::after{display:none!important}
+.tc.f-P .nm{position:absolute;top:9%;bottom:auto;left:0;right:0}.tc.f-P .ft .fin,.tc.f-P .ft b{display:none}
+.cofs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:0 0 12px}
+.cofs button{all:unset;box-sizing:border-box;cursor:pointer;display:grid;gap:2px;padding:8px;border-radius:13px;border:1px solid var(--nvl,#2a2531);background:#100f14;text-align:left}
+.cofs button:hover{border-color:#ff1e2d}.cofs button[disabled]{opacity:.55;cursor:default}
+.cofs img{width:100%;aspect-ratio:1.3;object-fit:contain;margin-bottom:4px}
+.cofs b{font:800 13px/1.2 var(--title,system-ui);color:var(--text,#fff)}.cofs small{font:700 11px var(--mono,monospace);color:#ff6b75}
+.cofh{font:700 11px var(--mono,monospace);letter-spacing:.08em;text-transform:uppercase;color:#a7a0b1;margin:4px 0 8px}
+.cofm{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:16px;background:#000c}
+.cofm>div{width:min(100%,520px);max-height:92dvh;overflow:auto;border-radius:20px;border:1px solid #2a2531;background:#121017;padding:18px}
+.cofm h2{font:900 21px var(--title,system-ui);margin:0 0 4px}.cofm .cimg{width:100%;max-height:230px;object-fit:contain}
+.cofm .cu{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}.cofm .cu button{padding:7px 12px;border-radius:99px;border:1px solid #2a2531;background:#0b0a0e;color:#ddd;font:700 12px var(--body,system-ui);cursor:pointer}
+.cofm .cu button.on{background:#ff1e2d;border-color:#ff1e2d;color:#fff}
+.cofm ul{margin:8px 0;padding-left:18px;color:#d5cfdc;font-size:14px;line-height:1.5}
+.cofm .cpro{display:flex;gap:12px;align-items:center;margin:8px 0}.cofm .cpro .tc{width:110px!important;margin:0!important;flex:none}
+.cofm .crow{display:flex;gap:8px;margin-top:12px}.cofm .crow button{flex:1;min-height:46px;border-radius:13px;font:800 14px var(--body,system-ui);cursor:pointer;border:1px solid #2a2531;background:#1c1922;color:#fff}
+.cofm .crow .go{background:#ff1e2d;border-color:#ff1e2d}.cofm .crow .go[disabled]{opacity:.5;cursor:default}
+.cofm .cnote{font-size:12.5px;color:#a7a0b1;margin:6px 0 0}
+</style>
+<script>
+/* Coffrets : chaque produit existe dans les 6 univers ; il donne des boosters de l'univers choisi et la carte Promo du personnage (version « P », jamais en booster). */
+const COF_U = ["op", "db", "na", "jjk", "ds", "mha"];
+const COF = [
+  {id: "P1", n: "Display 24 boosters", p: 2000, packs: [[0, 19], [2, 4], [3, 1]], lim: "w", d: "24 boosters de l'univers, dont 4 Or (Épique garantie) et 1 Divin (Légendaire garantie), et la carte « box topper » en Promo."},
+  {id: "P2", n: "Coffret Capitaine", p: 1100, packs: [[0, 9]], d: "9 boosters de l'univers et la carte Promo du héros."},
+  {id: "P3", n: "Boîte métal", p: 450, packs: [[0, 4]], d: "4 boosters de l'univers et la carte Promo du personnage star."},
+  {id: "P4", n: "Tripack", p: 320, packs: [[0, 2], [1, 1]], lim: "d", d: "3 boosters de l'univers (dont 1 Argent) et une carte Promo."},
+  {id: "P5", n: "Deck de départ", p: 400, packs: [[0, 2]], deck: 10, d: "10 cartes du même univers, 2 boosters et le leader en carte Promo. Le premier est offert à partir du niveau 3."},
+  {id: "P6", n: "Coffret Légende", p: 6000, packs: [[0, 11], [2, 4], [3, 1]], lim: "once", d: "16 boosters, dont 4 Or et 1 Divin, et la carte Promo de prestige. Édition limitée : un seul par compte et par univers."},
+  {id: "P9", n: "Calendrier de l'Avent", p: 0, soon: "Du 1er au 25 décembre", d: "Une case par jour de connexion en décembre, avec une carte de Noël exclusive le 25."}];
+const cofCard = (pid, u) => { const id = Object.keys(TC_PROMO).find(k => TC_PROMO[k] === pid + "-" + u); return id ? tcCards().find(c => c.id === id) : null; };
+const cofWeek = () => Math.floor((Date.now() + 3 * 864e5) / 6048e5);
+function cofState(s, P, u){ const L = (s.cof = s.cof || {})[P.id + ":" + u] || {};
+  if (P.soon) return {ok: false, why: P.soon};
+  if (P.lim === "once" && L.n) return {ok: false, why: "Déjà acheté pour cet univers"};
+  if (P.lim === "w" && L.w === cofWeek()) return {ok: false, why: "Déjà acheté cette semaine"};
+  if (P.lim === "d" && L.d === tcDay()) return {ok: false, why: "Reviens demain"};
+  const free = P.deck && !s.cofDeckFree && tcLvl(s.xp || 0) >= 3, price = free ? 0 : P.p;
+  if (s.gems < price) return {ok: false, why: `Il te manque ${(price - s.gems).toLocaleString("fr-FR")} ◆`, price};
+  return {ok: true, price, free}; }
+function cofOpen(pid){ const P = COF.find(x => x.id === pid); if (!P) return; let u = "op", ask = false;
+  document.querySelector(".cofm")?.remove(); document.body.insertAdjacentHTML("beforeend", `<div class="cofm" role="dialog" aria-modal="true"><div></div></div>`); const M = document.body.lastElementChild, box = M.firstElementChild;
+  const draw = () => { const s = tcLoad(), c = cofCard(P.id, u), st = cofState(s, P, u), price = st.price ?? P.p;
+    box.innerHTML = `<h2>${esc(P.n)}</h2><img class="cimg" src="coffret-${P.id}.webp" alt=""><div class="cu">${COF_U.map(x => `<button data-u="${x}" class="${x === u ? "on" : ""}">${esc(TC_PACKS[x][0])}</button>`).join("")}</div>
+      <p style="margin:0;color:#d5cfdc">${esc(P.d)}</p>${c ? `<div class="cpro">${tcCard(c, {f: "P"})}<div><b>Carte Promo : ${esc(c.n)}</b><p class="cnote">Illustration exclusive, introuvable dans les boosters.</p></div></div>` : ""}
+      ${P.soon ? "" : `<div class="crow"><button data-x>Fermer</button><button class="go" ${st.ok ? "" : "disabled"}>${!st.ok ? esc(st.why) : ask ? `Confirmer : ${price ? price.toLocaleString("fr-FR") + " ◆" : "gratuit"}` : price ? `Acheter · ${price.toLocaleString("fr-FR")} ◆` : "Recevoir (offert)"}</button></div>${ask ? `<p class="cnote">Touche encore pour confirmer l'achat. Tu as ${s.gems.toLocaleString("fr-FR")} ◆.</p>` : ""}`}
+      ${P.soon ? `<div class="crow"><button data-x>Fermer</button><button class="go" disabled>${esc(P.soon)}</button></div>` : ""}`;
+    box.querySelectorAll("[data-u]").forEach(b => b.onclick = () => { u = b.dataset.u; ask = false; draw(); });
+    box.querySelector("[data-x]").onclick = () => M.remove();
+    const g = box.querySelector(".go"); if (g && st.ok) g.onclick = () => { if (!ask){ ask = true; return draw(); } cofBuy(P, u); M.remove(); }; };
+  M.onclick = e => { if (e.target === M) M.remove(); }; draw(); }
+function cofBuy(P, u){ const s = tcLoad(), st = cofState(s, P, u); if (!st.ok) return;
+  s.gems -= st.price; if (st.free) s.cofDeckFree = 1;
+  for (const [t, n] of P.packs) tcGive(s, tcKey(u, t), n);
+  const c = cofCard(P.id, u); if (c){ s.own[c.id] = (s.own[c.id] || 0) + 1; s.fin[c.id] = s.fin[c.id] || {}; s.fin[c.id].P = (s.fin[c.id].P || 0) + 1; }
+  let deck = []; if (P.deck){ deck = tcCards().filter(x => x.u === u && !x.obj && !x.late && "CPR".includes(x.r)).sort((a, b) => b.p - a.p).slice(0, P.deck); deck.forEach(x => s.own[x.id] = (s.own[x.id] || 0) + 1); }
+  const L = (s.cof = s.cof || {})[P.id + ":" + u] = s.cof[P.id + ":" + u] || {}; L.n = (L.n || 0) + 1; L.w = cofWeek(); L.d = tcDay();
+  tcSave(s); try { SFX.play("fanfare"); } catch {} try { tcRender(); } catch {}
+  const nb = P.packs.reduce((a, x) => a + x[1], 0);
+  try { frToast(`${P.n} ${TC_PACKS[u][0]} : ${nb} boosters ajoutés${deck.length ? ` et ${deck.length} cartes` : ""}.`, "Ouvrir", () => tcShow("packs")); } catch {}
+  if (c) setTimeout(() => { try { tcView(c, "P"); } catch {} }, 300); }
+/* section Coffrets en tête de l'onglet Boutique du panneau « Ouvrir » */
+document.addEventListener("click", e => { const b = e.target.closest && e.target.closest("[data-cof]"); if (b){ e.stopPropagation(); cofOpen(b.dataset.cof); } }, true);
+new MutationObserver(() => { const sh = document.querySelector("#nvPk .nvsh>div"), on = sh && sh.querySelector('.nvtb [data-tb="2"].on'); if (!on || sh.querySelector(".cofs")) return;
+  const s = tcLoad(); sh.querySelector(".nvtb").insertAdjacentHTML("afterend", `<p class="cofh">Coffrets · dans les 6 univers</p><div class="cofs">${COF.map(P => `<button data-cof="${P.id}"><img src="coffret-${P.id}.webp" alt="" loading="lazy"><b>${esc(P.n)}</b><small>${P.soon ? P.soon : P.deck && !s.cofDeckFree && tcLvl(s.xp || 0) >= 3 ? "Offert" : P.p.toLocaleString("fr-FR") + " ◆"}</small></button>`).join("")}</div><p class="cofh">Boosters</p>`); }).observe(document.body, {childList: true, subtree: true});
 </script>
 
 </body>
