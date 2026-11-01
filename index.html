@@ -10597,7 +10597,7 @@ const TC_ALLMAX = 50;   // « Tout ouvrir » : nombre maximal de boosters ouvert
 const TC_PITY = {M: 120, L: 25};   // Mythique sûre au 120e booster sans Mythique ; Légendaire ou mieux au 25e sans
 const TC_PACKS = {mix: ["Mélange", "混", "#f5c518", 100, "Tous les univers"], op: ["One Piece", "海", "#ff5a36", 120, "Pirates et Marine"], db: ["Dragon Ball", "龍", "#ff9f1c", 120, "Guerriers et dieux"], na: ["Naruto", "忍", "#5aa9ff", 120, "Shinobi"], jjk: ["Jujutsu Kaisen", "呪", "#a98bff", 120, "Exorcistes et fléaux"], ds: ["Demon Slayer", "鬼", "#3fc9a0", 120, "Pourfendeurs et démons"], mha: ["My Hero Academia", "英", "#ffd84a", 120, "Héros et vilains"]};
 const TC_UNIS = ["op", "db", "na", "jjk", "ds", "mha"];   // jjk, ds, mha : ajoutés le 14 oct. 2026, numérotés après toutes les cartes existantes
-const TC_FREE = {max: 10, every: 27e5}   /* 10 en réserve, un toutes les 45 min (14 oct. 2026) : même en se connectant jour et nuit (32 par jour au plus), la collection demande environ trois mois */, TC_WINCAP = 3;
+const TC_FREE = {max: 10, every: 9e5, weekend: 6e5}   /* 10 en réserve, un toutes les 45 min (14 oct. 2026) : même en se connectant jour et nuit (32 par jour au plus), la collection demande environ trois mois */, TC_WINCAP = 3;
 // popularité : S = têtes d'affiche, A = très aimés (bonus de rareté même si le personnage est faible)
 const TC_POP = {
   op: {S: ["Monkey D. Luffy", "Roronoa Zoro", "Sanji", "Trafalgar D. Water Law", "Portgas D. Ace", "Nami", "Nico Robin", "Shanks"],
@@ -10614,6 +10614,9 @@ const TC_POP = {
        A: ["Ochaco Uraraka", "Dabi", "Tsuyu Asui", "Mirio Togata", "Tomura Shigaraki", "Hawks", "Denki Kaminari", "Tamaki Amajiki", "Fumikage Tokoyami", "Kyoka Jiro", "Momo Yaoyorozu", "Hitoshi Shinso", "Mirko", "Tenya Iida", "Endeavor"]}};
 let TC_MSUB = "day";
 const TC_LIM = 60;   /* 31 oct. 2026 : la collection se dessine par paquets, 640 cartes d'un coup bloquaient les téléphones */
+// 1er nov. 2026 : un booster gratuit toutes les 15 min (10 min le samedi et le dimanche, « week-end boosté »)
+const tcWeekendBoost = () => { const d = new Date().getDay(); return d === 0 || d === 6; };
+const tcFreeEvery = () => tcWeekendBoost() ? TC_FREE.weekend : TC_FREE.every;
 let TC_ALL = null, TC_TAB = "packs", TC_SUB = "mine", TC_PICK = null, TC_SHOP = {u: "mix"}, TC_F = {u: "all", r: "all", own: false};
 
 // toutes les cartes, numérotées, avec leur rareté
@@ -10668,7 +10671,8 @@ function tcLoad(){
   // les anciennes SAR rouges sont devenues la rareté Red Blood
   for (const id in s.fin) if (s.fin[id].S){ s.fin[id].K = (s.fin[id].K || 0) + s.fin[id].S; delete s.fin[id].S; } if (bad) s.taint = true; delete s.sig;
   // boosters gratuits : un par heure, cumulables jusqu'à TC_FREE.max (3, choix de l'utilisateur le 12 oct. 2026) ; à 3, le compteur s'arrête et ne repart qu'à l'ouverture d'un booster
-  if (s.free.n < TC_FREE.max){ const k = Math.floor((Date.now() - s.free.t) / TC_FREE.every); if (k > 0){ s.free.n = Math.min(TC_FREE.max, s.free.n + k); s.free.t = s.free.n >= TC_FREE.max ? Date.now() : s.free.t + k * TC_FREE.every; } }
+  if (s.free.n < TC_FREE.max){ const ev = tcFreeEvery(); const k = Math.floor((Date.now() - s.free.t) / ev); if (k > 0){ s.free.n = Math.min(TC_FREE.max, s.free.n + k); s.free.t = s.free.n >= TC_FREE.max ? Date.now() : s.free.t + k * ev; } }
+  s.free.full = s.free.n >= TC_FREE.max ? 0 : s.free.t + (TC_FREE.max - s.free.n) * tcFreeEvery();   // moment où les 10 seront prêts (notification « boosters pleins »)
   if (!s.day || s.day.d < tcDay()) s.day = {d: tcDay(), play: 0, win: 0, open: 0, neu: 0, modes: [], unis: [], claimed: [], bonus: false, vp: 0};
   // série de connexion : un jour de plus si la dernière visite date d'hier, sinon on repart à 1
   if (s.login) s.loginBest = Math.max(s.loginBest || 0, s.login.n);
@@ -11031,7 +11035,7 @@ const TC_BURN = (() => {
       return any || this.tgt > 0 || this.parts.length > 0; }
   }
   let running = false;
-  const tick = () => { let alive = false; const c = fx(), dpr = Math.min(2, devicePixelRatio || 1), W = Math.round(innerWidth * dpr), H = Math.round(innerHeight * dpr); if (c.width !== W || c.height !== H){ c.width = W; c.height = H; }
+  const tick = () => { if (document.hidden){ running = false; return; } let alive = false; const c = fx(), dpr = Math.min(2, devicePixelRatio || 1), W = Math.round(innerWidth * dpr), H = Math.round(innerHeight * dpr); if (c.width !== W || c.height !== H){ c.width = W; c.height = H; }
     const x = c.getContext("2d"); x.clearRect(0, 0, W, H); const parts = [];
     for (const t of document.querySelectorAll(".tc.f-W:not(.no)")){ if (!t.isConnected) continue;
       const on = (t.classList.contains("hl") || !!t.closest(".vcard.live")) && !t.closest(".vcard.bk"), cs = on ? getComputedStyle(t) : null;
@@ -11162,7 +11166,7 @@ function tcRender(){
   if (TC_TAB === "packs"){
     const keys = Object.keys(s.packs).filter(k => s.packs[k] > 0).sort((a, b) => tcParse(b).t - tcParse(a).t || a.localeCompare(b)), inv = [...(s.free.n ? ["free"] : []), ...keys];
     if (!inv.includes(TC_PICK)) TC_PICK = inv[0] || null;
-    const k = TC_PICK, real = k === "free" ? "mix:0" : k, left = s.free.n < TC_FREE.max ? Math.max(0, s.free.t + TC_FREE.every - Date.now()) : 0, od = tcWinOdds(s.streak + 1, false);
+    const k = TC_PICK, real = k === "free" ? "mix:0" : k, left = s.free.n < TC_FREE.max ? Math.max(0, s.free.t + tcFreeEvery() - Date.now()) : 0, od = tcWinOdds(s.streak + 1, false);
     const wait = left ? `${Math.floor(left / 36e5)} h ${String(Math.floor(left % 36e5 / 6e4)).padStart(2, "0")}` : "";
     const tcSure = (s, t) => { const P = s.pity || {}, left = (max, n) => Math.max(1, max - (n || 0));
       return [...(t === 0 ? [["#f7c64a", left(TC_DPITY, P.D), "avant le booster Doré"]] : []), ["#f7c64a", left(TC_PITY.L, P.L), "avant Légendaire sûre"], ["#ff5a36", left(TC_PITY.M, P.M), "avant Mythique sûre"],
@@ -11181,12 +11185,13 @@ function tcRender(){
             ${p.t === 0 ? `<p class="small" style="margin-top:10px">Environ 1 Classique sur 22 cache un <b>booster secret</b> : Doré, Sceau rouge, Éveil, Trésor ou Divin caché.</p>` : ""}</div></div>`; })()
         : `<p class="note-off">Aucun booster en stock. Gagne des parties pour des éclats, termine une mission, ou attends le prochain gratuit${wait ? ` (dans ${wait})` : ""}.</p>`;
       html += inv.length > 1 ? `<h2 class="tch">Mes boosters</h2><div class="tcrail">${inv.map(x => { const r = x === "free" ? "mix:0" : x, p = tcParse(r); return `<button class="tcpk ${x === k ? "sel" : ""}" data-tcp="${x}" style="--pc:${TC_PACKS[p.u][2]}"><span class="cnt">${x === "free" ? s.free.n : s.packs[x]}</span>${tcPouch3D(r, "sm")}<span class="lb">${x === "free" ? "Gratuit" : tcName(r)}</span></button>`; }).join("")}</div>` : "";
-      html += `<div class="tcluck"><b>Gratuits : ${s.free.n}/${TC_FREE.max}${wait ? ` · le prochain dans ${wait}` : ""}</b><span>Un booster gratuit toutes les 45 minutes, jusqu'à ${TC_FREE.max} en réserve : au-delà le compteur s'arrête, ouvre-en un pour qu'il reparte. Série de victoires en ligne : <b>${s.streak}</b>. Prochaine victoire : <b>+${TC_GAIN.win + Math.min(TC_GAIN.streakMax, TC_GAIN.streak * s.streak)} ◆</b> et <b>${Math.round(tcDropChance(s.streak + 1) * 100)} %</b> de chance de booster (${od.map((p, t) => `<em class="q${t}">${TC_T[t].n} ${p >= 10 ? p.toFixed(0) : p.toFixed(1)} %</em>`).join(" · ")}). Un <b>record battu</b> donne +${TC_GAIN.record} ◆ et un booster garanti. Boosters gagnés en victoire aujourd'hui : ${s.day.vp}/${TC_WINCAP}.</span></div>`;
+      html += `<div class="tcluck"><b>Gratuits : ${s.free.n}/${TC_FREE.max}${wait ? ` · le prochain dans ${wait}` : ""}${tcWeekendBoost() ? " ⚡ week-end boosté" : ""}</b><span>Un booster gratuit toutes les ${Math.round(tcFreeEvery() / 6e4)} minutes${tcWeekendBoost() ? " ce week-end" : ""}, jusqu'à ${TC_FREE.max} en réserve : au-delà le compteur s'arrête, ouvre-en un pour qu'il reparte. Série de victoires en ligne : <b>${s.streak}</b>. Prochaine victoire : <b>+${TC_GAIN.win + Math.min(TC_GAIN.streakMax, TC_GAIN.streak * s.streak)} ◆</b> et <b>${Math.round(tcDropChance(s.streak + 1) * 100)} %</b> de chance de booster (${od.map((p, t) => `<em class="q${t}">${TC_T[t].n} ${p >= 10 ? p.toFixed(0) : p.toFixed(1)} %</em>`).join(" · ")}). Un <b>record battu</b> donne +${TC_GAIN.record} ◆ et un booster garanti. Boosters gagnés en victoire aujourd'hui : ${s.day.vp}/${TC_WINCAP}.</span></div>`;
     } else {
       html += `<div class="tcchips">${Object.keys(TC_PACKS).map(u => `<button class="${TC_SHOP.u === u ? "sel" : ""}" data-tcsu="${u}">${TC_PACKS[u][1]} ${TC_PACKS[u][0]}</button>`).join("")}</div>
         <div class="tcshop">${TC_T.map((T, t) => { const pr = tcPrice(TC_SHOP.u, t), key = tcKey(TC_SHOP.u, t), f = x => x >= 10 ? x.toFixed(0) : x.toFixed(1); return `<div class="tcsh q${t}" style="--pc:${TC_PACKS[TC_SHOP.u][2]}"><div class="pw">${tcPouch3D(key, "sm")}</div><b>${T.n}</b>
           <ul><li>${T.g} garantie</li><li>Légendaire+ <em>${f(tcOdds("L", t))} %</em></li><li>Mythique <em>${f(tcOdds("M", t))} %</em></li><li>Éveil <em>${f(TC_XRATE[t])} %</em></li><li>Versions rares ×${TC_FINMUL[t]}</li></ul>
           <button class="${s.gems >= pr ? "primary" : ""}" data-tcbuy="${t}" ${s.gems >= pr ? "" : "disabled"}>${pr} ◆</button><button class="ghost lk" data-tcdrop="${key}">Persos et taux</button></div>`; }).join("")}</div>
+        <div class="tcshop" style="margin-top:12px"><div class="tcsh tccof" style="--pc:#f5c518"><div class="pw" style="font-size:40px;display:grid;place-items:center;aspect-ratio:1">箱</div><h3>Coffret · 20 cartes</h3><ul><li>4 boosters Or Mélange d'un coup</li><li>Une Épique garantie <em>par booster</em></li><li>À ouvrir quand tu veux</li></ul><button class="${s.gems >= 2000 ? "primary" : ""}" data-tccoffret ${s.gems >= 2000 ? "" : "disabled"}>2000 ◆</button><p class="small" style="margin:4px 0 0;opacity:.7">au lieu de 2400 ◆</p></div></div>
         <p class="small" style="margin-top:12px">Tu as <b>${s.gems} ◆</b>. Les éclats se gagnent en remportant des parties, avec les missions, les cartes de visite et le recyclage des doublons.</p>`;
     }
   } else if (TC_TAB === "album"){
@@ -11297,6 +11302,7 @@ function tcRender(){
   document.querySelectorAll("[data-tcopen]").forEach(b => b.onclick = () => { if (b.dataset.tcopen !== "all") return openN(+b.dataset.tcopen); const s = tcLoad(), n = TC_PICK === "free" ? s.free.n : s.packs[TC_PICK] || 0; if (n >= 1) openN(Math.min(TC_ALLMAX, n)); });
   document.querySelectorAll("[data-tcbuy]").forEach(b => b.onclick = () => { const s = tcLoad(), t = +b.dataset.tcbuy, c = tcPrice(TC_SHOP.u, t); if (s.gems < c) return;
     if (!tcPaidOk(c, () => b.click())) return; s.gems -= c; tcGive(s, tcKey(TC_SHOP.u, t)); TC_PICK = tcKey(TC_SHOP.u, t); TC_SUB = "mine"; tcSave(s); tcRender(); SFX.play("pop"); });
+  if ($("[data-tccoffret]")){ const go = () => { const s = tcLoad(); if (s.gems < 2000) return; if (!tcPaidOk(2000, go)) return; s.gems -= 2000; for (let i = 0; i < 4; i++) tcGive(s, "mix:2"); TC_PICK = "mix:2"; TC_SUB = "mine"; tcSave(s); tcRender(); SFX.play("win"); frToast("Coffret acheté : 4 boosters Or Mélange ! Ouvre-les quand tu veux.", "Ouvrir", () => tcShow("packs")); }; $("[data-tccoffret]").onclick = go; }
   /* 31 oct. 2026 : au-dessus d'Épique, on confirme carte par carte. Celles qu'on garde ne sont pas recyclées, et le jeu propose ensuite de les verrouiller. */
   $("#tcRecycle") && ($("#tcRecycle").onclick = () => { const s0 = tcLoad(), M = $("#modal"), close = () => { M.classList.add("hidden"); M.innerHTML = ""; }, all0 = tcCards().map(c => [c, tcDups(s0, c)]).filter(x => x[1].n);
     const rareV = (c, s) => { const fin = s.fin[c.id] || {}, hit = Object.keys(fin).filter(k => fin[k] > 1 && (TC_ORDER.indexOf(tcER(c, k)) > 3 || "SKWGZ".includes(k))); if (hit.length) return hit[0]; const nf = Object.values(fin).reduce((a, b) => a + b, 0); return (s.own[c.id] || 0) - nf > 1 && TC_ORDER.indexOf(c.r) > 3 ? "" : null; };
@@ -13373,6 +13379,7 @@ function cpRender(){ const box = $("#cpBox"); if (!box) return;
   else if (CP.recov && u) top = `<label class="f">Nouveau mot de passe</label><div class="cprow"><input id="cpNew" type="password" autocomplete="new-password" minlength="8" placeholder="8 caractères au minimum"><button class="primary" id="cpNewGo">Enregistrer</button></div>`;
   else if (u) top = `<label class="f">Compte · 保存</label><p style="margin:4px 0 0"><b>${esc(u.email || "")}</b></p><p class="small" style="margin-top:4px">Ta progression est sauvegardée sur ton compte, automatiquement. Connecte-toi avec ce compte sur un autre appareil pour la retrouver.</p>
       <div class="cprow" style="margin-top:10px"><button class="primary" id="cpSaveNow">Sauvegarder maintenant</button><button class="ghost" id="cpOut">Se déconnecter</button></div>
+      <details style="margin-top:12px"><summary class="small" style="cursor:pointer;font-weight:700">Sécurité</summary><p class="small" style="margin:8px 0">Un doute sur un appareil où tu serais resté connecté ? Ferme toutes les sessions d'un coup. Tu devras te reconnecter partout.</p><div class="cprow"><button class="ghost" id="cpOutAll">Me déconnecter partout</button></div></details>
       <details class="cpdel" style="margin-top:12px"><summary class="small" style="cursor:pointer">Supprimer mon compte</summary><p class="small" style="margin:8px 0">Ton compte et sa sauvegarde en ligne seront effacés pour de bon : amis, profil, parrainages, annonces et échanges en cours au marché. La progression reste seulement sur cet appareil. Écris <b>SUPPRIMER</b> pour confirmer.</p>
         <div class="cprow"><input id="cpDelW" autocomplete="off" placeholder="SUPPRIMER"><button class="ghost" id="cpDel" style="color:var(--danger,#ff5a5a)">Supprimer définitivement</button></div></details>`;
   else top = `<label class="f">Compte · 保存</label><p class="small" style="margin:4px 0 8px">Crée un compte pour garder ta progression, même si tu fermes Safari ou changes de téléphone.</p>
@@ -13391,6 +13398,7 @@ function cpRender(){ const box = $("#cpBox"); if (!box) return;
   $("#cpDel") && ($("#cpDel").onclick = () => { if ($("#cpDelW").value.trim().toUpperCase() !== "SUPPRIMER") return cpSet("ko", "Écris SUPPRIMER dans la case pour confirmer.");
     run(async sb => { const {error} = await sb.rpc("delete_my_account"); if (error) return cpSet("ko", "Suppression impossible : " + error.message); try { await sb.auth.signOut(); } catch {} cpSet("", "Compte supprimé. Ta progression reste sur cet appareil, sans sauvegarde en ligne."); }); });
   $("#cpOut") && ($("#cpOut").onclick = () => run(async sb => { if (lsGet("mercato-compte-dirty", false)) await cpPush(); await sb.auth.signOut(); cpSet("", "Déconnecté. Ta progression reste sur cet appareil."); }));
+  $("#cpOutAll") && ($("#cpOutAll").onclick = () => run(async sb => { if (lsGet("mercato-compte-dirty", false)) await cpPush(); try { await sb.auth.signOut({scope: "global"}); } catch { await sb.auth.signOut(); } cpSet("", "Déconnecté de tous tes appareils. Ta progression reste sur celui-ci."); }));
   $("#svCopy").onclick = async () => { const code = svEncode(svPack()); try { await navigator.clipboard.writeText(code); $("#svCopy").textContent = "Copié ✔"; } catch { $("#svIn").classList.remove("hidden"); $("#svTxt").value = code; $("#svTxt").select(); $("#svMsg").textContent = "Copie ce texte et garde-le."; } };
   $("#svFile") && ($("#svFile").onclick = () => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([svEncode(svPack())], {type: "text/plain"})); a.download = "hanko-sauvegarde-" + new Date().toISOString().slice(0, 10) + ".txt"; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); });
   $("#svShow").onclick = () => { $("#svIn").classList.toggle("hidden"); $("#svTxt").value = ""; $("#svMsg").textContent = ""; $("#svTxt").focus(); };
@@ -19525,6 +19533,9 @@ const HK_NEWS = [["1er novembre 2026", [
   ["n", "Messages entre amis : discute et envoie des cartes, en direct."],
   ["n", "Hanko s'installe comme une application, avec des notifications même jeu fermé."],
   ["n", "Notification quand tes boosters gratuits sont pleins (à activer dans Application et notifications)."],
+  ["n", "Boosters gratuits plus rapides : un toutes les 15 minutes, et un toutes les 10 minutes le week-end (⚡)."],
+  ["n", "Coffret : 4 boosters Or Mélange d'un coup, à prix réduit."],
+  ["n", "Page Sécurité : « Me déconnecter partout » depuis Mon compte."],
   ["n", "10 boosters offerts à l'ouverture d'un compte."],
   ["n", "Cette page Nouveautés, et une cloche pour retrouver toutes tes notifications."],
   ["n", "Mon activité : tes ventes, achats, ordres et échanges au même endroit."],
