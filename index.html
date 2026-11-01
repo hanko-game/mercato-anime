@@ -15078,10 +15078,8 @@ body:has(.gcards [data-g="gt"].sel) .gth{display:block}
 .gtpl div span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .gtpl div.empty{color:var(--muted);font-weight:500;border:1px dashed var(--line);box-shadow:none;background:none}
 .gtdot{flex:none;width:8px;height:8px;border-radius:50%;background:var(--ok,#3fb950)}.gtdot.off{background:#6b6672}
-.gtbr{display:grid;gap:14px 12px;align-items:stretch}
-.gtbr[data-n="8"]{grid-template-columns:repeat(5,minmax(0,1fr))}
-.gtbr[data-n="4"]{grid-template-columns:repeat(3,minmax(0,1fr))}
-.gtcol{display:flex;flex-direction:column;justify-content:space-around;gap:10px;min-width:0}
+.gtbr{display:flex;gap:12px;align-items:stretch;overflow-x:auto;padding-bottom:8px}
+.gtcol{display:flex;flex-direction:column;justify-content:space-around;gap:10px;flex:1 0 158px;min-width:158px}
 .gtcol h3{font-family:var(--mono);font-weight:700;font-size:10.5px;letter-spacing:1.6px;text-transform:uppercase;color:var(--muted);margin:0;text-align:center}
 .gtcol.fin{justify-content:center}
 .gtm{border-radius:14px;background:var(--panel);box-shadow:inset 0 0 0 1px var(--line);padding:9px 10px;min-width:0}
@@ -15149,7 +15147,7 @@ body.gtwatch #board button,body.gtwatch #board input,body.gtwatch #board .bidbox
 const GT = {room: null, role: null, code: null, T: null, name: "", pid: "", peers: new Map(), seen: new Map(), timers: [], cur: null, watch: null, pending: null, last: 0, sent: null, cfg: {u: "op", mode: "live", size: 4}, ask: null, pf: {}, pfT: 0};
 GT.pid = (() => { let p = lsGet("hanko-gt-pid", ""); if (!/^[a-z0-9]{8,14}$/.test(p)){ p = Math.random().toString(36).slice(2, 12); lsSet("hanko-gt-pid", p); } return p; })();
 const GT_ABSENT = 60000, GT_KEY = "hanko-gt-host", GT_LAST = "hanko-gt-last";
-const GT_RN = {q: "Quart de finale", s: "Demi-finale", f: "Finale", t: "Petite finale"};
+const GT_RN = {z: "Seizième de finale", h: "Huitième de finale", q: "Quart de finale", s: "Demi-finale", f: "Finale", t: "Petite finale"};
 // profil public montré sur le podium (carte de visite, photo de profil, cadre, titre) : envoyé une fois à l'organisateur, qui le redistribue à la demande
 const gtMyPf = () => { try { const p = pfPublic(tcLoad()); return {av: p.av, img: p.img, cc: p.cc, fr: p.fr, ti: p.ti}; } catch { return null; } };
 const gtPfOf = pid => { try { return pfClean(GT.pf[pid] || {}); } catch { return {fr: "auto"}; } };
@@ -15160,17 +15158,25 @@ const gtReady = m => !!(m.a && m.b) && m.winner == null;
 const gtNeed = m => m.best === 3 ? 2 : 1;
 const gtMine = () => GT.T && GT.T.phase === "run" ? GT.T.matches.find(m => gtReady(m) && (m.a === GT.pid || m.b === GT.pid)) : null;
 const gtRoomName = (m, g) => ("mercato-gt" + GT.code + "-" + m.id + "-" + g).toLowerCase();
-const gtLabel = m => GT_RN[m.r] + (m.r === "q" || m.r === "s" ? (m.side === "L" ? " · côté gauche" : " · côté droit") : "") + (m.best === 3 ? " · en 2 manches gagnantes" : "");
+const gtLabel = m => GT_RN[m.r] + (m.best === 3 ? " · en 2 manches gagnantes" : "");
 
 /* ---------- le tableau (chez l'organisateur) ---------- */
 function gtBuild(T){
-  const o = T.players.map(p => p.pid); for (let i = o.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [o[i], o[j]] = [o[j], o[i]]; }
-  const mk = (id, r, side, x) => ({id, r, side, a: null, b: null, best: 1, wins: [0, 0], winner: null, game: 0, live: null, ff: null, draws: 0, ...x});
-  if (T.size === 4) T.matches = [mk(0, "s", "L", {a: o[0], b: o[1]}), mk(1, "s", "R", {a: o[2], b: o[3]}), mk(2, "f", "", {fa: [0, "w"], fb: [1, "w"], best: 3}), mk(3, "t", "", {fa: [0, "l"], fb: [1, "l"]})];
-  else T.matches = [mk(0, "q", "L", {a: o[0], b: o[1]}), mk(1, "q", "L", {a: o[2], b: o[3]}), mk(2, "q", "R", {a: o[4], b: o[5]}), mk(3, "q", "R", {a: o[6], b: o[7]}),
-    mk(4, "s", "L", {fa: [0, "w"], fb: [1, "w"]}), mk(5, "s", "R", {fa: [2, "w"], fb: [3, "w"]}), mk(6, "f", "", {fa: [4, "w"], fb: [5, "w"], best: 3}), mk(7, "t", "", {fa: [4, "l"], fb: [5, "l"]})];
+  const all = T.players.map(p => p.pid); for (let i = all.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [all[i], all[j]] = [all[j], all[i]]; }
+  // taille du tableau = plus grande puissance de 2 (>= 4) qui tient dans les joueurs présents, plafonnée aux places
+  const n = all.length, b = n >= 4 ? Math.min(T.cap || T.size || 4, 1 << (31 - Math.clz32(n))) : 0;
+  if (b < 4){ gtLog("Il faut au moins 4 joueurs pour lancer."); return; }
+  T.size = b; const o = all.slice(0, b); T.seeded = o.slice();
+  const ROUND = {32: "z", 16: "h", 8: "q", 4: "s", 2: "f"}, rounds = Math.round(Math.log2(b));
+  const mk = (id, r, x) => ({id, r, side: "", a: null, b: null, best: 1, wins: [0, 0], winner: null, game: 0, live: null, ff: null, draws: 0, ...x});
+  T.matches = []; let id = 0, prev = [];
+  for (let r = 0; r < rounds; r++){ const cnt = b >> (r + 1), code = ROUND[b >> r], last = r === rounds - 1, cur = [];
+    for (let i = 0; i < cnt; i++){ const m = mk(id++, code, last ? {best: 3} : {});
+      if (r === 0){ m.a = o[2 * i]; m.b = o[2 * i + 1]; } else { m.fa = [prev[2 * i], "w"]; m.fb = [prev[2 * i + 1], "w"]; }
+      cur.push(m.id); T.matches.push(m); } prev = cur; }
+  const semis = T.matches.filter(m => m.r === "s"); if (semis.length === 2) T.matches.push(mk(id++, "t", {fa: [semis[0].id, "l"], fb: [semis[1].id, "l"]}));
   const now = Date.now(); T.matches.forEach(m => { if (m.a && m.b) m.readyAt = now; });
-  T.phase = "run"; gtLog("Tirage au sort effectué : le tournoi commence.");
+  T.phase = "run"; gtLog(`Tirage au sort : tournoi à ${b} joueurs lancé.${n > b ? ` ${n - b} joueur${n - b > 1 ? "s" : ""} en spectateur.` : ""}`);
 }
 function gtLog(t){ const T = GT.T; if (!T) return; T.log.unshift(t); T.log.length = Math.min(T.log.length, 8); }
 // résultat d'une manche : w = 0 (joueur A), 1 (joueur B) ou -1 (égalité parfaite : manche rejouée)
@@ -15222,11 +15228,11 @@ async function gtHost(resume){
   if (!room) return gtErr(resume ? "Impossible de reprendre le tournoi pour le moment. Réessaie dans quelques secondes." : "Impossible de créer le tournoi pour le moment. Vérifie ta connexion internet puis réessaie.");
   Object.assign(GT, {room, role: "host", code});
   if (resume){ GT.T = resume.T; GT.name = resume.name || GT.name; const now = Date.now(); GT.T.players.forEach(p => GT.seen.set(p.pid, now)); GT.T.matches.forEach(m => { if (gtReady(m)) m.readyAt = now; m.live = null; }); GT.T.players.forEach(p => { p.hp = 0; }); }
-  else GT.T = {code, u: GT.cfg.u, mode: GT.cfg.mode, size: GT.cfg.size, phase: "lobby", players: [{pid: GT.pid, name: GT.name, on: true}], matches: [], seq: 0, log: []};
+  else GT.T = {code, u: GT.cfg.u, mode: GT.cfg.mode, cap: GT.cfg.size, size: 0, phase: "lobby", players: [{pid: GT.pid, name: GT.name, on: true}], matches: [], seq: 0, log: []};
   room.on("thello", msg => { if (GT.role !== "host") return; const d = msg.data || {}, pid = String(d.pid || ""), T = GT.T; if (!/^[a-z0-9]{8,14}$/.test(pid) || pid === GT.pid) return;
     GT.peers.set(msg.peer, pid); GT.seen.set(pid, Date.now());
     let p = T.players.find(x => x.pid === pid);
-    if (!p && T.phase === "lobby" && T.players.length < T.size){ let n = cleanName(d.name, "Joueur"); while (T.players.some(x => x.name === n)) n = (n.slice(0, 12) + " " + (T.players.length + 1)); p = {pid, name: n, on: true}; T.players.push(p); return gtPush(); }
+    if (!p && T.phase === "lobby" && T.players.length < (T.cap || T.size)){ let n = cleanName(d.name, "Joueur"); while (T.players.some(x => x.name === n)) n = (n.slice(0, 12) + " " + (T.players.length + 1)); p = {pid, name: n, on: true}; T.players.push(p); return gtPush(); }
     if (p && !p.on){ p.on = true; return gtPush(); } });
   { const mine = gtMyPf(), me = GT.T.players.find(p => p.pid === GT.pid); if (mine && me){ GT.pf[GT.pid] = mine; me.hp = 1; } }
   room.on("tpf", msg => { if (GT.role !== "host") return; const pid = GT.peers.get(msg.peer), p = pid && gtP(pid), d = msg.data || {}; if (!p || !d.pf || JSON.stringify(d.pf).length > 400000) return; GT.pf[pid] = pfClean(d.pf); p.hp = 1; room.emit("tpf", {pid, pf: GT.pf[pid]}).catch(() => {}); gtPush(); });
@@ -15361,12 +15367,13 @@ function gtRender(){
   const link = location.href.split("#")[0] + "#" + T.code;
   let body = "";
   if (T.phase === "lobby"){
-    const n = T.players.length, slots = Array.from({length: T.size}, (_, k) => T.players[k] ? `<div><u class="gtdot ${T.players[k].on ? "" : "off"}"></u><span>${esc(T.players[k].name)}${T.players[k].pid === GT.pid ? " (toi)" : ""}</span></div>` : `<div class="empty">Place libre</div>`).join("");
-    body = `<div class="panel"><p class="muted" style="margin:0 0 8px">Envoie ce code ou le lien aux autres joueurs. Ils ouvrent le site, choisissent « Grand Tournoi » puis « Rejoindre ».</p>
+    const cap = T.cap || T.size, n = T.players.length, b = n >= 4 ? Math.min(cap, 1 << (31 - Math.clz32(n))) : 0;
+    const slots = Array.from({length: cap}, (_, k) => T.players[k] ? `<div><u class="gtdot ${T.players[k].on ? "" : "off"}"></u><span>${esc(T.players[k].name)}${T.players[k].pid === GT.pid ? " (toi)" : ""}</span></div>` : `<div class="empty">Place libre</div>`).join("");
+    body = `<div class="panel"><p class="muted" style="margin:0 0 8px">Envoie ce code ou le lien aux autres joueurs (parfait pour un stream). Ils ouvrent le site, choisissent « Grand Tournoi » puis « Rejoindre ».</p>
         <div class="gtcode"><b>${esc(T.code)}</b><button id="gtCopy">Copier le lien d'invitation</button></div>
-        <label class="f" style="margin-top:16px">Joueurs inscrits · ${n}/${T.size}</label><div class="gtpl">${slots}</div>
-        ${!iAm ? `<p class="small">Le tournoi est complet : tu pourras le suivre en spectateur.</p>` : ""}
-        ${host ? `<div class="row" style="margin-top:6px"><button class="primary" id="gtStart" ${n === T.size ? "" : "disabled"}>Lancer le tirage au sort</button>${T.size === 8 && n >= 4 && n < 8 ? `<button id="gtTo4" ${n === 4 ? "" : "disabled"}>Passer à 4 joueurs</button>` : ""}</div><p class="small" style="margin-top:8px">${n === T.size ? "Tout le monde est là : le placement dans le tableau est tiré au sort." : `Il manque ${T.size - n} joueur${T.size - n > 1 ? "s" : ""}. Un tournoi se joue à 4 ou à 8, pas autrement.`}</p>` : waitHTML(n === T.size ? "L'organisateur va lancer le tirage au sort…" : "En attente des autres joueurs…")}</div>`;
+        <label class="f" style="margin-top:16px">Joueurs inscrits · ${n}/${cap}</label><div class="gtpl">${slots}</div>
+        ${!iAm ? `<p class="small">Tu rejoins une fois le tournoi plein : tu pourras le suivre en spectateur.</p>` : ""}
+        ${host ? `<div class="row" style="margin-top:6px"><button class="primary" id="gtStart" ${n >= 4 ? "" : "disabled"}>${n >= 4 ? `Lancer le tournoi · ${b} joueur${b > 1 ? "s" : ""}` : "Lancer le tournoi"}</button></div><p class="small" style="margin-top:8px">${n < 4 ? `Il faut au moins 4 joueurs pour lancer (actuellement ${n}).` : n === b ? "Tout le monde entre dans le tableau, tiré au sort." : `${b} joueurs entrent dans le tableau (la plus grande puissance de 2) ; les ${n - b} autres suivent en spectateurs. Attends plus de monde pour un tableau plus grand.`}</p>` : waitHTML(n >= cap ? "L'organisateur va lancer le tirage…" : "En attente des joueurs et du lancement…")}</div>`;
   } else {
     const my = gtMine(), F = T.matches.find(m => m.r === "f"), S3 = T.matches.find(m => m.r === "t");
     let me = "";
@@ -15377,23 +15384,23 @@ function gtRender(){
       me = `<div class="gtpod">${tile(w(F), 1, "1er · Grand vainqueur")}${tile(l(F), 2, "2e")}${tile(w(S3), 3, "3e")}${tile(l(S3), 4, "4e")}</div>`; }
     else if (my){ const opp = my.a === GT.pid ? my.b : my.a, inIt = GT.cur === my.id + ":" + my.game;
       me = `<div class="gtme go"><div><b>${inIt ? "Ton match est en cours" : "À toi de jouer"} · ${GT_RN[my.r]}${my.best === 3 ? ` (${my.wins[my.a === GT.pid ? 0 : 1]}-${my.wins[my.a === GT.pid ? 1 : 0]})` : ""}</b><span>Contre ${gtName(opp)}. Nouvelle équipe à recruter, 300M chacun.</span></div><button class="primary" data-gtplay="${my.id}">${inIt ? "Revenir à mon match" : my.best === 3 && my.wins[0] + my.wins[1] ? "Jouer la manche " + (my.wins[0] + my.wins[1] + 1) : "Jouer mon match"}</button></div>`; }
-    else if (iAm){ const next = T.matches.find(m => m.winner == null && (m.a === GT.pid || m.b === GT.pid)), still = next || T.matches.some(m => m.winner == null && [m.fa, m.fb].some(s => s && (() => { const x = gtM(s[0]); return x.winner == null && (x.a === GT.pid || x.b === GT.pid); })()));
+    else if (iAm && (!T.seeded || T.seeded.includes(GT.pid))){ const next = T.matches.find(m => m.winner == null && (m.a === GT.pid || m.b === GT.pid)), still = next || T.matches.some(m => m.winner == null && [m.fa, m.fb].some(s => s && (() => { const x = gtM(s[0]); return x.winner == null && (x.a === GT.pid || x.b === GT.pid); })()));
       me = `<div class="gtme"><div><b>${next ? "Ton prochain match attend son adversaire" : still ? "Ton match est enregistré" : "Tu as terminé ton tournoi"}</b><span>${T.matches.some(m => gtReady(m) && m.live === m.game) ? "En attendant, regarde un match en direct : touche « Regarder en direct » dans le tableau." : "Les matchs en cours apparaîtront en direct dans le tableau."}</span></div></div>`; }
     else me = `<div class="gtme"><div><b>Tu suis ce tournoi en spectateur</b><span>Touche « Regarder en direct » sur un match en cours.</span></div></div>`;
-    const col = (h, ms, o, cls = "") => `<div class="gtcol ${cls}" style="--o:${o}"><h3>${h}</h3>${ms.map(gtCard).join("")}</div>`, by = (r, s) => T.matches.filter(m => m.r === r && (!s || m.side === s));
-    const br = T.size === 8 ? col("Quarts · côté gauche", by("q", "L"), 1) + col("Demi · côté gauche", by("s", "L"), 3) + col("Finale", [F, S3], 5, "fin") + col("Demi · côté droit", by("s", "R"), 4) + col("Quarts · côté droit", by("q", "R"), 2)
-      : col("Demi · côté gauche", by("s", "L"), 1) + col("Finale", [F, S3], 3, "fin") + col("Demi · côté droit", by("s", "R"), 2);
+    const col = (h, ms, cls = "") => `<div class="gtcol ${cls}"><h3>${h}</h3>${ms.map(gtCard).join("")}</div>`, by = r => T.matches.filter(m => m.r === r);
+    const RLBL = [["z", "Seizièmes"], ["h", "Huitièmes"], ["q", "Quarts"], ["s", "Demi-finales"]];
+    const br = RLBL.filter(([c]) => by(c).length).map(([c, l]) => col(l, by(c))).join("") + col("Finale", [F, S3].filter(Boolean), "fin");
     body = `${me}<div class="gtbr" data-n="${T.size}">${br}</div>`;
   }
   el.innerHTML = `<div class="topbar"><h1>GRAND TOURNOI<i> · 大会</i></h1><button class="ghost" id="gtQuit">${GT.ask === "quit" ? "" : "✕ Quitter"}</button></div>
     <div class="gtwarn hidden" id="gtLost">L'organisateur ne répond plus. Le tableau se remettra à jour dès son retour ; les matchs déjà lancés continuent.</div>
     ${GT.ask === "quit" ? `<div class="gtwarn">${host ? "Tu es l'organisateur : si tu quittes, le tournoi s'arrête pour tout le monde." : "Si tu quittes, tes prochains matchs seront perdus par forfait."} <span class="row" style="display:inline-flex;margin-left:8px"><button class="red" id="gtQuitOk">Quitter le tournoi</button><button class="ghost" id="gtQuitNo">Rester</button></span></div>` : ""}
-    <div class="gthead"><div><div class="eb">${u.name} · ${MODES[T.mode]} · ${T.size} joueurs</div><h2>${T.phase === "lobby" ? "Salle d'attente" : T.phase === "done" ? "Tournoi terminé" : "Tableau du tournoi"}</h2><p>Élimination directe, une nouvelle équipe à chaque match. Finale en deux manches gagnantes, petite finale pour la 3e place.</p></div>${T.phase !== "lobby" ? `<div class="gtcode"><b style="font-size:16px;letter-spacing:3px">${esc(T.code)}</b></div>` : ""}</div>
+    <div class="gthead"><div><div class="eb">${u.name} · ${MODES[T.mode]} · ${T.phase === "lobby" ? (T.cap || T.size) : T.size} joueurs</div><h2>${T.phase === "lobby" ? "Salle d'attente" : T.phase === "done" ? "Tournoi terminé" : "Tableau du tournoi"}</h2><p>Élimination directe, une nouvelle équipe à chaque match. Finale en deux manches gagnantes, petite finale pour la 3e place.</p></div>${T.phase !== "lobby" ? `<div class="gtcode"><b style="font-size:16px;letter-spacing:3px">${esc(T.code)}</b></div>` : ""}</div>
     ${body}${T.log.length ? `<div class="gtlog">${T.log.map(t => `<div>${t}</div>`).join("")}</div>` : ""}`;
   $("#gtQuit").onclick = () => { if (T.phase === "done" || (T.phase === "lobby" && !host)) return gtQuit(); GT.ask = "quit"; gtRender(); };
   $("#gtQuitOk") && ($("#gtQuitOk").onclick = gtQuit); $("#gtQuitNo") && ($("#gtQuitNo").onclick = () => { GT.ask = null; gtRender(); });
   $("#gtCopy") && ($("#gtCopy").onclick = async () => { const b = $("#gtCopy"); try { await navigator.clipboard.writeText(link); b.textContent = "Lien copié ✔"; } catch { b.outerHTML = `<input readonly value="${esc(link)}" style="max-width:340px;font-size:13px" onfocus="this.select()">`; } });
-  $("#gtStart") && ($("#gtStart").onclick = () => { if (GT.role !== "host" || T.players.length !== T.size) return; gtBuild(T); gtPush(); });
+  $("#gtStart") && ($("#gtStart").onclick = () => { if (GT.role !== "host" || T.players.length < 4) return; gtBuild(T); if (T.phase === "run") gtPush(); });
   $("#gtTo4") && ($("#gtTo4").onclick = () => { if (GT.role !== "host" || T.players.length !== 4) return; T.size = 4; gtPush(); });
   el.querySelectorAll("[data-gtplay]").forEach(b => b.onclick = () => gtPlay(+b.dataset.gtplay));
   el.querySelectorAll("[data-gtwatch]").forEach(b => b.onclick = () => gtWatch(+b.dataset.gtwatch));
@@ -15408,7 +15415,7 @@ function gtRender(){
   const seg = (attr, items, cur) => `<div class="gtseg">${items.map(([v, t, s]) => `<button class="${String(v) === String(cur) ? "sel" : ""}" ${attr}="${v}">${t}${s ? `<small>${s}</small>` : ""}</button>`).join("")}</div>`;
   anchor.insertAdjacentHTML("beforebegin", `<div class="panel gth" id="gtCfg"></div>
     <div class="panel rules gth" style="margin-top:14px"><b style="color:var(--text)">Règles du Grand Tournoi</b><ul style="margin-top:6px">
-      <li><b>4 ou 8 joueurs</b>, chacun sur son appareil. Le placement dans le tableau (côté gauche, côté droit) est <b>tiré au sort</b>.</li>
+      <li><b>De 4 à 32 joueurs</b>, chacun sur son appareil. Au lancement, le tableau prend la plus grande taille possible (4, 8, 16 ou 32) ; le placement est <b>tiré au sort</b>. Au-delà, les derniers arrivés suivent en spectateurs.</li>
       <li>Chaque match est un <b>Mercato en duel, en une manche</b> : nouvelle équipe et 300M pour tout le monde à chaque match. Rien ne se garde d'un match à l'autre.</li>
       <li>La <b>finale</b> oppose les vainqueurs des deux côtés, en <b>deux manches gagnantes</b>. Les deux demi-finalistes battus jouent la <b>petite finale</b> pour la 3e place.</li>
       <li>Égalité parfaite au combat : la manche est rejouée.</li>
@@ -15422,7 +15429,7 @@ function gtRender(){
       ${backJ ? `<div class="gtme go"><div><b>Tu étais dans le tournoi ${esc(backJ.code)}</b><span>Tu retrouves ta place en le rejoignant de nouveau.</span></div><span class="row"><button class="primary" id="gtRejoin">Y retourner</button><button class="ghost" id="gtDropJ">Oublier</button></span></div>` : ""}
       <label class="f step"><i>01</i>Univers</label>${seg("data-gtu", Object.keys(UNI).map(k => [k, UNI[k].name]), GT.cfg.u)}
       <label class="f step" style="margin-top:16px"><i>02</i>Mode d'enchère</label>${seg("data-gtm", [["live", "Classique", "Chacun voit le personnage tiré."], ["bluff", "Bluff", "Seul le tireur sait qui est tombé."]], GT.cfg.mode)}
-      <label class="f step" style="margin-top:16px"><i>03</i>Taille du tableau</label>${seg("data-gts", [[4, "4 joueurs", "Demi-finales puis finale."], [8, "8 joueurs", "Quarts, demi-finales puis finale."]], GT.cfg.size)}
+      <label class="f step" style="margin-top:16px"><i>03</i>Nombre de places</label>${seg("data-gts", [[4, "4 joueurs", "Demi-finales puis finale."], [8, "8 joueurs", "Quarts puis finale."], [16, "16 joueurs", "Huitièmes puis finale."], [32, "32 joueurs", "Seizièmes puis finale. Parfait pour un stream."]], GT.cfg.size)}<p class="small" style="margin:6px 0 0;color:var(--muted)">Le tableau s'adapte au nombre de joueurs présents au lancement (4, 8, 16 ou 32).</p>
       <div class="online" style="margin-top:16px"><div><label class="f" for="gtMe">Ton pseudo</label><input id="gtMe" maxlength="16" placeholder="Ton pseudo" value="${esc(me)}"></div>
         <div class="grid2"><div class="panel" style="background:var(--panel2)"><b>Créer un tournoi</b><p class="small" style="margin:4px 0 10px">Tu es l'organisateur : tu reçois un code à envoyer aux autres, et tu joues aussi.</p><button class="primary" id="gtHost">Créer le tournoi</button></div>
         <div class="panel" style="background:var(--panel2)"><b>Rejoindre un tournoi</b><p class="small" style="margin:4px 0 10px">Entre le code envoyé par l'organisateur (il commence par K).</p><div class="row"><input id="gtCode" maxlength="4" placeholder="CODE" autocomplete="off" value="${esc(code)}" style="flex:1;min-width:100px;text-transform:uppercase;letter-spacing:4px"><button class="primary" id="gtJoin">Rejoindre</button></div></div></div>
