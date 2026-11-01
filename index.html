@@ -15255,6 +15255,10 @@ body:has(.gcards [data-g="gt"].sel) .gth{display:block}
 .gtseg{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
 .gtseg button{padding:11px 12px;border-radius:12px;text-align:left;font-weight:700}
 .gtseg button small{display:block;font-weight:500;color:var(--muted);font-size:12px;margin-top:2px}
+.gtsz{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;padding:4px;border-radius:14px;background:var(--panel2,#15131b);box-shadow:inset 0 0 0 1px var(--line)}
+.gtsz button{all:unset;box-sizing:border-box;cursor:pointer;text-align:center;padding:12px 0;border-radius:10px;font:800 16px var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.gtsz button.sel{background:#f4f1ea;color:#121016}
+.gthint{margin:8px 2px 0;font-size:13px;color:var(--muted)}
 .gtseg button.sel{box-shadow:inset 0 0 0 2px var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--panel2))}
 #gt{max-width:1180px;margin:0 auto}
 #gt .topbar h1 i{font-style:normal}
@@ -15622,9 +15626,9 @@ function gtRender(){
     const sv = lsGet(GT_KEY, null), back = sv && sv.T && sv.T.phase !== "done" && Date.now() - sv.t < 144e5 ? sv : null, lastJ = lsGet(GT_LAST, null), backJ = !back && lastJ && Date.now() - lastJ.t < 144e5 ? lastJ : null;
     box.innerHTML = `${back ? `<div class="gtme go"><div><b>Tu organisais le tournoi ${esc(back.T.code)}</b><span>Il n'est pas terminé : tu peux le reprendre là où il en était.</span></div><span class="row"><button class="primary" id="gtResume">Reprendre</button><button class="ghost" id="gtDrop">Abandonner</button></span></div>` : ""}
       ${backJ ? `<div class="gtme go"><div><b>Tu étais dans le tournoi ${esc(backJ.code)}</b><span>Tu retrouves ta place en le rejoignant de nouveau.</span></div><span class="row"><button class="primary" id="gtRejoin">Y retourner</button><button class="ghost" id="gtDropJ">Oublier</button></span></div>` : ""}
-      <label class="f step"><i>01</i>Univers</label>${seg("data-gtu", Object.keys(UNI).map(k => [k, UNI[k].name]), GT.cfg.u)}
+      <label class="f step"><i>01</i>Univers</label><div class="gtseg" id="gtUnis">${Object.keys(UNI).map(k => `<button class="${k === GT.cfg.u ? "sel" : ""}" data-gtu="${k}"><b>${esc(UNI[k].name)}</b></button>`).join("")}</div>
       <label class="f step" style="margin-top:16px"><i>02</i>Mode d'enchère</label>${seg("data-gtm", [["live", "Classique", "Chacun voit le personnage tiré."], ["bluff", "Bluff", "Seul le tireur sait qui est tombé."]], GT.cfg.mode)}
-      <label class="f step" style="margin-top:16px"><i>03</i>Nombre de places</label>${seg("data-gts", [[4, "4 joueurs", "Demi-finales puis finale."], [8, "8 joueurs", "Quarts puis finale."], [16, "16 joueurs", "Huitièmes puis finale."], [32, "32 joueurs", "Seizièmes puis finale. Parfait pour un stream."], [64, "64 joueurs", "Trente-deuxièmes puis finale. Pour un gros stream."]], GT.cfg.size)}<p class="small" style="margin:6px 0 0;color:var(--muted)">Le tableau s'adapte au nombre de joueurs présents au lancement (4, 8, 16 ou 32).</p>
+      <label class="f step" style="margin-top:16px"><i>03</i>Joueurs maximum</label><div class="gtsz" role="radiogroup" aria-label="Joueurs maximum">${[4, 8, 16, 32, 64].map(n => `<button role="radio" aria-checked="${n === GT.cfg.size}" class="${n === GT.cfg.size ? "sel" : ""}" data-gts="${n}">${n}</button>`).join("")}</div><p class="gthint">${({4: "Demi-finales puis finale", 8: "Quarts puis finale", 16: "Huitièmes puis finale", 32: "Seizièmes puis finale · parfait pour un stream", 64: "Trente-deuxièmes puis finale · pour un gros stream"})[GT.cfg.size]}</p><p class="small" style="margin:4px 2px 0;color:var(--muted)">Tu peux lancer dès 4 joueurs : le tableau prend la plus grande taille possible.</p>
       <div class="online" style="margin-top:16px"><div><label class="f" for="gtMe">Ton pseudo</label><input id="gtMe" maxlength="16" placeholder="Ton pseudo" value="${esc(me)}"></div>
         <div class="grid2"><div class="panel" style="background:var(--panel2)"><b>Créer un tournoi</b><p class="small" style="margin:4px 0 10px">Tu es l'organisateur : tu reçois un code à envoyer aux autres, et tu joues aussi.</p><button class="primary" id="gtHost">Créer le tournoi</button></div>
         <div class="panel" style="background:var(--panel2)"><b>Rejoindre un tournoi</b><p class="small" style="margin:4px 0 10px">Entre le code envoyé par l'organisateur (il commence par K).</p><div class="row"><input id="gtCode" maxlength="4" placeholder="CODE" autocomplete="off" value="${esc(code)}" style="flex:1;min-width:100px;text-transform:uppercase;letter-spacing:4px"><button class="primary" id="gtJoin">Rejoindre</button></div></div></div>
@@ -19510,14 +19514,21 @@ body.nv #launch .cfgh .eyebrow,body.nv #launch .gmeta,body.nv #launch .lnws,body
 body.nv #launch .cfgh{margin:0 0 6px;padding:0;border:0}body.nv #launch #modeName{font-size:30px;line-height:1.05}body.nv #launch .gdesc{margin:3px 0 0;color:#9d99a6;font-size:14.5px}
 body.nv #launch .panel{padding:0!important;border:0!important;background:none!important;box-shadow:none!important;border-radius:0}
 body.nv #launch label.step{margin:14px 0 6px!important;font:700 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:#9d99a6}
-body.nv #launch #unis,body.nv #launch #ucUnis,body.nv #launch #gsUnis{display:flex!important;gap:8px;overflow-x:auto;margin:0 -16px;padding:0 16px 3px;scrollbar-width:none}
-body.nv #launch #unis::-webkit-scrollbar,body.nv #launch #ucUnis::-webkit-scrollbar,body.nv #launch #gsUnis::-webkit-scrollbar{display:none}
-body.nv #launch #unis button,body.nv #launch #ucUnis button,body.nv #launch #gsUnis button{all:unset;box-sizing:border-box;cursor:pointer;flex:none;display:grid!important;justify-items:center;gap:4px;width:84px;padding:0!important;text-align:center;font:700 12px/1.15 var(--body);color:#9d99a6;box-shadow:none!important;background:none!important;min-height:0}
-body.nv #launch .nvui{display:grid;place-items:center;width:84px;height:84px;border-radius:14px;overflow:hidden;border:2px solid transparent;background:var(--nvs2);font:900 30px var(--brand);font-style:normal;color:#fff}
+/* 1er nov. 2026 : univers en grille de 2 lignes de 3, sans défilement (tous les jeux + Grand Tournoi) */
+body.nv #launch #ucUnis button[data-ucu="mix"]{grid-column:1/-1;display:flex!important;align-items:center;justify-content:flex-start;gap:12px;padding:8px 12px!important;border-radius:16px;background:var(--nvs2)!important;box-shadow:inset 0 0 0 2px transparent!important;text-align:left}
+body.nv #launch #ucUnis button[data-ucu="mix"]>.nvui{width:44px;aspect-ratio:1;font-size:22px;border-radius:12px;box-shadow:none;flex:none}
+body.nv #launch #ucUnis button[data-ucu="mix"].sel{box-shadow:inset 0 0 0 2px var(--nvr)!important}
+body.nv #launch #ucUnis button[data-ucu="mix"].sel>.nvui{border-color:transparent;transform:none}
+body.nv #launch #ucUnis button[data-ucu="mix"] b{font-size:14px}
+body.nv #launch #ucUnis button[data-ucu="mix"].sel::after{top:50%;translate:0 -50%;right:12px}
+body.nv #launch #unis,body.nv #launch #ucUnis,body.nv #launch #gsUnis,body.nv #launch #gtUnis{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 10px;overflow:visible;margin:0;padding:0}
+body.nv #launch #unis button,body.nv #launch #ucUnis button,body.nv #launch #gsUnis button,body.nv #launch #gtUnis button{all:unset;box-sizing:border-box;cursor:pointer;display:grid!important;justify-items:center;gap:6px;width:auto;min-width:0;padding:0!important;text-align:center;font:700 12.5px/1.2 var(--body);color:#9d99a6;box-shadow:none!important;background:none!important;min-height:0;position:relative}
+body.nv #launch .nvui{display:grid;place-items:center;width:100%;aspect-ratio:1;height:auto;border-radius:16px;overflow:hidden;border:2px solid transparent;background:var(--nvs2);font:900 30px var(--brand);font-style:normal;color:#fff;box-shadow:0 6px 18px #0007;transition:transform .15s,border-color .15s}
 body.nv #launch .nvui img{width:100%;height:100%;object-fit:cover;object-position:50% 14%}
-body.nv #launch button.sel>.nvui{border-color:var(--nvr)}body.nv #launch #unis button.sel,body.nv #launch #ucUnis button.sel,body.nv #launch #gsUnis button.sel{color:var(--text)}
-body.nv #launch #unis button>:not(.nvui):not(.lbl):not(b),body.nv #launch #ucUnis button>:not(.nvui):not(b),body.nv #launch #gsUnis button>:not(.nvui):not(b){display:none!important}
-body.nv #launch #unis .lbl,body.nv #launch #ucUnis b,body.nv #launch #gsUnis b{all:unset;font:700 12px/1.15 var(--body);order:2}
+body.nv #launch button.sel>.nvui{border-color:var(--nvr);box-shadow:0 0 0 3px color-mix(in srgb,var(--nvr) 30%,transparent),0 6px 18px #0007;transform:translateY(-1px)}body.nv #launch #unis button.sel,body.nv #launch #ucUnis button.sel,body.nv #launch #gsUnis button.sel,body.nv #launch #gtUnis button.sel{color:var(--text)}
+body.nv #launch #unis button.sel::after,body.nv #launch #ucUnis button.sel::after,body.nv #launch #gsUnis button.sel::after,body.nv #launch #gtUnis button.sel::after{content:"✓";position:absolute;top:6px;right:6px;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--nvr);color:#fff;font:900 12px/1 var(--body);box-shadow:0 2px 6px #0008}
+body.nv #launch #unis button>:not(.nvui):not(.lbl):not(b),body.nv #launch #ucUnis button>:not(.nvui):not(b),body.nv #launch #gsUnis button>:not(.nvui):not(b),body.nv #launch #gtUnis button>:not(.nvui):not(b){display:none!important}
+body.nv #launch #unis .lbl,body.nv #launch #ucUnis b,body.nv #launch #gsUnis b,body.nv #launch #gtUnis b{all:unset;font:700 12.5px/1.2 var(--body);order:2;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 body.nv #launch .where:not(.hidden),body.nv #launch .modes:not(#unis):not(#ucUnis):not(#gsUnis):not(.hidden){display:grid!important;grid-auto-flow:column;grid-auto-columns:1fr;gap:3px;padding:3px;border-radius:12px;background:var(--nvs2)}
 body.nv #launch .where .mode,body.nv #launch .modes:not(#unis):not(#ucUnis):not(#gsUnis) .mode{all:unset;box-sizing:border-box;cursor:pointer;display:grid;place-items:center;min-height:42px;padding:2px 4px;border-radius:9px;text-align:center;color:#9d99a6}
 body.nv #launch .where .mode>span,body.nv #launch .modes:not(#unis):not(#ucUnis):not(#gsUnis) .mode>span{display:none}
@@ -19714,7 +19725,7 @@ window.NV_ON = true;   /* false : retour à l'ancienne interface */
   /* écran de lancement : images d'univers, pseudo déjà rempli */
   const U_ART = {op: "op", db: "db", na: "na", jjk: "jjk", ds: "ds", mha: "mha"};
   const fixLaunch = () => { const L = $1("#launch"), me = frMe(); if (!L) return;
-    L.querySelectorAll("#unis button,#ucUnis button,#gsUnis button").forEach(b => { if (b.querySelector(":scope>.nvui")) return; const u = b.dataset.u || b.dataset.ucu || b.dataset.gsu, a = U_ART[u] ? art(u) : ""; b.insertAdjacentHTML("afterbegin", `<i class="nvui">${a ? `<img src="${a}" alt="">` : "混"}</i>`); });
+    L.querySelectorAll("#unis button,#ucUnis button,#gsUnis button,#gtUnis button").forEach(b => { if (b.querySelector(":scope>.nvui")) return; const u = b.dataset.u || b.dataset.ucu || b.dataset.gsu || b.dataset.gtu, a = U_ART[u] ? art(u) : ""; b.insertAdjacentHTML("afterbegin", `<i class="nvui">${a ? `<img src="${a}" alt="">` : "混"}</i>`); });
     L.querySelectorAll('#mjCnt [data-mjn="2"]').forEach(b => { if (b.textContent !== "2") b.textContent = "2"; });
     if (me) L.querySelectorAll("#n1,#ucN0,#myName,#ucMe,#gsMe").forEach(i => { if (!i.value) i.value = me.name; });
     if (me) L.querySelectorAll(".online>div:first-child:has(input)").forEach(d => d.style.display = "none"); };
