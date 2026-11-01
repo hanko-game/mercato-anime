@@ -19156,7 +19156,7 @@ document.addEventListener("click", e => { const b = e.target.closest(".pfchips b
 .kb .vH .vH3{inset:4.6cqi;background:linear-gradient(160deg,var(--foil-hi),var(--foil-lo));opacity:.9;clip-path:polygon(50% 0,93.3% 25%,93.3% 75%,50% 100%,6.7% 75%,6.7% 25%,50% 0,50% 3%,9.3% 26.5%,9.3% 73.5%,50% 97%,90.7% 73.5%,90.7% 26.5%,50% 3%)}
 .kb .vH::before{content:"";position:absolute;inset:-14cqi;background:repeating-conic-gradient(from 0deg,color-mix(in oklab,var(--foil) 70%,transparent) 0 1deg,transparent 1deg 60deg);-webkit-mask:radial-gradient(circle,#0000 52%,#000 56%,#0000 72%);mask:radial-gradient(circle,#0000 52%,#000 56%,#0000 72%)}
 .kb .vHl{position:absolute;inset:11cqi;filter:drop-shadow(0 0 4cqi color-mix(in oklab,var(--t) 80%,transparent))}
-.kb .vHl .lg{--lga:var(--t);--lgb:var(--ink);--lgc:color-mix(in oklab,var(--t) 40%,#fff)}
+.kb .vHl .lg{--lga:var(--t);--lgb:var(--ink);--lgc:var(--t)}
 /* halo serré sur les dos : contour net + lueur courte (20 oct.). 1er nov. 2026 : seulement à partir d'Épique (Commune, Peu commune et Rare restent sans halo) */
 .tcbk2.r-E > .hlx{box-shadow:0 0 0 3.5px #b07cff,0 0 12px 2px rgba(176,124,255,.7)}
 .tcbk2.r-L > .hlx{box-shadow:0 0 0 3.5px #ffc93a,0 0 14px 2px rgba(255,201,58,.7)}
@@ -19226,7 +19226,7 @@ function tcBackU(r, o = {}){
   const sp = r === "M" || r === "X" ? Array.from({length: 8}, (_, i) => `<i class="sp" style="--i:${i}"></i>`).join("") : "";
   return `<${tag} class="tcbk2 r-${r} ${o.cls || ""}" ${o.attr || ""} style="${o.style || ""}"><i class="hlx" aria-hidden="true">${sp}</i>`
     + `<span class="kb" aria-hidden="true" style="--t:${TC_BKU[u]};--pat:${TC_BKP[u]}"><i class="kwv"></i><i class="khl"></i><i class="kfr"><i class="kq q1"></i><i class="kq q2"></i><i class="kq q3"></i><i class="kq q4"></i></i>`
-    + `<span class="vH"><i class="vH1"></i><i class="vH2"></i><i class="vH3"></i><span class="vHl">${TC_BKLOGO}</span></span><b class="kj">${P[1]}</b>${tcGem(r)}`
+    + `<span class="vH"><i class="vH1"></i><i class="vH2"></i><i class="vH3"></i><span class="vHl">${TC_BKLOGO}</span></span><b class="kj">${P[1]}</b>`
     + `<span class="kbd"><span class="kwd">HANKO</span><span class="ksb">${esc((u === "mix" ? "Hanko" : P[0]).toUpperCase())}</span></span><i class="ksh"></i></span></${tag}>`;
 }
 // reflet holo sous le doigt (dos seulement, très léger)
