@@ -2209,8 +2209,11 @@ function groupWatch(o){ const away = new Map(); let tick = Date.now(), seen = Da
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && o.live()) netAwake(true); });
   if (!o.host) o.game.on(o.topic, m => { if (!m.sameTab){ seen = Date.now(); told = false; } });
   o.timers.push(setInterval(() => { const now = Date.now(), gap = now - tick; tick = now; if (done) return;
-    if (gap > 5000){ seen = now; away.forEach((t, k) => away.set(k, t + gap)); }   // téléphone en veille : ce temps ne compte pas contre les autres
+    if (gap > 5000){ seen = now; away.forEach((t, k) => away.set(k, t + gap)); if (o.idle) o.players().forEach(p => { if (p.turnAt) p.turnAt += gap; if (p.act) p.act += gap; }); }   // téléphone en veille : ce temps ne compte pas contre les autres
     netAwake(o.live()); if (!o.live()) return;
+    // o.idle (Undercover) : on peut réfléchir aussi longtemps qu'on veut ; seule 1 minute à son tour sans aucun geste sur l'écran donne un forfait, avec un avertissement à 30 s
+    if (o.idle && o.host) return o.players().forEach((p, i) => { const wait = o.active(i) && o.turn(i); p.turnAt = wait ? p.turnAt || now : 0; if (!wait){ if (p.warn){ p.warn = 0; o.warn(null); } return; }
+      const still = now - Math.max(p.act || 0, p.turnAt); if (still < 30000){ if (p.warn){ p.warn = 0; o.warn(null); } return; } if (!p.warn){ p.warn = 1; o.warn(i); } if (still >= NET_FF){ p.warn = 0; o.warn(null); o.drop(i); } });
     if (o.host) return o.players().forEach((p, i) => { const t = p.peer ? away.get(p.peer) : null; if (!i) return; const wait = o.active(i) && (!o.turn || o.turn(i)); p.turnAt = wait ? p.turnAt || now : 0; if (t == null || !wait){ p.told = 0; return; }
       if (!p.told){ p.told = 1; frToast(`${p.name} ne répond plus : forfait dans moins d'une minute s'il ne revient pas.`); } if (now - Math.max(t, p.turnAt) >= NET_FF){ away.delete(p.peer); o.drop(i); } });
     const g = now - Math.max(seen, o.game.seen?.() || 0), off = navigator.onLine === false;
@@ -2257,6 +2260,7 @@ $("#host").onclick = async () => {
   $("#copyCode").onclick = () => navigator.clipboard?.writeText(code).then(() => $("#copyCode").textContent = "Copié !", () => {});
   NET.unsub.push(game.on("hello", msg => {
     if (msg.sameTab || NET.role !== "host") return;
+    if (G && (msg.peer === NET.guestPeer || msg.peer === NET.lastGuest)){ NET.seen = Date.now(); if (msg.data?.ff && !G.over) return ffEnd(0); }
     const name = cleanName(msg.data?.name, "Joueur 2");
     if (!G){
       NET.guestPeer = msg.peer;
@@ -2292,7 +2296,6 @@ $("#host").onclick = async () => {
     if (!NET.guestPeer && ch.joined.some(p => p.peer === NET.lastGuest)) netBack();
     if (ch.joined.length && G) sendState();
   }));
-  NET.unsub.push(game.on("alive", msg => { if (msg.sameTab || NET.role !== "host") return; if (msg.peer !== NET.guestPeer && msg.peer !== NET.lastGuest) return; NET.seen = Date.now(); if (msg.data?.ff && G && !G.over) ffEnd(0); }));
   NET.timers.push(setInterval(() => G && sendState(), 4000));
   netWatch(game);
 };
@@ -2335,7 +2338,7 @@ $("#join").onclick = async () => {
     const s = msg.data;
     if (!s || !DATA[s.u] || !Array.isArray(s.players)) return;
     NET.seen = Date.now();
-    if (G?.ff && !s.ff) return;   // déjà gagné par forfait : l'hôte qui revient l'apprend par « alive »
+    if (G?.ff && !s.ff) return;   // déjà gagné par forfait : l'hôte qui revient l'apprend par le signe de vie
     if (!NET.away) setNet(`En ligne · ${code}`, true);
     // rien de neuf (l'hôte renvoie l'état toutes les 4 s) : on ne redessine pas, un appui en cours sur téléphone serait perdu
     const j = JSON.stringify(s); if (j === NET.lastState && G) return; NET.lastState = j;
@@ -2343,7 +2346,7 @@ $("#join").onclick = async () => {
     render();
   }));
   NET.timers.push(setInterval(() => {
-    game.emit("alive", {ff: !!G?.ff}).catch(() => {});
+    if (G) game.emit("hello", {name: NET.myName, ff: !!G.ff}).catch(() => {});   // signe de vie, par un canal déclaré sur claude.ai
     const a = NET.pendAct; if (a){ if (G && a.seq === G.seq) game.emit("act", a).catch(() => {}); else NET.pendAct = null; }   // mise perdue pendant une coupure : renvoyée (l'hôte ignore les doublons)
   }, 4000));
   netWatch(game);
@@ -3659,11 +3662,13 @@ function ucTally(){
   ucEliminate(top[Math.floor(Math.random() * top.length)], top.length > 1);
 }
 // 1er nov. 2026 : joueur absent plus d'une minute : il sort de la partie, comme éliminé, et la manche reprend sans lui
+// un geste sur l'écran (doigt, souris, clavier) prévient que le joueur est là, au plus toutes les 5 secondes
+function ucActive(fn){ let t = 0; const go = () => { const n = Date.now(); if (n - t > 5000){ t = n; fn(); } }; ["pointerdown", "pointermove", "keydown", "touchstart", "scroll"].forEach(e => addEventListener(e, go, {passive: true, capture: true})); }
 function ucDrop(i){
   if (!UC || UC.phase === "over") return;
   const p = UC.players[i]; if (!p) return;
   if (!p.alive){ if (UC.phase === "guess" && UC.last?.p === i) ucAfterElim(); return; }
-  p.alive = false; p.ready = true; UC.note = `${p.name} est déconnecté : forfait.`;
+  p.alive = false; p.ready = true; UC.note = `${p.name} ne répond plus : forfait.`;
   const alive = ucAlive().map(k => UC.players[k]), imp = alive.filter(x => x.role !== "civil"), civ = alive.filter(x => x.role === "civil");
   if (!imp.length){ UC.winner = {side:"civil"}; UC.phase = "over"; return ucCommit(); }
   if (civ.length <= 1){ UC.winner = {side:"imp", who: ucAlive().filter(k => UC.players[k].role !== "civil")}; UC.phase = "over"; return ucCommit(); }
@@ -3702,7 +3707,7 @@ function ucAct(t, v, who){
 function ucPublic(){
   const over = UC.phase === "over";
   return {id:UC.id, u:UC.u, seq:UC.seq, round:UC.round, phase:UC.phase, order:UC.order, pos:UC.pos, white:UC.white, nUnder:UC.nUnder, clues:UC.clues, winner:UC.winner,
-    note: UC.note || "",
+    note: UC.note || "", afk: UC.afk ?? null,
     last: UC.last ? {p:UC.last.p, role:UC.last.role, tie:UC.last.tie, guess:UC.last.guess, guessOk:UC.last.guessOk, votes:UC.last.votes} : null,
     voted: Object.keys(UC.votes).map(Number),
     pair: over ? UC.pair : null,
@@ -3965,13 +3970,16 @@ async function ucHost(){
     const i = UCN.lobby.findIndex(p => p.peer === msg.peer);
     if (i <= 0) return;
     const a = msg.data || {};
+    UCN.lobby[i].act = Date.now();   // toute action compte comme un signe de vie
+    if (a.t === "active") return;
     ucApply(i, {t: String(a.t), v: a.v, seq: Number(a.seq)});
   }));
   UCN.unsub.push(game.onPeers(ch => {
     if (!UC && ch.left.length){ UCN.lobby = UCN.lobby.filter((p, i) => i === 0 || !ch.left.some(l => l.peer === p.peer)); ucBroadcastLobby(); }
   }));
   UCN.timers.push(setInterval(() => UC ? ucSendAll() : ucBroadcastLobby(), 4000));
-  groupWatch({game, host: true, timers: UCN.timers, players: () => UCN.lobby, live: () => !!UC && UC.phase !== "over", active: i => !!UC.players[i] && UC.players[i].alive, turn: i => UC.phase === "reveal" ? !UC.players[i].ready : UC.phase === "clues" ? ucCurrent() === i : UC.phase === "vote" ? UC.votes[i] == null : UC.phase === "guess" ? UC.last?.p === i : false, drop: ucDrop});
+  ucActive(() => { if (UCN.lobby[0]) UCN.lobby[0].act = Date.now(); });
+  groupWatch({game, host: true, timers: UCN.timers, players: () => UCN.lobby, live: () => !!UC && UC.phase !== "over", idle: true, warn: i => { UC.afk = i; ucSendAll(); if (i === 0) frToast("Toujours là ? Touche l'écran, sinon tu seras forfait dans 30 secondes."); }, active: i => !!UC.players[i] && UC.players[i].alive, turn: i => UC.phase === "reveal" ? !UC.players[i].ready : UC.phase === "clues" ? ucCurrent() === i : UC.phase === "vote" ? UC.votes[i] == null : UC.phase === "guess" ? UC.last?.p === i : false, drop: ucDrop});
   ucBroadcastLobby();
 }
 function ucBroadcastLobby(){
@@ -4005,6 +4013,7 @@ async function ucJoin(){
     if (d.to && d.to !== UCN.myPeer) return;
     got = true;
     UV = {pub: d.pub, me: d.me, word: d.word};
+    if (d.pub.afk === d.me && d.pub.afk != null){ if (!UCN.warned){ UCN.warned = 1; frToast("Toujours là ? Touche l'écran, sinon tu seras forfait dans 30 secondes."); } } else UCN.warned = 0;
     ucRender();
   }));
   let tries = 0;
@@ -4017,6 +4026,7 @@ async function ucJoin(){
   };
   hello();
   UCN.timers.push(setInterval(hello, 2000));
+  ucActive(() => { if (UV && UV.pub.phase !== "over") game.emit("uact", {t: "active"}).catch(() => {}); });
   groupWatch({game, host: false, topic: "ustate", timers: UCN.timers, live: () => !!UV && UV.pub.phase !== "over", stop: ucLeave});
 }
 ucInitHome();
@@ -19518,6 +19528,7 @@ const HK_NEWS = [["1er novembre 2026", [
   ["n", "Mon activité : tes ventes, achats, ordres et échanges au même endroit."],
   ["n", "Échanges : filtre « Contre mes doublons », pastille « Il te manque » et nombre d'exemplaires sur chaque carte."],
   ["n", "Forfait dans tous les jeux en ligne : un joueur qui ne répond pas pendant 1 minute à son tour quitte la partie, et les autres continuent. Pendant le tour des autres, tu peux poser ton téléphone."],
+  ["a", "Undercover : prends le temps de réfléchir. Le forfait ne tombe qu'après 1 minute à ton tour sans toucher l'écran, avec un avertissement avant."],
   ["n", "Cartes Kizuna : des cartes exclusives au parrainage, à partager avec ton filleul."],
   ["n", "Nouvelle page pour ouvrir ses boosters, avec tes envies."],
   ["a", "Parrainage plus simple : tous les boosters comptent, et le jeu te dit combien de temps il reste."],
