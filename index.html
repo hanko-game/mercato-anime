@@ -9554,7 +9554,7 @@ setInterval(voxRender, 2000);
 .tc > .tcnew::before{content:"Nouvelle";position:relative;font:900 7px/1 Unbounded,system-ui,sans-serif;letter-spacing:.17em;text-transform:uppercase;text-shadow:0 1px 0 rgba(0,0,0,.45)}
 .tc > .tcnew::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.8) 48%,transparent 64%);transform:translateX(-130%);animation:tcribSh 3.2s ease-in-out .7s infinite}
 .tc > .tcnew.v{color:#2a1a05;background:linear-gradient(180deg,#fff6cf 0%,#f5c84a 45%,#a8791a 100%);border-top-color:#fffbe8;border-bottom-color:#7a5510}
-.tc > .tcnew.v::before{content:"Version";text-shadow:0 1px 0 rgba(255,255,255,.5)}
+.tc > .tcnew.v::before{content:"Nouvelle";text-shadow:0 1px 0 rgba(255,255,255,.5)}   /* 2 nov. 2026 : « Nouvelle » aussi pour une nouvelle version (le ruban doré la distingue) */
 .kfl .tc > .tcnew,.tccine .tc > .tcnew,.tcview .tc > .tcnew{top:28px;right:-44px;width:176px;padding:6px 0 5px}
 .kfl .tc > .tcnew::before,.tccine .tc > .tcnew::before,.tcview .tc > .tcnew::before{font-size:10.5px}
 @keyframes tcribIn{from{transform:translate(26px,-26px) rotate(45deg);opacity:0}to{transform:rotate(45deg);opacity:1}}
@@ -11410,7 +11410,7 @@ async function tcPlFill(root){ const dd = root && root.querySelector("[data-fpl]
 // carte en grand, qui s'incline sous le doigt ou la souris ; un toucher la retourne pour lire la fiche
 function tcView(c, want){
   try { const s0 = tcLoad(); if (s0.own[c.id] && !(s0.tuto && s0.tuto.view)){ s0.tuto = s0.tuto || {claimed: []}; s0.tuto.view = 1; tcSave(s0); } } catch {}
-  const s = tcLoad(), fins = ["", ...Object.keys(TC_FIN).filter(k => s.fin[c.id] && s.fin[c.id][k] && tcVersOf(c).includes(k))]; let f = tcBestFin(s, c), back = false; if (want != null && want !== "*" && tcHas(s, c, want)) f = want;
+  const s = tcLoad(), fins = ["", ...Object.keys(TC_FIN).filter(k => s.fin[c.id] && s.fin[c.id][k] && tcVersOf(c).includes(k))]; let f = tcBestFin(s, c), back = false; if (want != null && want !== "*" && tcHas(s, c, want)) f = want; else if (want === "P" && TC_PROMO[c.id]) f = "P";   /* aperçu de la carte Promo d'un coffret, même pas encore obtenue */
   document.querySelector(".tcview")?.remove();
   document.body.insertAdjacentHTML("beforeend", `<div class="tcview r-${c.r}" role="dialog" aria-modal="true" aria-label="${esc(c.n)}"><button class="ghost vx" id="tcvX">✕ Fermer</button><div class="v3d"><div class="vcard"><div class="vf"></div><div class="vb">${tcBack(c.r)}<div class="tcfiche-w">${tcSheet(c, s, f)}</div></div></div></div>
     <div class="vbar">${fins.length > 1 ? `<div class="tcchips">${fins.map(k => `<button data-tcf="${k}">${k ? TC_FIN[k][0] + (k === "B" ? " · 2e illustration" : k === "C" ? " · 3e illustration" : "") : "Normale"}</button>`).join("")}</div>` : ""}<div class="row" style="justify-content:center"><button id="tcvSheet">Lire la fiche</button>${s.own[c.id] ? `<button class="ghost" id="tcvLock" aria-pressed="${!!(s.lock || {})[c.id]}">${(s.lock || {})[c.id] ? "🔒 Verrouillée" : "🔓 Verrouiller"}</button>` : ""}${s.own[c.id] && typeof hvSellForm === "function" ? `<button class="ghost" id="tcvSell" ${(s.lock || {})[c.id] ? "hidden" : ""}>◆ Vendre au marché</button>` : ""}</div><p class="small">Fais glisser pour incliner la carte, touche-la pour lire sa fiche.</p></div></div>`);
