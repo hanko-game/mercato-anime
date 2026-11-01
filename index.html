@@ -13782,11 +13782,12 @@ function pfCopyLink(btn){ const me = frMe(); if (!me) return; const url = FR_SIT
 // mon profil, tel que mes amis le voient
 function pfShow(){ const me = frMe(); if (!me){ show("home"); setTimeout(() => document.querySelector("#profBox")?.scrollIntoView({behavior: "smooth", block: "center"}), 80); return; } try { tcLibs(); } catch {}
   const M = $("#modal"), p = pfGet(tcLoad()), c = frCard(), hidden = PF_BLOCKS.filter(b => p.hide.includes(b[0])).map(b => b[1]);
-  const bar = `<div class="pfbar"><button class="primary" id="pfEdit">✎ Personnaliser</button><button id="pfLink">Copier mon lien</button><button class="ghost" id="pfVit">Choisir ma vitrine</button><button class="ghost" id="pfRec">Records et parties</button></div>
+  const bar = `<div class="pfbar"><button class="primary" id="pfEdit">✎ Personnaliser</button><button id="pfShImg">📷 Partager (image)</button><button id="pfShVid">🎬 Partager (vidéo)</button><button id="pfLink">Copier mon lien</button><button class="ghost" id="pfVit">Choisir ma vitrine</button><button class="ghost" id="pfRec">Records et parties</button></div>
     <p class="pfnote">Aperçu : c'est exactement ce que voient tes amis.${p.pv.all === 0 ? " Ton profil est <b>privé</b>." : ""}${hidden.length ? " Blocs masqués : " + hidden.join(", ") + "." : ""}${p.pv.col === 0 ? " Collection privée." : ""}${p.pv.tr === 0 ? " Doublons privés : tes amis ne peuvent pas te proposer d'échange." : ""}</p>`;
   M.innerHTML = `<div class="box" style="max-width:760px"><div class="head"><div><h2>Mon profil</h2></div><button class="ghost" id="pfX">✕ Fermer</button></div>${pfBody(me.name, me.tag, c, {me: true, bar})}</div>`;
   M.classList.remove("hidden"); M.scrollTo(0, 0); const close = () => { M.classList.add("hidden"); M.innerHTML = ""; }; $("#pfX").onclick = close; M.onclick = e => { if (e.target === M) close(); };
-  $("#pfEdit").onclick = () => pfEdit(); $("#pfLink").onclick = e => pfCopyLink(e.currentTarget); $("#pfVit").onclick = () => { close(); tcShow("vitrine"); }; $("#pfRec").onclick = () => { close(); profShow(); }; }
+  $("#pfEdit").onclick = () => pfEdit(); $("#pfLink").onclick = e => pfCopyLink(e.currentTarget); $("#pfVit").onclick = () => { close(); tcShow("vitrine"); }; $("#pfRec").onclick = () => { close(); profShow(); };
+  $("#pfShImg") && ($("#pfShImg").onclick = e => window.pfShareGo && pfShareGo("img", e.currentTarget)); $("#pfShVid") && ($("#pfShVid").onclick = e => window.pfShareGo && pfShareGo("vid", e.currentTarget)); }
 // fenêtre « Personnaliser » : trois onglets, un brouillon, rien n'est enregistré avant « Enregistrer »
 function pfEdit(tab = "look", draft){ const me = frMe(); if (!me) return; const s = tcLoad(), d = draft || pfGet(s), M = $("#modal"), all = tcCards();
   const owned = all.filter(c => s.own[c.id]).sort((a, b) => TC_ORDER.indexOf(b.r) - TC_ORDER.indexOf(a.r) || b.p - a.p).slice(0, 5), titles = VT.filter(v => (s.unl || []).includes(v[0]));
@@ -14675,6 +14676,133 @@ document.addEventListener("contextmenu", e => { if (e.target.closest && !e.targe
 <script>
 // menu contextuel (appui long) bloqué sur téléphone, sauf dans les champs de saisie et sur l'image de partage
 if (matchMedia("(hover: none) and (pointer: coarse)").matches) document.addEventListener("contextmenu", e => { const t = e.target; if (t.closest && (t.closest("input,textarea,select,[contenteditable='true']") || t.closest("img.shareimg"))) return; e.preventDefault(); }, true);
+</script>
+
+<script>
+/* ---- Partage du profil / de la collection : une carte verticale 1080×1350 stylée (photo + vidéo MP4), pour TikTok / Instagram (1er nov. 2026) ---- */
+(() => {
+  const RC = {C: "#b9b4c0", P: "#6fdc9f", R: "#6db6ff", E: "#c39bff", L: "#f7c64a", M: "#ff6a48", X: "#8fe9ff"}, RED = "#ff1e2d";
+  const load = src => new Promise(r => { if (!src) return r(null); const i = new Image(); i.onload = () => r(i); i.onerror = () => r(null); i.src = src; });
+  const rr = (g, x, y, w, h, r) => { r = Math.min(r, w / 2, h / 2); g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
+  const fit = (g, t, max, size, weight, fam) => { let s = size; do { g.font = `${weight} ${s}px ${fam}`; s -= 1; } while (g.measureText(t).width > max && s > 10); return t; };
+  const TTL = "Unbounded, Inter, system-ui, sans-serif", MONO = "'JetBrains Mono', ui-monospace, monospace";
+
+  async function pfPoster(){
+    const s = tcLoad(), all = tcCards();
+    const name = (typeof frMe === "function" && frMe()?.name) || (profGet() || {}).name || "Joueur";
+    const lvl = typeof tcLvl === "function" ? tcLvl(s.xp || 0) : 0;
+    const pf = pfPublic(s), owned = all.filter(c => s.own[c.id]);
+    const nOwn = owned.length, total = all.length || 1, pct = nOwn / total * 100;
+    const order = typeof TC_ORDER !== "undefined" ? TC_ORDER : ["C", "P", "R", "E", "L", "M", "X"];
+    const rarest = [...owned].sort((a, b) => order.indexOf(b.r) - order.indexOf(a.r) || (b.p || 0) - (a.p || 0)).slice(0, 5);
+    let c = null; try { c = window.frCardFull ? frCardFull() : null; } catch {}
+    const w = c ? c.w || 0 : 0, best = c ? c.best || 0 : 0, g0 = c ? c.g || 0 : 0;
+    const ti = pf.ti && (typeof VT !== "undefined" ? VT.find(v => v[0] === pf.ti) : null);
+    let avSrc = null; try { if (pf.img && typeof pfImgOk === "function" && pfImgOk(pf.img)) avSrc = pf.img; else if (pf.av){ const ac = all.find(x => x.no === pf.av[0]); if (ac) avSrc = tcBase(ac); } } catch {}
+    const [avImg, ...arts] = await Promise.all([load(avSrc), ...rarest.map(x => load(tcArt(x) || tcBase(x)))]);
+
+    const W = 1080, H = 1350, cv = document.createElement("canvas"); cv.width = W; cv.height = H; const g = cv.getContext("2d");
+    const bg = g.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, "#120509"); bg.addColorStop(.5, "#0a0810"); bg.addColorStop(1, "#050507"); g.fillStyle = bg; g.fillRect(0, 0, W, H);
+    const glow = g.createRadialGradient(W / 2, 200, 30, W / 2, 200, 760); glow.addColorStop(0, "rgba(255,30,45,.26)"); glow.addColorStop(1, "transparent"); g.fillStyle = glow; g.fillRect(0, 0, W, H);
+    g.textAlign = "center"; g.textBaseline = "alphabetic";
+
+    // logo hexagone rouge + marque
+    g.save(); g.translate(60, 54); g.scale(.46, .46); const hx = (cx, cy, r) => { g.beginPath(); for (let i = 0; i < 6; i++){ const a = Math.PI / 180 * (60 * i - 90), x = cx + r * Math.cos(a), y = cy + r * Math.sin(a); i ? g.lineTo(x, y) : g.moveTo(x, y); } g.closePath(); };
+    hx(50, 50, 48); g.fillStyle = RED; g.fill(); hx(50, 50, 38); g.fillStyle = "#120506"; g.fill(); g.fillStyle = RED; g.fillRect(31, 28, 11, 44); g.fillRect(58, 28, 11, 44); g.beginPath(); g.moveTo(27, 60); g.lineTo(73, 39); g.lineTo(73, 49); g.lineTo(27, 70); g.closePath(); g.fill(); g.restore();
+    g.textAlign = "left"; g.fillStyle = "#fff"; g.font = `900 30px ${TTL}`; g.fillText("HANKO", 110, 68);
+    g.textAlign = "right"; g.fillStyle = RED; g.font = `700 22px ${MONO}`; g.fillText("MON PROFIL", W - 60, 66);
+    g.textAlign = "center";
+
+    // avatar
+    const acx = W / 2, acy = 246, ar = 100;
+    g.save(); g.beginPath(); g.arc(acx, acy, ar, 0, 7); g.closePath(); g.fillStyle = "#15111b"; g.fill(); g.clip();
+    if (avImg){ const sc = Math.max(2 * ar / avImg.naturalWidth, 2 * ar / avImg.naturalHeight), iw = avImg.naturalWidth * sc, ih = avImg.naturalHeight * sc; g.drawImage(avImg, acx - iw / 2, acy - ih / 2, iw, ih); }
+    else { g.fillStyle = "#2a2130"; g.fillRect(acx - ar, acy - ar, 2 * ar, 2 * ar); g.fillStyle = "#fff"; g.font = `900 110px ${TTL}`; g.textBaseline = "middle"; g.fillText((name[0] || "?").toUpperCase(), acx, acy + 4); g.textBaseline = "alphabetic"; }
+    g.restore();
+    g.beginPath(); g.arc(acx, acy, ar + 4, 0, 7); g.lineWidth = 6; g.strokeStyle = RED; g.stroke();
+
+    // pseudo + niveau + titre
+    g.fillStyle = "#fff"; fit(g, name, W - 160, 56, 900, TTL); g.fillText(name, acx, 424);
+    let cy = 462;
+    // niveau (toujours) + titre (si présent), centrés côte à côte
+    g.font = `800 24px ${MONO}`; const lvTxt = "NIVEAU " + lvl, tiTxt = ti ? (ti[2] + " " + ti[1]).toUpperCase() : "";
+    const lvW = g.measureText(lvTxt).width + 34, tiW = tiTxt ? g.measureText(tiTxt).width + 34 : 0, gap = tiTxt ? 12 : 0, totW = lvW + gap + tiW;
+    let x0 = (W - totW) / 2;
+    rr(g, x0, cy - 30, lvW, 42, 21); g.fillStyle = "rgba(255,255,255,.08)"; g.fill(); g.lineWidth = 2; g.strokeStyle = RED; g.stroke(); g.fillStyle = "#fff"; g.textBaseline = "middle"; g.fillText(lvTxt, x0 + lvW / 2, cy - 8);
+    if (tiTxt){ x0 += lvW + gap; rr(g, x0, cy - 30, tiW, 42, 21); const tc = ["#c9a36a", "#dfe5ee", "#f2c230", "#c9a2ff"][ti[3]] || "#f2c230"; g.fillStyle = "rgba(255,255,255,.06)"; g.fill(); g.lineWidth = 2; g.strokeStyle = tc; g.stroke(); g.fillStyle = tc; g.fillText(fit(g, tiTxt, tiW - 20, 24, 800, MONO), x0 + tiW / 2, cy - 8); }
+    g.textBaseline = "alphabetic";
+
+    // anneau de complétude
+    const rcx = W / 2, rcy = 672, rad = 100, th = 20;
+    g.fillStyle = "#9a96a0"; g.font = `700 24px ${MONO}`; g.fillText("COLLECTION", rcx, 548);
+    g.lineWidth = th; g.lineCap = "round";
+    g.beginPath(); g.arc(rcx, rcy, rad, 0, 7); g.strokeStyle = "rgba(255,255,255,.09)"; g.stroke();
+    if (pct > 0){ g.beginPath(); g.arc(rcx, rcy, rad, -Math.PI / 2, -Math.PI / 2 + Math.max(.04, pct / 100) * 2 * Math.PI); g.strokeStyle = RED; g.stroke(); }
+    g.lineCap = "butt";
+    const pf2 = pct >= 100 ? "100" : pct < 10 ? pct.toFixed(1).replace(".", ",") : String(Math.floor(pct));
+    g.fillStyle = "#fff"; g.textBaseline = "middle"; g.font = `900 58px ${TTL}`; g.fillText(pf2 + "%", rcx, rcy - 4); g.font = `700 26px ${MONO}`; g.fillStyle = "#cfcbd6"; g.fillText(nOwn + " / " + total, rcx, rcy + 44); g.textBaseline = "alphabetic";
+
+    // pastilles de rareté (jusqu'à 2 lignes, centrées, sans débordement)
+    const chips = order.filter(r => owned.some(c => c.r === r)).map(r => [r, owned.filter(c => c.r === r).length]);
+    g.font = `800 21px ${MONO}`; g.textBaseline = "middle";
+    const CW = chips.map(([r, n]) => g.measureText((TC_R[r] ? TC_R[r][0] : r) + " " + n).width + 32), maxW = W - 90, rows = [[]];
+    let rw = 0; chips.forEach((ch, i) => { const cur = rows[rows.length - 1]; if (cur.length && rw + 10 + CW[i] > maxW){ rows.push([]); rw = 0; } rows[rows.length - 1].push(i); rw += (rows[rows.length - 1].length > 1 ? 10 : 0) + CW[i]; });
+    let cyr = 804; rows.forEach(row => { const tot = row.reduce((a, i) => a + CW[i], 0) + (row.length - 1) * 10; let cx2 = (W - tot) / 2;
+      row.forEach(i => { const [r, n] = chips[i], txt = (TC_R[r] ? TC_R[r][0] : r) + " " + n, pw = CW[i]; rr(g, cx2, cyr, pw, 42, 21); g.fillStyle = "rgba(255,255,255,.05)"; g.fill(); g.lineWidth = 2; g.strokeStyle = RC[r] || "#888"; g.stroke(); g.fillStyle = RC[r] || "#fff"; g.fillText(txt, cx2 + pw / 2, cyr + 22); cx2 += pw + 10; }); cyr += 52; });
+    g.textBaseline = "alphabetic";
+
+    // tuiles de stats (sous les pastilles)
+    const tiles = [["VICTOIRES", w], ["SÉRIE RECORD", best], ["PARTIES", g0]];
+    const tw = 300, th2 = 100, tg = 18, tx0 = (W - (tw * 3 + tg * 2)) / 2, ty = cyr + 6;
+    tiles.forEach(([lab, val], i) => { const x = tx0 + i * (tw + tg); rr(g, x, ty, tw, th2, 18); g.fillStyle = "rgba(255,255,255,.04)"; g.fill(); g.lineWidth = 1.5; g.strokeStyle = "rgba(255,255,255,.12)"; g.stroke();
+      g.fillStyle = "#fff"; g.font = `900 44px ${TTL}`; g.fillText(String(val), x + tw / 2, ty + 52); g.fillStyle = "#9a96a0"; g.font = `700 18px ${MONO}`; g.fillText(lab, x + tw / 2, ty + 82); });
+
+    // meilleures cartes
+    if (rarest.length){ const n = rarest.length, cwd = 140, ch = cwd * 666 / 450, cly = ty + th2 + 28, cardY = cly + 12;
+      g.fillStyle = "#9a96a0"; g.font = `700 21px ${MONO}`; g.textAlign = "left"; g.fillText("MES PLUS BELLES CARTES", tx0, cly); g.textAlign = "center";
+      const cgap = n > 1 ? (W - 2 * tx0 - n * cwd) / (n - 1) : 0;
+      rarest.forEach((card, i) => { const x = tx0 + i * (cwd + cgap), col = RC[card.r] || "#888", im = arts[i];
+        g.save(); rr(g, x, cardY, cwd, ch, 11); g.fillStyle = "#111"; g.fill(); g.clip(); if (im){ const sc = Math.max(cwd / im.naturalWidth, ch / im.naturalHeight), iw = im.naturalWidth * sc, ih = im.naturalHeight * sc; g.drawImage(im, x + (cwd - iw) / 2, cardY + (ch - ih) * .12, iw, ih); } const sh = g.createLinearGradient(0, cardY + ch * .5, 0, cardY + ch); sh.addColorStop(0, "transparent"); sh.addColorStop(1, "rgba(0,0,0,.85)"); g.fillStyle = sh; g.fillRect(x, cardY, cwd, ch); g.restore();
+        g.save(); rr(g, x + 1, cardY + 1, cwd - 2, ch - 2, 10); g.lineWidth = 2.5; g.strokeStyle = col; g.stroke(); g.restore();
+        g.fillStyle = col; g.font = `800 14px ${MONO}`; g.fillText((TC_R[card.r] ? TC_R[card.r][0] : card.r).toUpperCase(), x + cwd / 2, cardY + ch - 11); });
+    }
+
+    // pied de page
+    g.fillStyle = "#9a96a0"; g.font = `600 26px Inter, system-ui, sans-serif`; g.fillText("Rejoins-moi sur Hanko", W / 2, H - 48);
+    g.fillStyle = "#fff"; g.font = `700 29px ${MONO}`; g.fillText("hanko-game.github.io/mercato-anime", W / 2, H - 15);
+    return cv;
+  }
+
+  // ---- partage photo + vidéo (même principe que le partage de tirage) ----
+  const mimeFor = () => { const L = ["video/mp4;codecs=h264", "video/mp4", "video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"]; if (!window.MediaRecorder || !window.MediaRecorder.isTypeSupported) return ""; for (const m of L) if (MediaRecorder.isTypeSupported(m)) return m; return ""; };
+  function drawFrame(g, poster, k, W, H){
+    g.fillStyle = "#050507"; g.fillRect(0, 0, W, H);
+    const ease = 1 - Math.pow(1 - k, 3), scale = 1.1 - .1 * ease, dy = (1 - ease) * -26;
+    g.save(); g.globalAlpha = Math.min(1, k / .16); g.translate(W / 2, H / 2); g.scale(scale, scale); g.translate(-W / 2, -H / 2); g.drawImage(poster, 0, dy, W, H); g.restore();
+    const sw = (k - .22) / .42; if (sw > 0 && sw < 1){ const x = -.35 * W + sw * 1.7 * W; g.save(); g.globalCompositeOperation = "screen"; const gr = g.createLinearGradient(x - 160, 0, x + 160, H); gr.addColorStop(0, "transparent"); gr.addColorStop(.5, "rgba(255,255,255,.16)"); gr.addColorStop(1, "transparent"); g.fillStyle = gr; g.fillRect(0, 0, W, H); g.restore(); }
+    if (k > .35){ g.save(); g.globalCompositeOperation = "screen"; for (let i = 0; i < 14; i++){ const a = (i * 2654435761 % 1000) / 1000, b = ((i * 40503) % 1000) / 1000, tw = .5 + .5 * Math.sin((k - .35) / .65 * 6.28 + i * 1.7), x = a * W, y = 150 + b * (H - 360), r = 2 + tw * 5; g.globalAlpha = .2 + .6 * tw; g.fillStyle = "#fff"; g.beginPath(); g.arc(x, y, r, 0, 6.28); g.fill(); } g.restore(); }
+  }
+  function modal(url, isVideo, ext){ const M = document.createElement("div"); M.className = "tcview tcsharebox"; M.style.cssText = "display:grid;place-items:center;align-content:center;overflow:auto;background:rgba(5,5,7,.92)";
+    const media = isVideo ? `<video class="shareimg" src="${url}" autoplay loop muted playsinline controls style="width:100%;max-width:400px;margin:0 auto 12px;border-radius:14px;display:block"></video>` : `<img class="shareimg" src="${url}" alt="Mon profil Hanko">`;
+    M.innerHTML = `<div style="width:min(100%,460px);padding:16px">${media}<p class="small" style="text-align:center;margin:0 0 12px;color:#bbb">${isVideo ? "Télécharge la vidéo, puis publie-la sur TikTok ou Instagram." : "Enregistre l'image (appui long sur téléphone) ou copie-la, puis partage-la."}</p><div class="row"><a href="${url}" download="hanko-profil.${ext}" style="border-radius:999px;padding:10px 18px;text-decoration:none;font-weight:700;background:var(--accent);color:#fff">Télécharger</a>${isVideo ? "" : `<button id="pfsCopy" style="border-radius:999px">Copier l'image</button>`}<button class="ghost" id="pfsX" style="border-radius:999px">Fermer</button></div></div>`;
+    document.body.appendChild(M); const close = () => { M.remove(); URL.revokeObjectURL(url); }; M.querySelector("#pfsX").onclick = close; M.onclick = e => { if (e.target === M) close(); }; return M; }
+
+  async function sharePhoto(cv){ const blob = await new Promise(r => cv.toBlob(r, "image/png")), file = new File([blob], "hanko-profil.png", {type: "image/png"}), text = "Mon profil Hanko !";
+    if (navigator.canShare && navigator.canShare({files: [file]})){ try { await navigator.share({files: [file], title: "Mon profil Hanko", text}); return; } catch (e) { if (e && e.name === "AbortError") return; } }
+    const url = URL.createObjectURL(blob), M = modal(url, false, "png"); const cp = M.querySelector("#pfsCopy"); if (cp) cp.onclick = async e => { try { await navigator.clipboard.write([new ClipboardItem({"image/png": blob})]); e.currentTarget.textContent = "Copiée ✔"; } catch { e.currentTarget.textContent = "Copie impossible ici"; } }; }
+
+  async function shareVideo(poster){ const mime = mimeFor(), W = poster.width, H = poster.height, cv = document.createElement("canvas"); cv.width = W; cv.height = H; const g = cv.getContext("2d");
+    if (!window.MediaRecorder || !cv.captureStream || !mime) return sharePhoto(poster);
+    const stream = cv.captureStream(30), chunks = [], rec = new MediaRecorder(stream, {mimeType: mime, videoBitsPerSecond: 9e6});
+    rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+    const DUR = 4600; await new Promise(resolve => { let s0 = 0; rec.onstop = resolve; const loop = ts => { if (!s0) s0 = ts; const el = ts - s0; drawFrame(g, poster, Math.min(1, el / DUR), W, H); if (el < DUR) requestAnimationFrame(loop); else { try { rec.stop(); } catch { resolve(); } } }; rec.start(); requestAnimationFrame(loop); });
+    const ext = mime.indexOf("mp4") >= 0 ? "mp4" : "webm", blob = new Blob(chunks, {type: mime}), file = new File([blob], "hanko-profil." + ext, {type: mime}), text = "Mon profil Hanko !";
+    if (navigator.canShare && navigator.canShare({files: [file]})){ try { await navigator.share({files: [file], title: "Mon profil Hanko", text}); return; } catch (e) { if (e && e.name === "AbortError") return; } }
+    modal(URL.createObjectURL(blob), true, ext); }
+
+  window.pfShareGo = async (kind, btn) => { const t = btn ? btn.innerHTML : ""; if (btn){ btn.disabled = true; btn.innerHTML = kind === "vid" ? "🎬 Vidéo…" : "📷 Image…"; }
+    try { const cv = await pfPoster(); if (!cv) return; if (kind === "vid") await shareVideo(cv); else await sharePhoto(cv); } catch (e) { console.error(e); } finally { if (btn){ btn.disabled = false; btn.innerHTML = t; } } };
+})();
 </script>
 
 <style>
