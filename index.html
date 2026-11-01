@@ -11481,6 +11481,12 @@ function tcOddsOf(c, key){ try { const {t} = tcParse(key), R = TC_T[t].rate; let
     else { const a = (R[0][c.r] || 0) / 100, b = (R[1][c.r] || 0) / 100; p = (1 - Math.pow(1 - a, 4) * (1 - b)) * 100; }
     if (!(p > 0)) return ""; const txt = p >= 10 ? p.toFixed(0) : p >= 1 ? p.toFixed(1).replace(".", ",") : p.toFixed(2).replace(".", ",");
     return `<div class="odds">${txt} % de chance dans ce booster<small>${c.f && c.f !== "H" ? "version " + TC_FIN[c.f][1] : TC_R[c.r][0]}${p < 5 ? " · environ 1 booster sur " + Math.max(2, Math.round(100 / p)) : ""}</small></div>`; } catch { return ""; } }
+// probabilité (en %) d'obtenir cette carte dans ce booster, pour l'afficher sur les rendus de partage (1er nov. 2026)
+function tcOddsPct(c, key){ try { const {t} = tcParse(key), R = TC_T[t].rate; let p;
+  if (c.f && c.f !== "H" && TC_VHIT[c.f === "B" || c.f === "C" ? "A" : c.f] != null) p = TC_VHIT[c.f === "B" || c.f === "C" ? "A" : c.f] * TC_FINMUL[t];
+  else if (c.r === "X") p = TC_XRATE[t];
+  else { const a = (R[0][c.r] || 0) / 100, b = (R[1][c.r] || 0) / 100; p = (1 - Math.pow(1 - a, 4) * (1 - b)) * 100; }
+  return p > 0 ? p : null; } catch { return null; } }
 function tcCine(c, o = {}){
   return new Promise(res => {
     const sty = c.f === "Z" ? "Z" : c.f === "G" ? "G" : c.f === "K" ? "M" : c.f === "S" ? "S" : c.f === "W" ? "L" : c.r === "X" ? "X" : c.r === "M" ? "M" : c.r === "L" ? "L" : "E", myth = sty !== "L" && sty !== "E", calm = tcCalm(), mini = !!o.mini || (sty === "E" && !o.full);
@@ -11941,6 +11947,7 @@ function tcOpening(key, got){
     const gain = got.filter(c => !c.isNew && !c.newFin).reduce((a, c) => a + TC_R[c.r][1] * (c.f ? TC_FIN[c.f][3] : 1), 0), have = (s.packs[key] || 0) + (key === "mix:0" ? s.free.n : 0), price = tcPrice(u, t);
     // meilleure carte du lot : la rareté d'abord, la version rare ensuite (ce n'est plus forcément la dernière depuis que la version rare prend la 4e place)
     const VB = {H: .5, A: 3, B: 3, C: 3, W: 3.5, S: 4, K: 5, G: 8, Z: 9}, sc = c => TC_ORDER.indexOf(c.r) * 2 + (VB[c.f] || 0), bk = got.reduce((b, c, k) => sc(c) > sc(got[b]) ? k : b, 0);
+    try { const _p = tcOddsPct(got[bk], key); O.dataset.oddsp = _p != null ? String(_p) : ""; O.dataset.oddslab = got[bk].f && got[bk].f !== "H" ? TC_FIN[got[bk].f][1] : TC_R[got[bk].r][0]; } catch {}   /* % de drop de la meilleure carte, pour les rendus de partage */
     O.classList.add("res"); O.querySelector("h2").textContent = tcName(key);
     const row = mid.querySelector(".tcrow"); if (row && got.length <= 5){ row.classList.add("tcfan"); let j = 0; [...row.children].forEach((el, k) => { el.classList.remove("tcflip", "tcburst"); if (k === bk){ el.style.setProperty("--k", 0); el.style.order = 3; el.classList.add("best"); return; } el.style.setProperty("--k", j < 2 ? j - 2 : j - 1); el.style.order = j < 2 ? j + 1 : j + 2; j++; }); }
     { const rw = mid.querySelector(".tcrow"); if (rw){ const zoom = () => [...rw.children].forEach((el, j) => { const c = got[SIDX[j]]; if (!c || el.classList.contains("zoom")) return; el.classList.add("zoom"); el.setAttribute("role", "button"); el.tabIndex = 0; el.setAttribute("aria-label", "Voir " + c.n + " en grand"); const go = () => tcView(c, c.f || ""); el.onclick = go; el.onkeydown = e => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); go(); } }; }); zoom();
@@ -11955,7 +11962,7 @@ function tcOpening(key, got){
     mid.insertAdjacentHTML("afterbegin", `<p class="osum">${[nw && nw + " nouvelle" + (nw > 1 ? "s" : "") + " carte" + (nw > 1 ? "s" : ""), nf && nf + " nouvelle" + (nf > 1 ? "s" : "") + " version" + (nf > 1 ? "s" : ""), dup && dup + " doublon" + (dup > 1 ? "s" : "") + " (+" + gain + " ◆ si recyclé" + (dup > 1 ? "s" : "") + ")"].filter(Boolean).join(", ")}</p><p class="obest">Meilleure carte : ${esc(got[bk].n)}${got[bk].f && got[bk].f !== "H" ? " · " + TC_FIN[got[bk].f][1] : ""}</p>${(TC_ORDER.indexOf(got[bk].r) >= 3 || (got[bk].f && got[bk].f !== "H")) ? tcOddsOf(got[bk], key).replace('class="odds"', 'class="odds oodds"') : ""}`);
     mid.insertAdjacentHTML("beforeend", `<span class="oxn">×${got.packs || 1}</span><p class="tcxp">+${got.xp} XP${got.ups.map(([l, tt]) => ` · <b>Niveau ${l} : booster ${TC_T[tt].n} offert</b>`).join("")}</p>`);
     bot.innerHTML = `<div class="oend"><button class="primary" id="tcAgain" ${have || s.gems >= price ? "" : "disabled"}>Ouvrir un autre${have ? `<small>${have} en stock</small>` : `<small>${price} ◆</small>`}</button>
-      <div class="ogrid"><button id="tcColl"><i aria-hidden="true">札</i>Collection</button><button id="tcShare2"><i aria-hidden="true">↗</i>Partager</button><button id="tcSwap"><i aria-hidden="true">✓</i>Terminer</button></div></div>`;   /* 25 oct. 2026 : barre compacte collée en bas (plus besoin de descendre) */   /* 19 oct. 2026 : fin d'ouverture simplifiée (une action principale, deux raccourcis, une sortie claire) */
+      <div class="ogrid"><button id="tcColl"><i aria-hidden="true">札</i>Collection</button><button id="tcShare2"><i aria-hidden="true">📷</i>Photo</button><button id="tcVid"><i aria-hidden="true">🎬</i>Vidéo</button><button id="tcSwap"><i aria-hidden="true">✓</i>Terminer</button></div></div>`;   /* 25 oct. 2026 : barre compacte collée en bas (plus besoin de descendre) */   /* 19 oct. 2026 : fin d'ouverture simplifiée (une action principale, deux raccourcis, une sortie claire) */
     $("#tcSwap").onclick = () => { TC_TAB = "packs"; end(); }; $("#tcColl").onclick = () => { TC_TAB = "album"; end(); };
     $("#tcAgain").onclick = () => { const s = tcLoad(); if (!((s.packs[key] || 0) + (key === "mix:0" ? s.free.n : 0))){ if (s.gems < price) return; if (!tcPaidOk(price, () => $("#tcAgain")?.click())) return; s.gems -= price; tcGive(s, key); tcSave(s); } TC_PICK = (tcLoad().packs[key] || 0) > 0 ? key : "free"; TC_TAB = "packs"; TC_SUB = "mine"; O.remove(); tcRender(); $("#tcOpen")?.click(); };
     const st = tcLoad(); O.querySelector(".otop .ost").innerHTML = `<span>${tcStock(st)} booster${tcStock(st) > 1 ? "s" : ""}</span><span>${st.gems} ◆</span>`;
@@ -14589,9 +14596,16 @@ document.addEventListener("contextmenu", e => { if (e.target.closest && !e.targe
     g.textAlign = "center"; g.fillStyle = "#fff"; g.font = "900 64px Unbounded, Inter, system-ui, sans-serif"; g.fillText("Mon tirage Hanko", W / 2, 118);
     const title = (document.querySelector(".tcopen.res h2, .tcopen.res .otop b")?.textContent || "Booster").replace(/[^\p{Script=Latin}\d\s'’·-]/gu, "").replace(/\s+/g, " ").trim() || "Booster";
     g.fillStyle = acc; g.font = "700 30px 'JetBrains Mono', Inter, monospace"; g.fillText(fit(g, (title + " · meilleure carte : " + top.n).toUpperCase(), W - 120, 30, 700, "'JetBrains Mono', Inter, monospace"), W / 2, 170);
+    // badge du % de drop de la meilleure carte : on « sent » la rareté (1er nov. 2026)
+    const Ov = document.querySelector(".tcopen.res"), op = Ov && Ov.dataset.oddsp ? parseFloat(Ov.dataset.oddsp) : null, olab = (Ov && Ov.dataset.oddslab) || (TC_R[top.r] && TC_R[top.r][0]) || "";
+    if (op != null && op > 0){ const pt = op >= 10 ? op.toFixed(0) : op >= 1 ? op.toFixed(1).replace(".", ",") : op.toFixed(2).replace(".", ","); const lbl = `${olab.toUpperCase()} · ${pt} % DE CHANCE${op < 5 ? " · 1 BOOSTER SUR " + Math.max(2, Math.round(100 / op)) : ""}`;
+      g.font = "800 29px Inter, system-ui, sans-serif"; const tw = g.measureText(lbl).width, pw = Math.min(W - 80, tw + 56), px = (W - pw) / 2, py = 196, ph = 54;
+      g.save(); rr(g, px, py, pw, ph, 27); g.fillStyle = "rgba(255,255,255,.07)"; g.fill(); g.lineWidth = 2.5; g.strokeStyle = acc; g.stroke();
+      g.fillStyle = "#fff"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(fit(g, lbl, pw - 36, 29, 800, "Inter, system-ui, sans-serif"), W / 2, py + ph / 2 + 1); g.restore(); g.textBaseline = "alphabetic"; g.textAlign = "center"; }
+    const TOP = op != null && op > 0 ? 278 : 230;
     const n = L.length, cols = n <= 3 ? n : n <= 6 ? 3 : 5, rows = Math.ceil(n / cols), gap = cols === 5 ? 18 : 28;
-    const cw = Math.min(n <= 3 ? 300 : 300, (W - 120 - gap * (cols - 1)) / cols), ch = cw * 666 / 450, areaH = H - 230 - 150, scale = Math.min(1, (areaH - gap * (rows - 1)) / (rows * ch));
-    const w = cw * scale, h = ch * scale, y0 = 230 + (areaH - (rows * h + gap * (rows - 1))) / 2;
+    const cw = Math.min(n <= 3 ? 300 : 300, (W - 120 - gap * (cols - 1)) / cols), ch = cw * 666 / 450, areaH = H - TOP - 150, scale = Math.min(1, (areaH - gap * (rows - 1)) / (rows * ch));
+    const w = cw * scale, h = ch * scale, y0 = TOP + (areaH - (rows * h + gap * (rows - 1))) / 2;
     for (let i = 0; i < n; i++){ const {c, src, fin, ar} = L[i], row = Math.floor(i / cols), inRow = Math.min(cols, n - row * cols), x0 = (W - (inRow * w + gap * (inRow - 1))) / 2, x = x0 + (i - row * cols) * (w + gap), y = y0 + row * (h + gap);
       const col = (TC_BKC[c.r] || ["#888"])[0];
       g.save(); g.shadowColor = col; g.shadowBlur = RANK.indexOf(c.r) >= 3 ? 34 : 12; rr(g, x, y, w, h, 18); g.fillStyle = "#111"; g.fill(); g.restore();
@@ -14617,8 +14631,33 @@ document.addEventListener("contextmenu", e => { if (e.target.closest && !e.targe
       const close = () => { M.remove(); URL.revokeObjectURL(url); }; M.querySelector("#tcShX").onclick = close; M.onclick = e => { if (e.target === M) close(); };
       M.querySelector("#tcShCopy").onclick = async e => { try { await navigator.clipboard.write([new ClipboardItem({"image/png": blob})]); e.currentTarget.textContent = "Copiée ✔"; } catch { e.currentTarget.textContent = "Copie impossible ici"; } };
     } finally { btn.disabled = false; btn.innerHTML = t; } }
+  // ---- Vidéo verticale MP4 prête pour TikTok / Instagram ----
+  const mimeFor = () => { const L = ["video/mp4;codecs=h264", "video/mp4", "video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"]; if (!window.MediaRecorder || !window.MediaRecorder.isTypeSupported) return ""; for (const m of L) if (MediaRecorder.isTypeSupported(m)) return m; return ""; };
+  function drawFrame(g, poster, k, W, H){
+    g.fillStyle = "#050507"; g.fillRect(0, 0, W, H);
+    const ease = 1 - Math.pow(1 - k, 3), scale = 1.1 - .1 * ease, dy = (1 - ease) * -26;
+    g.save(); g.globalAlpha = Math.min(1, k / .16); g.translate(W / 2, H / 2); g.scale(scale, scale); g.translate(-W / 2, -H / 2); g.drawImage(poster, 0, dy, W, H); g.restore();
+    const sw = (k - .22) / .42; if (sw > 0 && sw < 1){ const x = -.35 * W + sw * 1.7 * W; g.save(); g.globalCompositeOperation = "screen"; const gr = g.createLinearGradient(x - 160, 0, x + 160, H); gr.addColorStop(0, "transparent"); gr.addColorStop(.5, "rgba(255,255,255,.16)"); gr.addColorStop(1, "transparent"); g.fillStyle = gr; g.fillRect(0, 0, W, H); g.restore(); }
+    if (k > .35){ g.save(); g.globalCompositeOperation = "screen"; for (let i = 0; i < 14; i++){ const a = (i * 2654435761 % 1000) / 1000, b = ((i * 40503) % 1000) / 1000, tw = .5 + .5 * Math.sin((k - .35) / .65 * 6.28 + i * 1.7), x = a * W, y = 150 + b * (H - 360), r = 2 + tw * 5; g.globalAlpha = .2 + .6 * tw; g.fillStyle = "#fff"; g.beginPath(); g.arc(x, y, r, 0, 6.28); g.fill(); } g.restore(); }
+  }
+  async function record(btn){
+    const t0 = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<i aria-hidden="true">🎬</i>Vidéo…';
+    try {
+      const poster = await render(); if (!poster) return;
+      const mime = mimeFor(), W = poster.width, H = poster.height, cv = document.createElement("canvas"); cv.width = W; cv.height = H; const g = cv.getContext("2d");
+      if (!window.MediaRecorder || !cv.captureStream || !mime){ btn.disabled = false; btn.innerHTML = t0; return share(btn); }   // pas d'enregistrement possible ici : on retombe sur l'image
+      const stream = cv.captureStream(30), chunks = [], rec = new MediaRecorder(stream, {mimeType: mime, videoBitsPerSecond: 9e6});
+      rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+      const DUR = 4600;
+      await new Promise(resolve => { let s0 = 0; rec.onstop = resolve; const loop = ts => { if (!s0) s0 = ts; const el = ts - s0; drawFrame(g, poster, Math.min(1, el / DUR), W, H); if (el < DUR) requestAnimationFrame(loop); else { try { rec.stop(); } catch { resolve(); } } }; rec.start(); requestAnimationFrame(loop); });
+      const ext = mime.indexOf("mp4") >= 0 ? "mp4" : "webm", blob = new Blob(chunks, {type: mime}), file = new File([blob], "hanko-tirage." + ext, {type: mime}), text = "Mon tirage sur Hanko !";
+      if (navigator.canShare && navigator.canShare({files: [file]})){ try { await navigator.share({files: [file], title: "Mon tirage Hanko", text}); return; } catch (e) { if (e && e.name === "AbortError") return; } }
+      const url = URL.createObjectURL(blob), M = document.createElement("div"); M.className = "tcview tcsharebox"; M.style.cssText = "display:grid;place-items:center;align-content:center;overflow:auto;background:rgba(5,5,7,.92)";
+      M.innerHTML = `<div style="width:min(100%,460px);padding:16px"><video class="shareimg" src="${url}" autoplay loop muted playsinline controls style="width:100%;max-width:420px;margin:0 auto 12px;border-radius:14px;display:block"></video><p class="small" style="text-align:center;margin:0 0 12px;color:#bbb">Télécharge la vidéo, puis publie-la sur TikTok ou Instagram.</p><div class="row"><a href="${url}" download="hanko-tirage.${ext}" style="border-radius:999px;padding:10px 18px;text-decoration:none;font-weight:700;background:var(--accent);color:#fff">Télécharger la vidéo</a><button class="ghost" id="tcVdX" style="border-radius:999px">Fermer</button></div></div>`;
+      document.body.appendChild(M); const close = () => { M.remove(); URL.revokeObjectURL(url); }; M.querySelector("#tcVdX").onclick = close; M.onclick = e => { if (e.target === M) close(); };
+    } catch {} finally { btn.disabled = false; btn.innerHTML = t0; } }
   // bouton « Partager mon tirage » sous les cartes obtenues
-  const add = () => { const O = document.querySelector(".tcopen.res"); if (!O) return; const b2 = O.querySelector("#tcShare2"); if (b2){ if (!b2.onclick) b2.onclick = e => share(e.currentTarget); return; } if (O.querySelector("#tcShare")) return; const row = O.querySelector(".tcopen .tcrow"); if (!row) return;
+  const add = () => { const O = document.querySelector(".tcopen.res"); if (!O) return; const bv = O.querySelector("#tcVid"); if (bv && !bv.onclick) bv.onclick = e => record(e.currentTarget); const b2 = O.querySelector("#tcShare2"); if (b2){ if (!b2.onclick) b2.onclick = e => share(e.currentTarget); return; } if (O.querySelector("#tcShare")) return; const row = O.querySelector(".tcopen .tcrow"); if (!row) return;
     const anchor = [...O.querySelectorAll("button")].find(b => /Ouvrir un autre|Changer de booster|Retour/.test(b.textContent) && b.offsetParent && b.getBoundingClientRect().top > row.getBoundingClientRect().top) || row;
     anchor.insertAdjacentHTML(anchor === row ? "afterend" : "beforebegin", `<div style="display:flex;justify-content:center;margin:14px 0"><button id="tcShare" class="ghost">↗ Partager mon tirage</button></div>`);
     O.querySelector("#tcShare").onclick = e => share(e.currentTarget); };
@@ -14822,6 +14861,7 @@ if (matchMedia("(hover: none) and (pointer: coarse)").matches) document.addEvent
 </style>
 <script>
 const GX = {rows: [], at: 0};
+try { const _c = JSON.parse(localStorage.getItem("hanko-gx") || "[]"); if (Array.isArray(_c) && _c.length) GX.rows = _c; } catch {}   /* 1er nov. 2026 : dernier fil gardé en cache → affichage instantané sans attendre le réseau */
 const GX_FIN = {S: "#7fd6ff", K: "#ff3b3b", W: "#d9a066", G: "#f7c64a", Z: "#ffe9a8"}, GX_COL = {L: "#f5c518", M: "#ff5f8f", X: "#b58cff"};
 const gxBig = c => "LMX".includes(c.r) || !!GX_FIN[c.f];   /* carte du jeu : Légendaire, Mythique, Éveil, ou version Art spécial, Red Blood, Wanted, UR, Légende */
 const gxOff = () => !!tcLoad().noFeed;
@@ -14841,14 +14881,16 @@ function gxDraw(){
   const o = box.querySelector(".gxo"); if (o) o.onclick = () => { const s = tcLoad(); s.noFeed = !s.noFeed; tcSave(s); delete box.dataset.h; gxDraw(); };
 }
 const gxSeen = () => !document.hidden && !!document.querySelector(window.NV_ON ? "#home:not(.hidden)" : "#tcg:not(.hidden)");
-async function gxTick(force){ if (!force && !gxSeen()) return; GX.at = Date.now(); try { const sb = typeof cpClient === "function" ? await cpClient() : null; if (!sb) return; const {data, error} = await sb.rpc("big_pulls_feed"); if (error || !data) return; GX.rows = data; gxDraw(); } catch {} }
+async function gxTick(force){ if (!force && !gxSeen()) return; GX.at = Date.now(); try { const sb = typeof cpClient === "function" ? await cpClient() : null; if (!sb) return; const {data, error} = await sb.rpc("big_pulls_feed"); if (error || !data) return; GX.rows = data; try { localStorage.setItem("hanko-gx", JSON.stringify(data.slice(0, 20))); } catch {} gxDraw(); } catch {} }
 /* après une ouverture : on envoie d'abord la sauvegarde, car le serveur vérifie que la carte y est bien */
 async function gxSend(l){ try { if (!l.length || !CP.user || gxOff()) return; const sb = await cpClient(); if (!sb || !(await cpPush())) return; for (const [card, f] of l.slice(-3)) await sb.rpc("report_pull", {card, f}); gxTick(true); } catch {} }
 const gxPull = got => gxSend([...new Map(got.filter(gxBig).map(c => [c.id + (c.f || ""), [c.id, c.f || ""]])).values()]);
 const gxPullS = (id, got) => gxSend([...new Set(got.filter(c => hsRk(c) >= 4).map(hsKey))].map(k => ["s:" + id + ":" + k, ""]));
 document.querySelector("#tcg")?.insertAdjacentHTML("beforeend", `<div class="gxf" hidden></div>`);   /* sous les boosters : le bouton Ouvrir reste en haut de l'écran */
 { const base = tcRender; tcRender = function(){ const r = base.apply(this, arguments); try { gxDraw(); if (Date.now() - GX.at > 3e4) gxTick(true); } catch {} return r; }; }
-setInterval(gxTick, 6e4);
+try { gxDraw(); } catch {}   /* rend tout de suite le cache */
+gxTick(true);   /* et lance un rafraîchissement immédiat au démarrage, sans attendre le 1er intervalle */
+setInterval(gxTick, 45e3);
 </script>
 
 <style>
@@ -19459,7 +19501,7 @@ window.NV_ON = true;   /* false : retour à l'ancienne interface */
     if (!box.dataset.init){ box.dataset.init = 1; box.innerHTML = `${hd("Bonjour · 今日", me ? esc(me.name) : "Bienvenue")}<div class="nvtwo"><div id="nvHero"></div><div><div class="nv2">Rejoindre une partie</div><div class="nvjoin"><input id="nvCode" maxlength="4" placeholder="Code à 4 caractères" autocomplete="off"><button id="nvJoin">Entrer</button></div><div class="nverr" id="nvErr"></div><div class="nv2">Ta journée</div><div id="nvDay"></div></div></div><div class="nv2">Gros tirages</div><div id="nvPulls"></div>`;
       const kd = $1(".kjd"), gx = $1(".gxf"); if (kd) $1("#nvDay").appendChild(kd); if (gx) $1("#nvPulls").appendChild(gx);
       $1("#nvJoin").onclick = () => { const v = $1("#nvCode").value.trim().toUpperCase(), er = $1("#nvErr"); er.textContent = ""; if (v.length !== 4) return er.textContent = "Entre les 4 caractères du code."; const m = frMe(); if (!m) return nvGo("me"); $1("#qjName").value = m.name; $1("#qjCode").value = v; $1("#qjGo").click(); setTimeout(() => { const t = $1("#qjErr")?.textContent; if (t) er.textContent = t; }, 400); }; }
-    $1("#nvHero").innerHTML = hero; $1("#nvResume").onclick = () => crOpen(); try { kjDayDraw(); } catch {} try { gxDraw(); } catch {} };
+    $1("#nvHero").innerHTML = hero; $1("#nvResume").onclick = () => crOpen(); try { kjDayDraw(); } catch {} try { gxDraw(); if (Date.now() - GX.at > 15000) gxTick(true); } catch {} };
   const drawPlay = () => { const box = $1("#nvPlay"); if (box.dataset.init) return; box.dataset.init = 1;
     box.innerHTML = `${hd("Jouer · 遊ぶ", "À quoi on joue ?")}<button class="nvhero" id="nvCr" style="min-height:150px"><img src="${art("na")}" alt=""><small>Solo · 1 joueur</small><b>Carrière</b><span>Six univers, ton équipe, ta légende</span></button><div class="nv2">Les jeux</div><div class="nvgs">${games().map((c, k) => { const im = c.querySelector(".art img"); return `<button class="nvg" data-k="${k}"><i>${im ? `<img src="${im.src}" alt="">` : c.querySelector(".k")?.textContent || ""}</i><div><b>${esc(c.querySelector("b").textContent)}</b><span>${esc(c.querySelector("span").textContent)}</span></div><u>›</u></button>`; }).join("")}</div>`;
     $1("#nvCr").onclick = () => crOpen(); box.querySelectorAll(".nvg").forEach(b => b.onclick = () => pickGame(games()[+b.dataset.k])); };
