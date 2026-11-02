@@ -11973,7 +11973,7 @@ function tcOpening(key, got){
   // 25 oct. 2026 : bilan léger. Jusqu'à 10 cartes, toutes sont montrées ; au-delà, seulement les cartes qui comptent (nouvelles, Épique ou mieux,
   // versions rares), les meilleures d'abord, par paquets de 30. 250 cartes complètes d'un coup faisaient planter les téléphones (11 Mo de page).
   const E0 = TC_ORDER.indexOf("E"), epq = c => TC_ORDER.indexOf(c.r) >= E0 || (c.f && c.f !== "H"), hot = c => TC_ORDER.indexOf(c.r) >= E0 || (c.f && c.f !== "H") || c.hype, many = got.length > 10;
-  const SIDX = many ? [...got.keys()].filter(k => got[k].isNew || got[k].newFin || hot(got[k])).sort((a, b) => sc0(got[b]) - sc0(got[a])) : [...got.keys()];
+  const SIDX = many ? [...got.keys()].filter(k => got[k].isNew || got[k].newFin || hot(got[k])).sort((a, b) => sc0(got[b]) - sc0(got[a])) : got.packs > 1 ? [...got.keys()].sort((a, b) => sc0(got[b]) - sc0(got[a]) || a - b) : [...got.keys()];   /* 2 nov. 2026 : plusieurs boosters → bilan trié par rareté, la meilleure carte en premier (l'ouverture garde l'ordre booster par booster) */
   const sumCards = (a, b) => SIDX.slice(a, b).map(k => tcCard(got[k], {isNew: got[k].isNew, newFin: got[k].newFin, f: got[k].f})).join("");
   const sumRow = () => `<div class="tcrow ${got.length > 5 ? "many" : ""}">${sumCards(0, many ? 30 : got.length)}</div>`;
   O._got = got;   /* les envies (kyara2) lisent le tirage complet, même les cartes non affichées */
