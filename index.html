@@ -20161,6 +20161,11 @@ new MutationObserver(() => { const sh = document.querySelector("#nvPk .nvsh>div"
   const s = tcLoad(); sh.querySelector(".nvtb").insertAdjacentHTML("afterend", `<p class="cofh">Coffrets · dans les 6 univers</p><div class="cofs">${COF.map(P => `<button data-cof="${P.id}"><img src="coffret-${P.id}-op.webp" alt=""><b>${esc(P.n)}</b><small>${P.soon ? P.soon : P.deck && !s.cofDeckFree && tcLvl(s.xp || 0) >= 3 ? "Offert" : P.p.toLocaleString("fr-FR") + " ◆"}</small></button>`).join("")}</div><p class="cofh">Boosters</p>`); }).observe(document.body, {childList: true, subtree: true});
 </script>
 
+<script>
+/* généré par tools/debat_portraits.py : portraits HD du débat du jour */
+const DF_PORT = {"Son Goku": "debat-db-son-goku.webp", "Vegeta": "debat-db-vegeta.webp", "Naruto Uzumaki": "debat-na-naruto-uzumaki.webp", "Sasuke Uchiwa": "debat-na-sasuke-uchiwa.webp", "Satoru Gojo": "debat-jjk-satoru-gojo.webp", "Ryomen Sukuna": "debat-jjk-ryomen-sukuna.webp", "Izuku Midoriya": "debat-mha-izuku-midoriya.webp", "Katsuki Bakugo": "debat-mha-katsuki-bakugo.webp", "Kakashi Hatake": "debat-na-kakashi-hatake.webp", "Kyojuro Rengoku": "debat-ds-kyojuro-rengoku.webp", "Akaza": "debat-ds-akaza.webp", "Dracule Mihawk": "debat-op-dracule-mihawk.webp", "Freezer": "debat-db-freezer.webp", "Cell": "debat-db-cell.webp", "Itachi Uchiwa": "debat-na-itachi-uchiwa.webp", "Shisui Uchiwa": "debat-na-shisui-uchiwa.webp", "Portgas D. Ace": "debat-op-portgas-d-ace.webp", "Sabo": "debat-op-sabo.webp", "All Might": "debat-mha-all-might.webp", "Muzan Kibutsuji": "debat-ds-muzan-kibutsuji.webp", "Hashirama Senju": "debat-na-hashirama-senju.webp", "Tanjiro Kamado": "debat-ds-tanjiro-kamado.webp", "Zenitsu Agatsuma": "debat-ds-zenitsu-agatsuma.webp", "Trafalgar D. Water Law": "debat-op-trafalgar-d-water-law.webp", "Jiraya": "debat-na-jiraya.webp", "Orochimaru": "debat-na-orochimaru.webp", "Toji Fushiguro": "debat-jjk-toji-fushiguro.webp", "Nami": "debat-op-nami.webp", "Nico Robin": "debat-op-nico-robin.webp", "Shoto Todoroki": "debat-x-shoto-todoroki.webp", "Charlotte Linlin": "debat-op-charlotte-linlin.webp", "Gol D. Roger": "debat-op-gol-d-roger.webp", "Yuji Itadori": "debat-jjk-yuji-itadori.webp", "Megumi Fushiguro": "debat-jjk-megumi-fushiguro.webp", "Tomura Shigaraki": "debat-mha-tomura-shigaraki.webp", "Dabi": "debat-mha-dabi.webp", "Giyu Tomioka": "debat-ds-giyu-tomioka.webp", "Shinobu Kocho": "debat-ds-shinobu-kocho.webp", "Gaara": "debat-na-gaara.webp", "Rock Lee": "debat-na-rock-lee.webp", "Yuta Okkotsu": "debat-jjk-yuta-okkotsu.webp", "Kokushibo": "debat-x-kokushibo.webp", "Doma": "debat-x-doma.webp", "Marshall D. Teach": "debat-op-marshall-d-teach.webp"};
+</script>
+
 <style>
 /* ==== Défi du jour mondial et débat du jour (2 nov. 2026) : écran d'arrivée « Aujourd'hui », jeu, débat en face-à-face, partage ====
    Habillage premium (2 nov. 2026, « trop cheap » sinon) : fond d'ambiance tiré de l'image du jour, carte mystère au cadre rouge et or,
@@ -20271,7 +20276,7 @@ new MutationObserver(() => { const sh = document.querySelector("#nvPk .nvsh>div"
 #dfHome .hvs .ha{left:0;clip-path:polygon(0 0,100% 0,72% 100%,0 100%)}#dfHome .hvs .hb{right:0;clip-path:polygon(28% 0,100% 0,100% 100%,0 100%)}
 #dfHome .hvs .hl{position:absolute;inset:0;background:#fff;opacity:.8;clip-path:polygon(59.4% 0,60.2% 0,40.6% 100%,39.8% 100%)}
 #dfHome .hvs em{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%) rotate(-8deg);width:36px;height:36px;display:grid;place-items:center;border-radius:50%;font:900 13px var(--title);font-style:normal;color:#fff;background:conic-gradient(from 200deg,#ff2d3a,#ffd27a,#3d8bff,#ff2d3a);box-shadow:0 0 0 3px #07060a}
-@media (min-width:900px){#dfHome button{min-height:190px}#dfHome b{font-size:20px}}
+@media (min-width:900px){#dfHome .hvs{bottom:0}#dfHome #dfH2::after{background:linear-gradient(90deg,transparent,transparent),linear-gradient(transparent 45%,#07060af0 92%)}#dfHome #dfH1 img{object-position:50% 18%}#dfHome button{min-height:190px}#dfHome b{font-size:20px}}
 /* partage */
 .dfshm{position:fixed;inset:0;z-index:120;display:grid;place-items:center;background:#000d;padding:16px}.dfshm>div{width:min(100%,420px);display:grid;gap:10px}.dfshm img{width:100%;border-radius:14px}
 .dfshm .dfbtn{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;justify-content:center;min-height:48px;border-radius:14px;background:#ff2d3a;color:#fff;font:800 14px var(--title)}.dfshm .dfbtn.g{background:#1c1922;border:1px solid #2b2932}
@@ -20314,6 +20319,7 @@ function dfFocus(T){ if (DF_FOC[T.d]) return DF_FOC[T.d]; return DF_FOC[T.d] = n
     L.sort((a, b) => b[0] - a[0]); const top = L.slice(0, Math.max(8, Math.floor(L.length * .25))), r = dfRng("foc-" + T.d), c = top[Math.floor(r() * top.length)];
     res(c ? {fx: (c[1] + .5) / w * 100, fy: (c[2] + .5) / h * 100} : {fx: T.fx, fy: T.fy}); } catch { res({fx: T.fx, fy: T.fy}); } }; im.onerror = () => res({fx: T.fx, fy: T.fy}); im.src = T.a.i; }); }
 const dfApplyFocus = (T, root) => dfFocus(T).then(f => { T.fx = f.fx; T.fy = f.fy; (root || document).querySelectorAll(".dfz-" + T.d).forEach(i => i.style.transformOrigin = f.fx + "% " + f.fy + "%"); });
+/* Personnages sous leur forme initiale (portraits de tools/debat_portraits.py) ; une transformation seulement si le débat oppose deux formes transformées. */
 /* débats choisis (2 nov. 2026) : des affiches qui divisent vraiment. Les duels restent dans un même univers (un Dragon Ball contre MHA ne fait pas débat) ;
    les questions d'avis (meilleur méchant, meilleur sensei…) peuvent croiser deux univers. Animé seulement, sans spoiler. Un débat par jour, dans l'ordre. */
 const DF_D = "Qui gagne en duel ?", DF_DEB = [
@@ -20324,19 +20330,21 @@ const DF_D = "Qui gagne en duel ?", DF_DEB = [
   ["Vegeta", "Katsuki Bakugo", "Le meilleur rival ?"], ["Jiraya", "Orochimaru", DF_D], ["Toji Fushiguro", "Satoru Gojo", DF_D], ["Nami", "Nico Robin", "Ta préférée de l'équipage ?"],
   ["Shoto Todoroki", "Katsuki Bakugo", DF_D], ["Kento Nanami", "Kyojuro Rengoku", "Le mentor le plus classe ?"], ["Kaido", "Charlotte Linlin", DF_D], ["Edward Newgate", "Gol D. Roger", DF_D],
   ["Yuji Itadori", "Megumi Fushiguro", "Qui prends-tu dans ton équipe ?"], ["Itachi Uchiwa", "Kyojuro Rengoku", "Le plus charismatique ?"], ["Sakazuki (Akainu)", "Kuzan (Aokiji)", DF_D], ["Tomura Shigaraki", "Dabi", "Le meilleur méchant ?"],
-  ["Son Gohan", "Vegeta", DF_D], ["Giyu Tomioka", "Shinobu Kocho", "Qui prends-tu dans ton équipe ?"], ["Shoto Todoroki", "Sasuke Uchiwa", "Le rival le plus stylé ?"], ["Broly", "Majin Buu", DF_D],
+  ["Son Gohan", "Vegeta", DF_D], ["Giyu Tomioka", "Shinobu Kocho", "Qui prends-tu dans ton équipe ?"], ["Shoto Todoroki", "Sasuke Uchiwa", "Le rival le plus stylé ?"], ["Son Goku", "Freezer", DF_D],
   ["Gaara", "Rock Lee", DF_D], ["Yuta Okkotsu", "Yuji Itadori", DF_D], ["Kokushibo", "Doma", DF_D], ["Marshall D. Teach", "Sakazuki (Akainu)", "Le meilleur méchant ?"]];
 /* portraits du débat cadrés sur le visage (2 nov. 2026) : FACES = centre et taille du visage dans l'image du personnage (détecteur de visages) ;
    le visage prend la même place des deux côtés, l'image couvre toujours toute la case */
 const dfArt = c => c.i;
 const dfFc = c => { try { const f = (FACES[c.u] || {})[c.n]; return f ? f.join(",") : ""; } catch { return ""; } };
-const dfPic = (c, cls, fw) => `<span class="fc ${cls}"><img src="${c.i}" alt="" data-fc="${dfFc(c)}" data-fw="${fw}"></span>`;
+/* 2 nov. 2026 : portraits HD préparés (tools/debat_portraits.py), déjà cadrés sur le visage ; plus jamais une petite image agrandie */
+const dfPort = c => (typeof DF_PORT !== "undefined" && DF_PORT[c.n]) || "";
+const dfPic = (c, cls) => `<span class="fc ${cls}"><img src="${dfPort(c) || c.i}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 24%"></span>`;
 function dfCrop(root){ (root || document).querySelectorAll("img[data-fw]").forEach(im => { const go = () => { const box = im.parentElement, W = box.clientWidth, H = box.clientHeight, nw = im.naturalWidth, nh = im.naturalHeight; if (!W || !H || !nw) return;
     const f = (im.dataset.fc || "").split(",").map(Number), ok = f.length === 3 && f[2] > 0, [cx, cy, sz] = ok ? f : [.5, .3, .5];
     let w = Math.max(W * +im.dataset.fw / sz, W, H * nw / nh), h = w * nh / nw, x = W / 2 - cx * w, y = H * .4 - cy * h; x = Math.min(0, Math.max(W - w, x)); y = Math.min(0, Math.max(H - h, y));
     Object.assign(im.style, {position: "absolute", width: w + "px", height: h + "px", left: x + "px", top: y + "px", maxWidth: "none", objectFit: "fill"}); }; if (im.complete && im.naturalWidth) go(); else im.onload = go; }); }
-function dfDebate(){ const d = tcDay(), n = dfNum(d), all = dfAll(), by = Object.fromEntries(all.map(c => [c.n, c])), L = DF_DEB.filter(x => by[x[0]] && by[x[1]]); if (!L.length) return null;
-  const x = L[(n - 1 + L.length * 100) % L.length]; return {d, n, a: by[x[0]], b: by[x[1]], q: x[2]}; }
+function dfDebate(){ const d = tcDay(), n = dfNum(d), all = dfAll(), by = Object.fromEntries(all.map(c => [c.n, c])), L = DF_DEB.filter(x => by[x[0]] && by[x[1]] && dfPort(by[x[0]]) && dfPort(by[x[1]]));   /* seulement les débats dont les deux portraits HD existent */ if (!L.length) return null;
+  const x = L[(n - 1 + L.length * 100) % L.length], D = {d, n, a: by[x[0]], b: by[x[1]], q: x[2]}; try { hkPre([dfPort(D.a), dfPort(D.b)]); } catch {} return D; }
 // état local (sauvegardé avec le compte) : s.df = {d, g: [id…], won, sent, st}, s.dfS = {n, last, best}, s.dfV = {d, pick, c}
 const dfState = () => { const s = tcLoad(), d = tcDay(); if (!s.df || s.df.d !== d) s.df = {d, g: [], won: null}; if (!s.dfS) s.dfS = {n: 0, last: "", best: 0}; if (!s.dfV || s.dfV.d !== d) s.dfV = {d, pick: null}; return s; };
 const dfNorm = t => String(t).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
@@ -20459,7 +20467,7 @@ async function dfPoster(kind){ const W = 1080, H = 1350, cv = document.createEle
     G.forEach((c, k) => { const r = dfRel(c, T.a), hit = c.id === T.a.id; [hit || r.u, hit || r.r === 0, hit || r.p === 0].forEach((ok, j) => { g.fillStyle = ok ? "#3ccf7a" : j === 2 && r.pc ? "#f2b13a" : "#e0452f"; const x = x00 + k * colW, y = 1000 + j * (sz + gap); g.beginPath(); g.roundRect ? g.roundRect(x, y, sz, sz, 12) : g.rect(x, y, sz, sz); g.fill(); }); });
     tx(fire > 1 ? `🔥 Série de ${fire} jours · Et toi ?` : "Et toi, tu le trouves ?", W / 2, 1268, 38, "#ffd9a0", 800); }
   else { const D = dfDebate(), v = s.dfV, c = v.c, tot = c ? c.a + c.b : 0, pa = tot ? Math.round(c.a / tot * 100) : null; tx("Débat du jour", W / 2, 260, 52, "#ff5a63"); tx(D.q, W / 2, 340, 54);
-    const [ia, ib] = await Promise.all([dfImg(dfArt(D.a)), dfImg(dfArt(D.b))]); cover(ia, 60, 400, 450, 600); cover(ib, 570, 400, 450, 600); tx("VS", W / 2, 720, 70, "#ff2d3a");
+    const [ia, ib] = await Promise.all([dfImg(dfPort(D.a) || D.a.i), dfImg(dfPort(D.b) || D.b.i)]); cover(ia, 60, 400, 450, 600); cover(ib, 570, 400, 450, 600); tx("VS", W / 2, 720, 70, "#ff2d3a");
     [[D.a, 60, 0], [D.b, 570, 1]].forEach(([x, X, k]) => { if (v.pick === k){ g.lineWidth = 12; g.strokeStyle = "#ff2d3a"; g.strokeRect(X, 400, 450, 600); } tx(x.n.length > 18 ? x.n.slice(0, 17) + "…" : x.n, X + 225, 1070, 38); if (pa != null) tx((k ? 100 - pa : pa) + " %", X + 225, 1140, 60, k ? "#4da3ff" : "#ff6b75"); });
     tx(v.pick != null ? `J'ai choisi ${[D.a, D.b][v.pick].n}. Et toi ?` : "Et toi, tu choisis qui ?", W / 2, 1250, 38, "#ffd9a0", 800); }
   tx("hanko-game.github.io/mercato-anime", W / 2, 1316, 26, "#8f889a", 600, "center", "'JetBrains Mono', monospace"); return cv; }
