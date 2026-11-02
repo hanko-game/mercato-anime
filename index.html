@@ -20421,7 +20421,7 @@ function dfDebDraw(el, D, s){ const v = s.dfV, c = v.c, tot = c ? c.a + c.b : 0,
     ${me != null ? `<div class="dffv" id="dfFv"></div><button class="dfcta g" id="dfShareD">↗ Partager le débat</button>` : ""}`;
   el.querySelectorAll("[data-pick]").forEach(b => b.onclick = async () => { const k = +b.dataset.pick, s2 = dfState(); if (s2.dfV.pick != null) return; s2.dfV.pick = k; if (!s2.dfV.paid){ s2.dfV.paid = 1; s2.gems = (s2.gems || 0) + 10; try { tcToast("Débat du jour : +10 ◆ pour ton vote"); } catch {} } tcSave(s2);   /* 2 nov. 2026 : 10 ◆ pour avoir voté, une fois par jour */ try { tcSnd("pop"); } catch {} try { navigator.vibrate?.(25); } catch {}
     dfDebDraw(el, D, s2); const r = CP.user ? await dfRpc("debate_vote", {p_day: D.d, p_pick: k}) : await dfRpc("debate_counts", {p_day: D.d});
-    if (r){ const s3 = dfState(); s3.dfV.c = {a: r.a + (CP.user ? 0 : k === 0 ? 1 : 0), b: r.b + (CP.user ? 0 : k === 1 ? 1 : 0)}; tcSave(s3); if (el.isConnected) dfDebDraw(el, D, s3); } });
+    if (r){ const s3 = dfState(); s3.dfV.c = {a: r.a + (CP.user ? 0 : k === 0 ? 1 : 0), b: r.b + (CP.user ? 0 : k === 1 ? 1 : 0)}; if (CP.user) s3.dfV.sent = 1; tcSave(s3); if (el.isConnected) dfDebDraw(el, D, s3); } });
   dfCrop(el); el.querySelector("#dfShareD") && (el.querySelector("#dfShareD").onclick = e => dfShare("debat", e.currentTarget));
   if (me != null){ dfFriendVotes(el, D);
     /* pourcentages en direct : relus toutes les 8 s tant que le débat est affiché */
@@ -20521,6 +20521,11 @@ function dfHomeDraw(){ const el = document.querySelector("#dfHome"); if (!el) re
     <button id="dfH2"><i class="hvs">${dfPic(D.a, "ha", .5)}${dfPic(D.b, "hb", .5)}<i class="hl"></i><em>VS</em></i><small>Débat du jour</small><b>${esc(D.a.n)} ou ${esc(D.b.n)} ?</b><span>${s.dfV.pick != null ? "Voir les résultats" : esc(D.q)}</span></button>`;
   dfPaint(T, el); dfCrop(el); el.querySelector("#dfH1").onclick = () => dfOpen(done ? "today" : "play"); el.querySelector("#dfH2").onclick = () => { dfOpen("today"); setTimeout(() => document.querySelector("#dfDeb")?.scrollIntoView({behavior: "smooth", block: "center"}), 80); }; }
 addEventListener("tcalt", () => { try { dfHomeDraw(); const d = document.querySelector(".dfov #dfDeb"), D = dfDebate(); if (d && D) dfDebDraw(d, D, dfState()); } catch {} });   /* illustrations des cartes arrivées : le débat les prend */
+// rattrapage (2 nov. 2026) : un défi fini ou un vote fait sans connexion au serveur (ou avant la mise en place du SQL) est envoyé dès que possible
+async function dfSync(){ try { if (!CP.user) return; const s = dfState(), st = s.df;
+    if (st.won !== null && !st.sent){ const r = await dfRpc("daily_submit", {p_day: st.d, p_tries: st.g.length, p_won: st.won}); if (r){ const s2 = dfState(); s2.df.sent = 1; s2.df.st = r; tcSave(s2); } }
+    if (s.dfV.pick != null && !s.dfV.sent){ const r = await dfRpc("debate_vote", {p_day: s.dfV.d, p_pick: s.dfV.pick}); if (r){ const s2 = dfState(); s2.dfV.sent = 1; s2.dfV.c = {a: r.a, b: r.b}; tcSave(s2); } } } catch {} }
+setTimeout(dfSync, 6000); setInterval(dfSync, 120000);
 // ——— à l'arrivée : une fois par jour, avant le reste, dès que plus rien d'autre n'est affiché (connexion, bienvenue, tutoriel…) ———
 (() => { let n = 0; const tick = () => { if (++n > 120) return; try { const s = tcLoad(), d = tcDay();
       if (s.dfSeen === d) return; const busy = (typeof hkBusy === "function" && hkBusy()) || document.querySelector(".dfov,.tccine,.tccele,.crpov,#arena,.tcsharebox,.cofm") || !tcCards().length;
