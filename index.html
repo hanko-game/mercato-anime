@@ -11530,7 +11530,7 @@ function tcCine(c, o = {}){
   return new Promise(res => {
     const sty = c.f === "Z" ? "Z" : c.f === "G" ? "G" : c.f === "K" ? "M" : c.f === "S" ? "S" : c.f === "W" ? "L" : c.r === "X" ? "X" : c.r === "M" ? "M" : c.r === "L" ? "L" : "E", myth = sty !== "L" && sty !== "E", calm = tcCalm(), mini = !!o.mini || (sty === "E" && !o.full);
     /* 2 nov. 2026 : Épique (grand format), Légendaire, Mythique et Éveil passent par l'Invocation 3D (src/invgl.part) ; les versions spéciales gardent leur cinématique */
-    if (!mini && !calm && window.THREE && /^[ELMX]$/.test(sty) && typeof tcInvGL === "function"){ tcInvGL(c, o, sty).then(res, () => res()); return; }
+    if (!mini && !calm && !o.no3d && window.THREE && /^[ELMX]$/.test(sty) && typeof tcInvGL === "function"){ tcInvGL(c, o, sty).then(r => r === "ko" ? tcCine(c, {...o, no3d: true}).then(res) : res(), () => tcCine(c, {...o, no3d: true}).then(res)); return; }
     try {   /* 19 oct. 2026 : si la cinématique échoue, on la retire et on continue (avant, l'écran restait bloqué) */
     const img = tcArt(c, c.f); document.querySelectorAll(".tccine").forEach(x => x.remove());
     document.body.insertAdjacentHTML("beforeend", `<div class="tccine r-${tcER(c, c.f)} y${sty} ${mini ? "mini" : ""} ${TC_LITE ? "lite" : ""}" role="dialog" aria-modal="true" aria-label="${TC_R[tcER(c, c.f)][0]} : ${esc(c.n)}">
@@ -21179,7 +21179,9 @@ const HKInv = (() => {
     function drawAt(t, g, W, H){ const [sh, zs] = step(t), k = W / 540; g.save(); g.fillStyle = "#05030a"; g.fillRect(0, 0, W, H); g.translate(W / 2 + (Math.random() - .5) * sh * k, H / 2 + (Math.random() - .5) * sh * k); g.scale(zs, zs); g.translate(-W / 2, -H / 2);
       g.drawImage(gB.canvas, 0, 0, W, H); g.drawImage(R.domElement, 0, 0, W, H); g.drawImage(gF.canvas, 0, 0, W, H); g.restore(); }
     const skip = () => { if (!D) return; const t = performance.now() - t0 + (D.start || 0); if (t < HIT - 50){ t0 -= HIT - 50 - t; ev.forEach(e => { if (e[0] < HIT - 50) e.done = true; }); return true; } return false; };
-    const stop = () => { cancelAnimationFrame(raf); raf = 0; D = null; try { [frontT, backT, holoT, specT].forEach(x => x.dispose()); card.traverse(o => o.geometry && o.geometry.dispose()); } catch {} wrap.remove(); };
+    const stop = () => { cancelAnimationFrame(raf); raf = 0; D = null; try { [frontT, backT, holoT, specT].forEach(x => x.dispose()); card.traverse(o => o.geometry && o.geometry.dispose()); } catch {}
+      /* 2 nov. 2026 : Safari (iPhone) ne rend la mémoire d'un canevas que s'il passe à 0 × 0 ; sinon, après plusieurs ouvertures, la 3D ne peut plus démarrer */
+      try { wrap.querySelectorAll("canvas").forEach(c => { if (c !== R.domElement){ c.width = 0; c.height = 0; } }); [frontC, backC].forEach(c => { c.width = 0; c.height = 0; }); } catch {} wrap.remove(); };
     return {play, load, drawAt, skip, stop, wrap, front: gF.canvas, time: () => D ? performance.now() - t0 + (D.start || 0) : 0, frameAt: t => { t0 = performance.now() - t + (D.start || 0); frame(performance.now()); cancelAnimationFrame(raf); raf = requestAnimationFrame(frame); }};
   }
   return {create, IV, ivChain, UP, HIT, DUR};
@@ -21253,7 +21255,7 @@ async function hkCardShot(c, f, W = 900){ try {
     g.beginPath(); g.rect(mbox.x * K, mbox.y * K, mbox.w * K, mbox.h * K); g.clip(); g.drawImage(main, (mbox.x + (mbox.w - dw) * px) * K, (mbox.y + (mbox.h - dh) * py) * K, dw * K, dh * K); g.restore();
     if (red){ g.save(); g.beginPath(); g.roundRect ? g.roundRect(0, 0, cv.width, cv.height, rad * K) : g.rect(0, 0, cv.width, cv.height); g.clip(); g.globalCompositeOperation = "multiply"; const rg = g.createRadialGradient(cv.width / 2, cv.height * .38, 0, cv.width / 2, cv.height * .38, cv.height * .62); rg.addColorStop(0, "#ff8f99"); rg.addColorStop(.55, "#f0566a"); rg.addColorStop(1, "#8a0018"); g.fillStyle = rg; g.fillRect(0, 0, cv.width, cv.height); g.restore(); }
     const lay = document.createElement("canvas"); lay.width = cv.width; lay.height = cv.height; const g0 = g; { const gl2 = lay.getContext("2d"); for (let k = 0; k < 4; k++){ gl2.clearRect(0, 0, lay.width, lay.height); gl2.drawImage(top, 0, 0, lay.width, lay.height); await wait(k ? 140 : 260); } gl2.clearRect(0, 0, lay.width, lay.height); gl2.drawImage(top, 0, 0, lay.width, lay.height); }
-    g0.drawImage(lay, 0, 0); }
+    g0.drawImage(lay, 0, 0); lay.width = lay.height = 0; }
   g.getImageData(0, 0, 1, 1); return cv; } catch (e) { console.warn("carte", e); return null; } }
 function tcInvGL(c, o, key){ return new Promise(async res => {
   const IVr = HKInv.IV[key], col = `rgb(${IVr.rgb.join(",")})`, lab = (TC_R[tcER(c, c.f)][0] + (c.f && c.f !== "H" ? " · " + TC_FIN[c.f][1] : "")).toUpperCase();
@@ -21276,8 +21278,10 @@ function tcInvGL(c, o, key){ return new Promise(async res => {
       t.style.transform = `rotateY(${((x - .5) * 30).toFixed(1)}deg) rotateX(${((.5 - y) * 22).toFixed(1)}deg)`; t.classList.add("hl"); t.style.setProperty("--px", (x * 100).toFixed(1) + "%"); t.style.setProperty("--py", (y * 100).toFixed(1) + "%"); };
     el.addEventListener("touchmove", e => e.preventDefault(), {passive: false});
     el.onclick = () => { if (inv.skip()){ riseOff(); return; } if (swapAt && Date.now() - swapAt > 900) close(); };
-  } catch (e){ console.warn(e); close(); }
+  } catch (e){ console.warn(e); hkDiag("cine", e); try { inv && inv.stop(); } catch {} done = true; el.remove(); res("ko"); }   /* la 3D n'a pas pu démarrer : tcCine montre l'ancienne cinématique */
 }); }
+/* 2 nov. 2026 : dernière erreur de cinématique, gardée dans la sauvegarde (clé mercato-…) pour pouvoir la lire depuis le serveur */
+function hkDiag(k, e){ try { const d = JSON.parse(localStorage.getItem("mercato-diag") || "{}"); d[k] = {m: String(e && (e.stack || e.message) || e).slice(0, 400), at: new Date().toISOString(), ua: navigator.userAgent.slice(0, 160)}; localStorage.setItem("mercato-diag", JSON.stringify(d)); } catch {} }
 </script>
 
 </body>
