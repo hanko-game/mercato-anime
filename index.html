@@ -14749,7 +14749,9 @@ document.addEventListener("contextmenu", e => { if (e.target.closest && !e.targe
       P.sort((a, b) => b[0] - a[0]); for (const q of P){ if (pal.every(c2 => Math.abs(c2[0] - q[1]) + Math.abs(c2[1] - q[2]) + Math.abs(c2[2] - q[3]) > 120)) pal.push([q[1], q[2], q[3]]); if (pal.length >= 3) break; } } } catch {}
     /* 2 nov. 2026 : lien de parrainage du joueur sur la vidéo (sans « https:// », pour qu'il se recopie facilement) */
     let ref = "hanko-game.github.io/mercato-anime"; try { const me = typeof frMe === "function" ? frMe() : null; if (me && me.id) ref += "/#parrain=" + me.id; } catch {}
-    return {items, pal, ref, rev: [...items].reverse(), uni: {k: uni[1], n: uni[0]}, title: shown || (key ? tcName(key) : "Booster " + uni[0]), pouch, best: items[0], oddsp: O && O.dataset.oddsp ? parseFloat(O.dataset.oddsp) : null, oddslab: (O && O.dataset.oddslab) || ""};
+    /* 2 nov. 2026 : la vraie carte du jeu (même rendu que dans la collection, sans le ruban « Nouvelle ») pour la révélation 3D */
+    let shot = null; try { if (window.THREE && typeof hkCardShot === "function") shot = await hkCardShot(L[0].c, L[0].fin); } catch {}
+    return {items, pal, ref, shot, rev: [...items].reverse(), uni: {k: uni[1], n: uni[0]}, title: shown || (key ? tcName(key) : "Booster " + uni[0]), pouch, best: items[0], oddsp: O && O.dataset.oddsp ? parseFloat(O.dataset.oddsp) : null, oddslab: (O && O.dataset.oddslab) || ""};
   }
   /* 2 nov. 2026 : carte avec une vraie marge intérieure (l'illustration ne touche plus le cadre) et un texte décollé des bords */
   function drawMini(g, cx, cy, w, it, o){ o = o || {}; const h = w * 666 / 450, x = cx - w / 2, y = cy - h / 2, lw = Math.max(3, w * .03), pad = lw * 1.6, R = Math.max(10, w * .06);
@@ -14823,7 +14825,7 @@ document.addEventListener("contextmenu", e => { if (e.target.closest && !e.targe
   let ivGL = null, ivGLD = null;
   function drawInv3D(g, D, t, W, H){ if (!window.THREE || typeof HKInv === "undefined") return false;
     try { if (!ivGL){ const h = document.createElement("div"); h.style.cssText = "position:fixed;left:-9999px;top:0;width:540px;height:960px;pointer-events:none"; document.body.appendChild(h); ivGL = HKInv.create(h, {dpr: 2}); }
-      if (ivGLD !== D){ ivGLD = D; const best = D.items[0], k = ivKey(best); ivGL.load({key: k, card: best, pal: D.pal && D.pal.length ? D.pal : null, odds: D.oddsp, label: (D.oddslab || IV[k].n).toUpperCase(), others: D.items.slice(1, 5), cta: D.ref, ctaSub: "sur Hanko · " + D.title}); }
+      if (ivGLD !== D){ ivGLD = D; const best = D.items[0], k = ivKey(best); ivGL.load({key: k, card: best, pal: D.pal && D.pal.length ? D.pal : null, odds: D.oddsp, label: (D.oddslab || IV[k].n).toUpperCase(), others: D.items.slice(1, 5), cta: D.ref, ctaSub: "sur Hanko · " + D.title, shot: D.shot}); }
       ivGL.drawAt(t, g, W, H); return true; } catch (e){ console.warn(e); return false; } }
   const drawVideo = (g, D, t, W, H) => t < IV_P ? drawOpening(g, D, null, t, W, H) : (drawInv3D(g, D, t - IV_P, W, H) || drawInvocation(g, D, t - IV_P, W, H));
   function drawInvocation(g, D, t, W, H){ const best = D.items[0], key = ivKey(best), chain = ivChain(key), pal = D.pal && D.pal.length ? D.pal : [IV[key].rgb];
@@ -21007,7 +21009,7 @@ const HKInv = (() => {
     const back = new T.Mesh(faceGeo(), new T.MeshBasicMaterial({map: backT})); back.rotation.y = Math.PI; back.position.z = -DEP / 2; card.add(back);
     const mEdge = new T.MeshBasicMaterial({color: 0xffffff}), edge = new T.Mesh(new T.ExtrudeGeometry(shape, {depth: DEP, bevelEnabled: false, curveSegments: 12}), [new T.MeshBasicMaterial({visible: false}), mEdge]); edge.position.z = -DEP / 2; card.add(edge);
     // reflet holo discret et reflet de lumière qui suit l'inclinaison
-    const holoC = cnv(512, 512); { const g = holoC.getContext("2d"), gr = g.createLinearGradient(0, 0, 512, 512); ["#ff004000", "#ff0040", "#ffe600", "#00ff88", "#00b3ff", "#b400ff", "#b400ff00"].forEach((c, i, A) => gr.addColorStop(i / (A.length - 1), c)); g.fillStyle = gr; g.fillRect(0, 0, 512, 512); }
+    const holoC = cnv(512, 512); { const g = holoC.getContext("2d"), gr = g.createLinearGradient(0, 0, 512, 0); ["#ff004000", "#ff0040", "#ffe600", "#00ff88", "#00b3ff", "#b400ff", "#b400ff00"].forEach((c, i, A) => gr.addColorStop(i / (A.length - 1), c)); g.fillStyle = gr; g.fillRect(0, 0, 512, 512); }
     const holoT = tex(holoC); holoT.wrapS = T.RepeatWrapping; holoT.repeat.set(.5, 1);
     const holo = new T.Mesh(faceGeo(), new T.MeshBasicMaterial({map: holoT, transparent: true, opacity: 0, blending: T.AdditiveBlending, depthWrite: false})); holo.position.z = DEP / 2 + .3; card.add(holo);
     const specC = cnv(512, 64); { const g = specC.getContext("2d"), gr = g.createLinearGradient(0, 0, 512, 0); gr.addColorStop(0, "rgba(255,255,255,0)"); gr.addColorStop(.5, "rgba(255,255,255,1)"); gr.addColorStop(1, "rgba(255,255,255,0)"); g.fillStyle = gr; g.fillRect(0, 0, 512, 64); }
@@ -21106,7 +21108,7 @@ const HKInv = (() => {
       // tremblement et coups de zoom sur l'ensemble
       return [(t < HIT ? beam * 1.8 : 0) + crF * 4.5 + punch * 6 * (1 - sg(t, HIT, HIT + 350)), 1 + punch * .07 + crF * .025 - pre * .025]; }
 
-    function load(data){ D = data; swapped = false; const g = frontC.getContext("2d"); g.clearRect(0, 0, 900, 1332); face(g, D.card, 450, 666, 900); frontT.needsUpdate = true; }
+    function load(data){ D = data; swapped = false; const g = frontC.getContext("2d"); g.clearRect(0, 0, 900, 1332); if (D.shot) g.drawImage(D.shot, 0, 0, 900, 1332); else face(g, D.card, 450, 666, 900); mFront.transparent = !!D.shot; mFront.needsUpdate = true; frontT.needsUpdate = true; }   /* D.shot : photo de la vraie carte du jeu (vidéo de partage) */
     function play(data, sounds){ load(data); t0 = performance.now(); ev = (sounds || []).map(e => Object.assign([...e], {done: false})); if (!raf) raf = requestAnimationFrame(frame); }
     /* vidéo de partage : dessine l'image t des trois couches dans un autre canevas (W × H), tremblement et zoom compris */
     function drawAt(t, g, W, H){ const [sh, zs] = step(t), k = W / 540; g.save(); g.fillStyle = "#05030a"; g.fillRect(0, 0, W, H); g.translate(W / 2 + (Math.random() - .5) * sh * k, H / 2 + (Math.random() - .5) * sh * k); g.scale(zs, zs); g.translate(-W / 2, -H / 2);
@@ -21139,6 +21141,35 @@ function hkPal(im){ const pal = []; try { const c = document.createElement("canv
   for (let i = 0; i < d.length; i += 4){ const r = d[i], g2 = d[i + 1], b = d[i + 2], mx = Math.max(r, g2, b), mn = Math.min(r, g2, b); if (mx > 90 && mx - mn > 60) P.push([mx - mn + mx * .3, r, g2, b]); }
   P.sort((a, b) => b[0] - a[0]); for (const q of P){ if (pal.every(c2 => Math.abs(c2[0] - q[1]) + Math.abs(c2[1] - q[2]) + Math.abs(c2[2] - q[3]) > 120)) pal.push([q[1], q[2], q[3]]); if (pal.length >= 3) break; } } catch {} return pal; }
 /* la cinématique en jeu ; renvoie une promesse résolue quand le joueur ferme (comme tcCine) */
+/* 2 nov. 2026 : photo de la VRAIE carte du jeu (tcCard, sans le ruban « Nouvelle ») pour la vidéo de partage :
+   styles calculés recopiés dans un SVG foreignObject, images et polices intégrées ; null si le navigateur refuse (on garde alors la carte dessinée) */
+const HK_FONTS = {};
+async function hkData(u){ if (!u || /^data:/.test(u)) return u; if (HK_FONTS[u]) return HK_FONTS[u];
+  const b = await (await fetch(u)).blob(); return HK_FONTS[u] = await new Promise(r => { const f = new FileReader(); f.onload = () => r(f.result); f.onerror = () => r(""); f.readAsDataURL(b); }); }
+async function hkCardShot(c, f, W = 900){ try {
+  const h = document.createElement("div"); h.style.cssText = "position:fixed;left:-10000px;top:0;width:450px;pointer-events:none"; h.innerHTML = tcCard(c, {f}); document.body.appendChild(h);
+  const el = h.firstElementChild, all = [el, ...el.querySelectorAll("*")]; all.forEach(n => { if (n.tagName === "IMG") n.loading = "eager"; });
+  await Promise.all(all.filter(n => n.tagName === "IMG").map(i => i.complete && i.naturalWidth ? 0 : new Promise(r => { i.onload = i.onerror = r; setTimeout(r, 3000); })));
+  const cw = el.offsetWidth, ch = el.offsetHeight, css = [], fams = new Set(), txt = el.textContent; let k = 0;
+  const decl = s => { let o = ""; for (let i = 0; i < s.length; i++){ const p = s[i]; if (/^(animation|transition)/.test(p)) continue; o += p + ":" + s.getPropertyValue(p) + ";"; } return o; };
+  const cl = el.cloneNode(true), cn = [cl, ...cl.querySelectorAll("*")];
+  for (let i = 0; i < all.length; i++){ const n = all[i], m = cn[i], s = getComputedStyle(n), id = "k" + k++; m.removeAttribute("style"); m.setAttribute("class", id);
+    s.fontFamily.split(",").forEach(x => fams.add(x.trim().replace(/"/g, "")));
+    css.push(`.${id}{${decl(s)}animation:none;transition:none}`);
+    for (const p of ["::before", "::after"]){ const q = getComputedStyle(n, p); if (q.animationName !== "none") css.push(`.${id}${p}{display:none}`); else if (q.content !== "none" && q.content !== "normal") css.push(`.${id}${p}{${decl(q)}animation:none}`); }
+    if (m.tagName === "IMG") m.setAttribute("src", await hkData(n.currentSrc || n.src)); }
+  let cssT = css.join("\n"); for (const u of new Set(cssT.match(/url\("(?!data:)[^"]+"\)/g) || [])){ const v = await hkData(u.slice(5, -2)); cssT = cssT.split(u).join(`url("${v}")`); }
+  /* polices de la carte (sous-ensembles latins, plus le japonais si la carte en affiche) */
+  try { const gl = document.querySelector('link[rel=stylesheet][href*="fonts.googleapis"]'); if (gl){ const fc = HK_FONTS.css || (HK_FONTS.css = await (await fetch(gl.href)).text()), jp = /[　-鿿]/.test(txt);
+    const cps = [...new Set(txt)].map(x => x.codePointAt(0)), hit = rg => rg.split(",").some(r => { const [a, b] = r.trim().slice(2).split("-").map(x => parseInt(x, 16)); return cps.some(p => p >= a && p <= (b || a)); });
+    for (const b of fc.split("/* ").slice(1)){ const sub = b.slice(0, b.indexOf(" */")), fm = (b.match(/font-family:\s*'([^']+)'/) || [])[1], rg = (b.match(/unicode-range:([^;]+)/) || [])[1] || "";
+      if (!fams.has(fm) || !(/^latin/.test(sub) || (jp && hit(rg)))) continue; const u = (b.match(/url\(([^)]+)\)/) || [])[1]; if (!u) continue;
+      cssT += "\n" + b.slice(b.indexOf("@font-face")).replace(u, await hkData(u)); } } } catch (e) { console.warn("polices", e); }
+  h.remove(); cl.setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${cw}" height="${ch}"><foreignObject width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml" style="width:${cw}px;height:${ch}px"><style>${cssT.replace(/<\/style/gi, "")}</style>${new XMLSerializer().serializeToString(cl)}</div></foreignObject></svg>`;
+  const im = new Image(); im.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg); await im.decode(); await new Promise(r => setTimeout(r, 250));
+  const cv = document.createElement("canvas"); cv.width = W; cv.height = Math.round(W * ch / cw); const g = cv.getContext("2d"); g.drawImage(im, 0, 0, cv.width, cv.height);
+  g.getImageData(0, 0, 1, 1); return cv; } catch (e) { console.warn("carte", e); return null; } }
 function tcInvGL(c, o, key){ return new Promise(async res => {
   const IVr = HKInv.IV[key], col = `rgb(${IVr.rgb.join(",")})`, lab = (TC_R[tcER(c, c.f)][0] + (c.f && c.f !== "H" ? " · " + TC_FIN[c.f][1] : "")).toUpperCase();
   const im = await new Promise(r => { const i = new Image(); let ok = 0; i.onload = () => { ok = 1; r(i); }; i.onerror = () => r(null); i.src = tcArt(c, c.f); setTimeout(() => !ok && r(i.complete && i.naturalWidth ? i : null), 1200); });
