@@ -14819,7 +14819,13 @@ document.addEventListener("contextmenu", e => { if (e.target.closest && !e.targe
   const cl1 = x => Math.max(0, Math.min(1, x)), sg = (t, a, b) => cl1((t - a) / (b - a)), eo3 = x => 1 - Math.pow(1 - cl1(x), 3);
   const IV_UP = [3000, 3550], IV_HIT = 4100, IV_DUR = 7400, IV_P = 1750;
   /* 2 nov. 2026 : la vidéo commence par l'ouverture du vrai sachet (son design réel, il tremble puis sa bande s'arrache), puis l'invocation */
-  const drawVideo = (g, D, t, W, H) => t < IV_P ? drawOpening(g, D, null, t, W, H) : drawInvocation(g, D, t - IV_P, W, H);
+  /* 2 nov. 2026 : l'invocation de la vidéo passe par le même moteur 3D que l'ouverture en jeu (src/invgl.part) ; l'ancienne version 2D reste en secours (pas de WebGL) */
+  let ivGL = null, ivGLD = null;
+  function drawInv3D(g, D, t, W, H){ if (!window.THREE || typeof HKInv === "undefined") return false;
+    try { if (!ivGL){ const h = document.createElement("div"); h.style.cssText = "position:fixed;left:-9999px;top:0;width:540px;height:960px;pointer-events:none"; document.body.appendChild(h); ivGL = HKInv.create(h, {dpr: 2}); }
+      if (ivGLD !== D){ ivGLD = D; const best = D.items[0], k = ivKey(best); ivGL.load({key: k, card: best, pal: D.pal && D.pal.length ? D.pal : null, odds: D.oddsp, label: (D.oddslab || IV[k].n).toUpperCase(), others: D.items.slice(1, 5), cta: D.ref, ctaSub: "sur Hanko · " + D.title}); }
+      ivGL.drawAt(t, g, W, H); return true; } catch (e){ console.warn(e); return false; } }
+  const drawVideo = (g, D, t, W, H) => t < IV_P ? drawOpening(g, D, null, t, W, H) : (drawInv3D(g, D, t - IV_P, W, H) || drawInvocation(g, D, t - IV_P, W, H));
   function drawInvocation(g, D, t, W, H){ const best = D.items[0], key = ivKey(best), chain = ivChain(key), pal = D.pal && D.pal.length ? D.pal : [IV[key].rgb];
     const stage = t < IV_UP[0] ? 0 : t < IV_UP[1] ? 1 : 2, kNow = chain[Math.min(stage, chain.length - 1)], pc = (j, a) => { const c = pal[j % pal.length]; return `rgba(${c[0]},${c[1]},${c[2]},${a})`; };
     g.save(); g.scale(W / 540, H / 960); const w0 = 540, h0 = 960; g.fillStyle = "#05030a"; g.fillRect(0, 0, w0, h0);
@@ -20963,7 +20969,7 @@ new MutationObserver(() => { const sh = document.querySelector("#nvPk .nvsh>div"
    =================================================================================== */
 const HKInv = (() => {
   let T = null, RND = null;
-  const IV = {E: {rgb: [176, 124, 255], kj: "叙事", n: "ÉPIQUE"}, L: {rgb: [255, 201, 58], kj: "伝説", n: "LÉGENDAIRE"}, M: {rgb: [255, 61, 90], kj: "神話", n: "MYTHIQUE"}, X: {rgb: [110, 240, 255], kj: "覚醒", n: "ÉVEIL", rb: true}};
+  const IV = {R: {rgb: [77, 163, 255], kj: "希少", n: "RARE"}, E: {rgb: [176, 124, 255], kj: "叙事", n: "ÉPIQUE"}, L: {rgb: [255, 201, 58], kj: "伝説", n: "LÉGENDAIRE"}, M: {rgb: [255, 61, 90], kj: "神話", n: "MYTHIQUE"}, X: {rgb: [110, 240, 255], kj: "覚醒", n: "ÉVEIL", rb: true}};
   const ivChain = k => k === "L" ? ["E", "L"] : k === "M" ? ["E", "L", "M"] : k === "X" ? ["E", "L", "X"] : [k];
   const ivCol = (k, t, a, j = 0) => IV[k].rb ? `hsla(${(t / 8 + j * 40) % 360},95%,65%,${a})` : `rgba(${IV[k].rgb.join(",")},${a})`;
   const cl1 = x => Math.max(0, Math.min(1, x)), sg = (t, a, b) => cl1((t - a) / (b - a)), eo3 = x => 1 - Math.pow(1 - cl1(x), 3), backOut = x => 1 + 2.2 * Math.pow(x - 1, 3) + 1.2 * Math.pow(x - 1, 2);
@@ -21065,8 +21071,8 @@ const HKInv = (() => {
         if (a1 > 0){ g.save(); g.globalAlpha = a1; g.translate(0, (1 - eo3(a1)) * 20); g.fillStyle = ivCol(key, t, 1); g.font = `900 30px ${TTL}`; g.fillText(D.label || IV[key].n, 270, 718);
           if (p != null){ const pt = p >= 10 ? p.toFixed(0) : p >= 1 ? p.toFixed(1).replace(".", ",") : p.toFixed(2).replace(".", ","); g.fillStyle = "#fff"; g.font = `700 18px ${MONO}`; g.fillText((D.pre || "") + `${pt} % DE CHANCE`, 270, 748); g.fillStyle = "#ffd9dc"; g.font = `700 15px ${MONO}`; g.fillText(`1 CHANCE SUR ${Math.max(2, Math.round(100 / p)).toLocaleString("fr-FR")} DANS CE BOOSTER`, 270, 772); } g.restore(); }
         if (D.cta && a2 > 0){ g.save(); g.globalAlpha = a2; g.translate(0, 14 + (1 - eo3(a2)) * 30); rr(g, 50, 790, 440, 128, 22); g.fillStyle = "rgba(255,30,45,.16)"; g.fill(); g.strokeStyle = "rgba(255,30,45,.65)"; g.lineWidth = 2; g.stroke();
-          if (LOGO.complete) g.drawImage(LOGO, 76, 812, 46, 46); g.textAlign = "left"; g.fillStyle = "#fff"; g.font = `900 26px ${TTL}`; g.fillText("Joue gratuitement", 134, 834); g.fillStyle = "#ffb3b8"; g.font = `800 17px ${TTL}`; g.fillText("sur Hanko · Anime TCG", 134, 860);
-          g.textAlign = "center"; g.fillStyle = "#fff"; g.font = `700 15px ${MONO}`; g.fillText(D.cta, 270, 898); g.fillStyle = "#ffb3b8"; g.font = `700 12px ${MONO}`; g.fillText("MON LIEN PARRAIN · 3 BOOSTERS OFFERTS", 270, 912); g.restore(); }
+          if (LOGO.complete) g.drawImage(LOGO, 76, 812, 46, 46); g.textAlign = "left"; g.fillStyle = "#fff"; g.font = `900 26px ${TTL}`; g.fillText("Joue gratuitement", 134, 834); g.fillStyle = "#ffb3b8"; g.font = `800 17px ${TTL}`; { let sub = D.ctaSub || "sur Hanko · Anime TCG"; g.font = `800 17px ${TTL}`; while (sub.length > 8 && g.measureText(sub).width > 340) sub = sub.slice(0, -2) + "…"; g.fillText(sub, 134, 860); }
+          g.textAlign = "center"; g.fillStyle = "#fff"; g.font = `700 15px ${MONO}`; g.fillText(D.cta, 270, 898, 430); if (/#parrain=/.test(D.cta)){ g.fillStyle = "#ffb3b8"; g.font = `700 12px ${MONO}`; g.fillText("MON LIEN PARRAIN · 3 BOOSTERS OFFERTS", 270, 912); } g.restore(); }
         if (!D.cta && a2 > 0){ g.save(); g.globalAlpha = a2 * (.55 + .45 * Math.sin(t / 260)); g.fillStyle = "#cfcbd6"; g.font = `700 14px ${MONO}`; g.fillText("TOUCHE POUR CONTINUER", 270, 900); g.restore(); } }
       const vg = g.createRadialGradient(270, 470, 260, 270, 470, 640); vg.addColorStop(0, "transparent"); vg.addColorStop(1, "rgba(0,0,0,.55)"); g.fillStyle = vg; g.fillRect(0, 0, 540, 960); }
 
@@ -21079,6 +21085,10 @@ const HKInv = (() => {
 
     function frame(now){ raf = requestAnimationFrame(frame); if (!D) return; let t = now - t0 + (D.start || 0); if (t > DUR + 600){ if (D.loop){ t0 = now; t = D.start || 0; ev.forEach(e => e.done = true); } else t = DUR; }
       ev.forEach(e => { if (!e.done && t >= e[0]){ e.done = true; try { e[1](); } catch {} } });
+      const [sh, zs] = step(t), k = host.clientWidth / 540;
+      wrap.style.transform = `translate(${((Math.random() - .5) * sh * k).toFixed(2)}px,${((Math.random() - .5) * sh * k).toFixed(2)}px) scale(${zs.toFixed(4)})`; }
+    /* une image de la cinématique à l'instant t (en ms) ; renvoie le tremblement et le zoom à appliquer à l'ensemble */
+    function step(t){
       const key = D.key, chain = ivChain(key), pal = D.pal || [IV[key].rgb], stg = t < UP[0] ? 0 : t < UP[1] ? 1 : 2, kNow = chain[Math.min(stg, chain.length - 1)], pc = (j, a) => { const c = pal[j % pal.length]; return `rgba(${c[0]},${c[1]},${c[2]},${a})`; };
       const C = (a, j = 0) => t < HIT ? ivCol(kNow, t, a, j) : pc(j, a), beam = sg(t, D.b0 || 2300, HIT), pre = t < HIT ? eo3(sg(t, HIT - 260, HIT)) : 0, punch = t >= HIT ? 1 - eo3(sg(t, HIT, HIT + 550)) : 0;
       const ups = UP.slice(0, chain.length - 1), cu = ups.find(u => t >= u && t < u + 260 && t < HIT), crF = cu == null ? 0 : 1 - sg(t, cu, cu + 260);
@@ -21091,17 +21101,19 @@ const HKInv = (() => {
         card.rotation.set(Math.sin(t / 700) * .05 * beam, Math.PI + Math.sin(t / 610) * .16 * beam, Math.sin(t / 420) * .022 * beam); mEdge.color.setStyle(ivCol(kNow, t, 1).replace(/,[^,]*\)$/, ")").replace("rgba", "rgb").replace("hsla", "hsl")); holo.material.opacity = 0; spec.material.opacity = 0; }
       else { if (D.onSwap && t >= HIT + 430){ if (!swapped){ swapped = true; try { D.onSwap(); } catch {} } } card.visible = !(D.onSwap && swapped); const fl = sg(t, HIT, HIT + 420), idle = sg(t, HIT + 420, HIT + 1000), tilt = Math.sin((t - HIT) / 950) * idle, sc = cw / CW;
         card.scale.set(sc, sc, 1); card.position.set(0, 480 - cy, 0); card.rotation.set(Math.sin((t - HIT) / 1300) * .07 * idle, Math.PI * (1 - backOut(fl)) + tilt * .26, -tilt * .02);
-        mEdge.color.setStyle(D.card.col); holo.material.opacity = .14 * idle; holoT.offset.x = ((t - HIT) / 2600) % 2; spec.material.opacity = .16 * idle; specT.offset.x = -.2 - tilt * .45; }
+        mEdge.color.setStyle(D.card.col); holo.material.opacity = .14 * idle; holoT.offset.x = ((t - HIT) / 2600) % 2; spec.material.opacity = .07 * idle; specT.offset.x = -.2 - tilt * .45; }
       drawBack(gB, t, s); R.render(S, cam); drawFront(gF, t, s);
       // tremblement et coups de zoom sur l'ensemble
-      const sh = (t < HIT ? beam * 1.8 : 0) + crF * 4.5 + punch * 6 * (1 - sg(t, HIT, HIT + 350)), zs = 1 + punch * .07 + crF * .025 - pre * .025, k = host.clientWidth / 540;
-      wrap.style.transform = `translate(${((Math.random() - .5) * sh * k).toFixed(2)}px,${((Math.random() - .5) * sh * k).toFixed(2)}px) scale(${zs.toFixed(4)})`; }
+      return [(t < HIT ? beam * 1.8 : 0) + crF * 4.5 + punch * 6 * (1 - sg(t, HIT, HIT + 350)), 1 + punch * .07 + crF * .025 - pre * .025]; }
 
-    function play(data, sounds){ D = data; t0 = performance.now(); swapped = false; ev = (sounds || []).map(e => Object.assign([...e], {done: false}));
-      const g = frontC.getContext("2d"); g.clearRect(0, 0, 900, 1332); face(g, D.card, 450, 666, 900); frontT.needsUpdate = true; if (!raf) raf = requestAnimationFrame(frame); }
+    function load(data){ D = data; swapped = false; const g = frontC.getContext("2d"); g.clearRect(0, 0, 900, 1332); face(g, D.card, 450, 666, 900); frontT.needsUpdate = true; }
+    function play(data, sounds){ load(data); t0 = performance.now(); ev = (sounds || []).map(e => Object.assign([...e], {done: false})); if (!raf) raf = requestAnimationFrame(frame); }
+    /* vidéo de partage : dessine l'image t des trois couches dans un autre canevas (W × H), tremblement et zoom compris */
+    function drawAt(t, g, W, H){ const [sh, zs] = step(t), k = W / 540; g.save(); g.fillStyle = "#05030a"; g.fillRect(0, 0, W, H); g.translate(W / 2 + (Math.random() - .5) * sh * k, H / 2 + (Math.random() - .5) * sh * k); g.scale(zs, zs); g.translate(-W / 2, -H / 2);
+      g.drawImage(gB.canvas, 0, 0, W, H); g.drawImage(R.domElement, 0, 0, W, H); g.drawImage(gF.canvas, 0, 0, W, H); g.restore(); }
     const skip = () => { if (!D) return; const t = performance.now() - t0 + (D.start || 0); if (t < HIT - 50){ t0 -= HIT - 50 - t; ev.forEach(e => { if (e[0] < HIT - 50) e.done = true; }); return true; } return false; };
     const stop = () => { cancelAnimationFrame(raf); raf = 0; D = null; try { [frontT, backT, holoT, specT].forEach(x => x.dispose()); card.traverse(o => o.geometry && o.geometry.dispose()); } catch {} wrap.remove(); };
-    return {play, skip, stop, wrap, front: gF.canvas, time: () => D ? performance.now() - t0 + (D.start || 0) : 0, frameAt: t => { t0 = performance.now() - t + (D.start || 0); frame(performance.now()); cancelAnimationFrame(raf); raf = requestAnimationFrame(frame); }};
+    return {play, load, drawAt, skip, stop, wrap, front: gF.canvas, time: () => D ? performance.now() - t0 + (D.start || 0) : 0, frameAt: t => { t0 = performance.now() - t + (D.start || 0); frame(performance.now()); cancelAnimationFrame(raf); raf = requestAnimationFrame(frame); }};
   }
   return {create, IV, ivChain, UP, HIT, DUR};
 })();
