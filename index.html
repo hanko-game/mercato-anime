@@ -20190,9 +20190,9 @@ new MutationObserver(() => { const sh = document.querySelector("#nvPk .nvsh>div"
 .dfseal.ok{background:radial-gradient(circle at 35% 30%,#4fe08f,#138a47 70%);box-shadow:inset 0 0 0 3px #ffffff40,inset 0 0 0 6px #138a47,inset 0 0 0 7px #ffffff55,0 8px 20px #0008}
 .dfcap{position:absolute;left:18px;right:18px;bottom:16px;display:grid;gap:4px}.dfcap b{font:900 clamp(22px,6vw,30px)/1.05 var(--title);text-shadow:0 2px 14px #000}.dfcap span{font:600 12.5px var(--mono);color:#e3dde8;letter-spacing:.03em}
 .dfmeta{display:flex;flex-wrap:wrap;gap:8px}.dfmeta span{display:inline-flex;align-items:center;gap:6px;font:700 12px var(--mono);padding:7px 11px;border-radius:999px;background:#ffffff0c;border:1px solid #ffffff17;color:#e3dde8;font-variant-numeric:tabular-nums}.dfmeta span.f{color:#ffc46b;border-color:#ffb34755;background:#ffb3471a}
-.dfcta{all:unset;box-sizing:border-box;cursor:pointer;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;gap:10px;min-height:58px;border-radius:16px;background:linear-gradient(180deg,#ff4651,#d8101e);color:#fff;font:900 17px var(--title);letter-spacing:.01em;box-shadow:0 14px 30px -10px #ff1e2d99,inset 0 1px 0 #ffffff55;width:100%}
+.dfcta{all:unset;box-sizing:border-box;cursor:pointer;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 20px;border-radius:14px;background:linear-gradient(180deg,#ff4651,#d8101e);color:#fff;font:800 14.5px var(--title);letter-spacing:.02em;box-shadow:0 10px 24px -12px #ff1e2dcc,inset 0 1px 0 #ffffff4d;width:100%;transition:transform .15s,filter .15s}.dfcta:hover{filter:brightness(1.08)}.dfcta:active{transform:scale(.98)}
 .dfcta::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,#ffffff55 50%,transparent 70%);transform:translateX(-120%);animation:dfsh 3.2s ease-in-out infinite}
-.dfcta.g{background:#ffffff0d;border:1px solid #ffffff22;box-shadow:none;font-weight:800;font-size:15px;min-height:52px}.dfcta.g::after{display:none}
+.dfcta.g{background:#ffffff0b;border:1px solid #ffffff1f;box-shadow:none;font-weight:700;font-size:13.5px;min-height:44px;color:#e9e4ee}.dfcta.g::after{display:none}
 .dfcta[disabled]{opacity:.5;cursor:default}
 .dfrow{display:flex;gap:10px;flex-wrap:wrap}.dfrow>*{flex:1 1 0;min-width:140px}
 .dfhero{display:grid;gap:14px}
@@ -20247,7 +20247,7 @@ new MutationObserver(() => { const sh = document.querySelector("#nvPk .nvsh>div"
 .dfg.old>span{animation:none}
 @keyframes dfflip{0%{transform:rotateX(90deg);opacity:.2}60%{transform:rotateX(-12deg)}100%{transform:none;opacity:1}}
 .dfres{display:grid;gap:12px;text-align:center}.dfres b{font:900 clamp(26px,7vw,36px)/1.05 var(--title);letter-spacing:-.02em}.dfres b.ok{color:#4fe08f}.dfres b.ko{color:#ff6b75}
-.dfrecap{display:flex;justify-content:center;gap:10px}.dfrecap span{display:grid;gap:4px}.dfrecap i{display:block;width:22px;height:22px;border-radius:6px;background:linear-gradient(180deg,#8a1f2a,#5a1018)}.dfrecap i.ok{background:linear-gradient(180deg,#22a35d,#126b3b)}.dfrecap i.mid{background:linear-gradient(180deg,#c7891f,#7c520c)}
+.dffr{display:grid;gap:6px}.dffr div{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;align-items:center;padding:9px 12px;border-radius:12px;background:#ffffff08}.dffr b{font:800 14px var(--title);color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dffr small{grid-row:2;font-size:11.5px;color:#a7a0b1}.dffr span{grid-row:1/3;grid-column:2;font:700 11.5px var(--mono);padding:5px 10px;border-radius:999px;background:#ffffff12;color:#bdb6c6}.dffr span.ok{background:#22a35d2e;color:#7ff0b0}.dffr span.ko{background:#e0452f2e;color:#ff9aa1}
 .dfnext{margin:0;font-size:13.5px;color:#d7d1dd}.dfnext b{font:800 13px var(--mono);color:#ffc46b;font-variant-numeric:tabular-nums}
 .dfres .gem{justify-self:center;font:800 13px var(--mono);padding:7px 14px;border-radius:999px;background:#4da3ff1f;border:1px solid #4da3ff55;color:#bfe0ff}
 .dfpanel{border-radius:18px;padding:14px;background:#ffffff08;border:1px solid #ffffff14;display:grid;gap:10px}.dfpanel h4{margin:0;font:900 15px var(--title)}
@@ -20375,17 +20375,16 @@ function dfPlay(box){ const T = dfToday(), s = dfState(); if (!T) return dfClose
       <div class="dfplay">${dfFrame(T, 0, done, st.won)}
         <div class="dfseals">${DF_KJ.slice(0, DF_MAX).map((kj, k) => `<i class="${k < G.length ? (G[k].id === A.id ? "ok" : "x") : ""}">${k < G.length ? (G[k].id === A.id ? "✓" : "✕") : kj}</i>`).join("")}</div>
         ${done ? `<div class="dfres">${st.won ? `<b class="ok">${esc(A.n)} !</b><p class="dfnote">Trouvé en ${G.length} essai${G.length > 1 ? "s" : ""}.</p>` : `<b class="ko">C'était ${esc(A.n)}</b><p class="dfnote">Pas trouvé cette fois.</p>`}${st.gain ? `<span class="gem">+${st.gain} ◆${st.bonus ? " · booster offert" : ""}</span>` : ""}
-          <div class="dfrecap">${G.map(g => { const r = dfRel(g, A), hit = g.id === A.id, q = (ok, mid) => `<i class="${ok ? "ok" : mid ? "mid" : ""}"></i>`; return `<span title="${esc(g.n)}">${q(hit || r.u)}${q(hit || r.r === 0)}${q(hit || r.p === 0, r.pc)}</span>`; }).join("")}</div>
           <p class="dfnext">Reviens demain à ${TC_RESET} h pour le prochain défi · <b class="dfcd">${dfLeft()}</b></p>
-          <button class="dfcta" id="dfShare">Partager mon résultat</button></div>
-          <div class="dfpanel"><h4>Dans le monde</h4><div id="dfSt" class="dfstat">Chargement…</div></div>`
+          <button class="dfcta" id="dfShare">↗ Partager mon résultat</button></div>
+          <div class="dfpanel"><h4>Dans le monde</h4><div id="dfSt" class="dfstat">Chargement…</div></div><div class="dfpanel"><h4>Tes amis</h4><div id="dfFr" class="dfstat">Chargement…</div></div>`
         : `<div class="dfhints">${hint(1, "Univers", TC_PACKS[A.u][0])}${hint(2, "Rareté", TC_R[A.r][0])}${hint(2, "Initiale", A.n[0] + "…")}</div>
           <div class="dfsearch"><input id="dfQ" placeholder="Tape le nom d'un personnage…" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go"><div class="dfsug" id="dfSug" hidden></div></div>
           <p class="dfleft">Chaque erreur débloque un indice</p>`}
         ${G.length && !done ? `<div class="dfgt"><b>Tes propositions</b><span>Vert : pareil que le mystère · Rouge : différent · ↑ ↓ : le mystère est plus haut ou plus bas</span></div>` : ""}
         <div class="dfgs">${done ? "" : G.slice().reverse().map((g, j) => { const r = dfRel(g, A), hit = g.id === A.id, ar = d => d ? `<em>${d > 0 ? "↑ plus haut" : "↓ plus bas"}</em>` : ""; return `<div class="dfg ${fresh && j === 0 ? "" : "old"}"><img src="${g.i}" alt=""><b>${esc(g.n)}${hit ? " ✓" : ""}</b><span class="${hit || r.u ? "ok" : ""}"><small>Univers</small>${esc(TC_PACKS[g.u][0])}</span><span class="${hit || r.r === 0 ? "ok" : ""}"><small>Rareté</small>${esc(TC_R[g.r][0])}${ar(r.r)}</span><span class="${hit || r.p === 0 ? "ok" : r.pc ? "mid" : ""}"><small>Niveau</small>${g.p}${ar(r.p)}</span></div>`; }).join("")}</div></div>`;
     dfPaint(T, box); box.querySelector("#dfBack").onclick = () => dfOpen("today");
-    if (done){ box.querySelector("#dfShare").onclick = e => dfShare("defi", e.currentTarget); dfStats(box.querySelector("#dfSt"), T, st); dfTick(box); return; }
+    if (done){ box.querySelector("#dfShare").onclick = e => dfShare("defi", e.currentTarget); dfStats(box.querySelector("#dfSt"), T, st); dfFriends(box.querySelector("#dfFr"), T); dfTick(box); return; }
     const q = box.querySelector("#dfQ"), sug = box.querySelector("#dfSug"); let L = [], on = 0;
     const pick = c => { const s = dfState(), st = s.df; if (st.won !== null || st.g.includes(c.id)) return; st.g.push(c.id); const hit = c.id === A.id;
       if (hit || st.g.length >= DF_MAX) dfFinish(s, hit); else { tcSave(s); try { tcSnd("flip0"); } catch {} try { navigator.vibrate?.(20); } catch {} } draw(); };
@@ -20408,6 +20407,11 @@ async function dfStats(el, T, st){ const r = st.st && st.sent ? st.st : await df
   const tile = (v, l, c = "") => `<div class="dft ${c}"><b>${v}</b><span>${l}</span></div>`;
   el.outerHTML = `<div style="display:grid;gap:12px"><div class="dftiles">${tile(n.toLocaleString("fr-FR"), "joueur" + (n > 1 ? "s" : "") + " aujourd'hui")}${tile((n ? Math.round(r.won / n * 100) : 0) + " %", "ont trouvé")}${top ? tile("Top " + top + " %", "des joueurs du jour", "gold") : ""}${r.rank ? tile(r.rank.toLocaleString("fr-FR") + (r.rank === 1 ? "er" : "e"), "à trouver", "red") : ""}</div>
     <div class="dfdist">${D.map((v, k) => `<div><span>${k + 1}</span><i class="${me === k + 1 ? "me" : ""}" style="width:${Math.max(3, v / mx * 100)}%"></i><em>${v}</em></div>`).join("")}</div>${CP.user ? "" : `<p class="dfstat">Connecte-toi pour que ton résultat compte dans le classement du jour.</p>`}</div>`; }
+// résultats des amis (défi du jour et camp choisi au débat)
+async function dfFriends(el, T){ if (!el) return; if (!CP.user){ el.textContent = "Connecte-toi pour comparer ton résultat avec tes amis."; return; }
+  const L = await dfRpc("daily_friends", {p_day: T.d}); if (!el.isConnected) return; if (!L){ el.textContent = "Les résultats de tes amis arrivent bientôt."; return; }
+  if (!L.length){ el.textContent = "Ajoute des amis pour comparer vos résultats chaque jour."; return; } const D = dfDebate();
+  el.outerHTML = `<div class="dffr">${L.map(f => `<div><b>${esc(f.name)}</b>${f.pick != null && D ? `<small>${esc([D.a, D.b][f.pick].n)} au débat</small>` : ""}<span class="${f.tries == null ? "" : f.won ? "ok" : "ko"}">${f.tries == null ? "Pas encore joué" : f.won ? `Trouvé en ${f.tries}/${DF_MAX}` : "Raté"}</span></div>`).join("")}</div>`; }
 // texte à partager (aucune réponse dévoilée) : une ligne par proposition, univers / rareté / niveau
 function dfText(){ const T = dfToday(), s = dfState(), st = s.df, all = dfAll(), byId = Object.fromEntries(all.map(c => [c.id, c])), G = st.g.map(id => byId[id]).filter(Boolean), fire = dfFire(s);
   const sq = (ok, mid) => ok ? "🟩" : mid ? "🟨" : "🟥";
@@ -20437,9 +20441,8 @@ async function dfPoster(kind){ const W = 1080, H = 1350, cv = document.createEle
 async function dfShare(kind, btn){ const t = btn ? btn.textContent : ""; if (btn){ btn.disabled = true; btn.textContent = "Préparation…"; }
   try { const cv = await dfPoster(kind), blob = await new Promise(r => cv.toBlob(r, "image/png")), file = new File([blob], "hanko-" + kind + ".png", {type: "image/png"}), text = kind === "defi" ? dfText() : "Débat du jour sur Hanko : " + dfDebate().q + " https://hanko-game.github.io/mercato-anime/";
     if (navigator.canShare && navigator.canShare({files: [file]})){ try { await navigator.share({files: [file], text}); return; } catch (e) { if (e && e.name === "AbortError") return; } }
-    const url = URL.createObjectURL(blob); document.body.insertAdjacentHTML("beforeend", `<div class="dfshm"><div><img src="${url}" alt="Mon résultat Hanko"><div class="dfrow"><a class="dfbtn" href="${url}" download="hanko-${kind}.png">Télécharger</a><button class="dfbtn g" id="dfShC">Copier le texte</button></div><button class="dfbtn g" id="dfShX">Fermer</button></div></div>`);
+    const url = URL.createObjectURL(blob); document.body.insertAdjacentHTML("beforeend", `<div class="dfshm"><div><img src="${url}" alt="Mon résultat Hanko"><a class="dfbtn" href="${url}" download="hanko-${kind}.png">Télécharger l'image</a><button class="dfbtn g" id="dfShX">Fermer</button></div></div>`);
     const M = document.body.lastElementChild, close = () => { M.remove(); URL.revokeObjectURL(url); }; M.querySelector("#dfShX").onclick = close; M.onclick = e => { if (e.target === M) close(); };
-    M.querySelector("#dfShC").onclick = async e => { try { await navigator.clipboard.writeText(text); e.currentTarget.textContent = "Copié ✔"; } catch { e.currentTarget.textContent = "Copie impossible ici"; } };
   } catch (e) { console.warn("partage", e); } finally { if (btn){ btn.disabled = false; btn.textContent = t; } } }
 // ——— bloc de l'accueil : toujours visible en haut ———
 function dfHomeDraw(){ const el = document.querySelector("#dfHome"); if (!el) return; const T = dfToday(), D = dfDebate(); if (!T || !D) return; const s = dfState(), st = s.df, done = st.won !== null, fire = dfFire(s);
