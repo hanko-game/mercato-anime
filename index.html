@@ -20644,6 +20644,8 @@ setTimeout(dfSync, 6000); setInterval(dfSync, 120000);
 .tlrow>div{display:flex;flex-wrap:wrap;gap:6px;padding:6px;align-content:center}
 .tl0>b{background:#ff5964}.tl1>b{background:#ff9f43}.tl2>b{background:#ffd23f}.tl3>b{background:#5fd98a}.tl4>b{background:#5aa9ff}
 .tlt{all:unset;box-sizing:border-box;cursor:pointer;position:relative;width:54px;height:68px;border-radius:10px;overflow:hidden;background:#000;box-shadow:0 0 0 1px #ffffff22;transition:transform .15s,box-shadow .15s;flex:none}
+.tlt{touch-action:none}.tlghost{box-shadow:0 0 0 3px #ff2d3a,0 20px 40px #000c!important;transition:none}
+.tlpool.tgt{border-color:#ff2d3a;background:#ff2d3a12}
 .tlt img{width:100%;height:100%;object-fit:cover;object-position:50% 22%;display:block}
 .tlt span{position:absolute;left:0;right:0;bottom:0;padding:10px 3px 3px;font:800 9px/1.1 var(--title);color:#fff;text-align:center;background:linear-gradient(transparent,#000d);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tlt.sel{box-shadow:0 0 0 3px #ff2d3a,0 8px 20px #ff2d3a55;transform:translateY(-3px) scale(1.05);z-index:2}
@@ -20678,6 +20680,8 @@ function tlToday(){ const d = tcDay(), n = dfNum(d), by = Object.fromEntries(dfA
     if (all.length >= 8) return {d, n, u: "mix", L: dfShuffle(all, "tier-" + d).slice(0, 8), crit: t}; }
   const u = TL_U[Math.floor(n / 2) % TL_U.length], all = dfAll().filter(c => c.u === u && dfPort(c));
   if (all.length < 8) return null; const L = dfShuffle(all.sort((a, b) => a.id < b.id ? -1 : 1), "tier-" + d).slice(0, 8); return {d, n, u, L, crit: TL_CRIT[Math.floor(n / 2) % TL_CRIT.length]}; }
+/* place (ou retire, t = null) un personnage et retient l'ordre de placement, rejoué par la vidéo de partage */
+const tlPut = (s, n, t) => { s.tl.o = (s.tl.o || []).filter(x => x !== n); if (t == null) delete s.tl.p[n]; else { s.tl.p[n] = t; s.tl.o.push(n); } tcSave(s); };
 const tlState = () => { const s = tcLoad(), d = tcDay(); if (!s.tl || s.tl.d !== d) s.tl = {d, p: {}, done: false}; return s; };
 const tlTile = (c, extra = "") => `<button class="tlt" data-n="${esc(c.n)}"><img src="${dfPort(c)}" alt="">${extra}<span>${esc(c.n.split(" (")[0])}</span></button>`;
 const tlWorld = st => { const r = {}; for (const k in (st && st.avg) || {}) r[k] = Math.max(0, Math.min(4, Math.round(+st.avg[k]))); return r; };
@@ -20697,17 +20701,28 @@ function tlPlay(box){ const T = tlToday(); if (!T) return dfOpen("today"); const
     if (done) return tlResults(box, T);
     box.innerHTML = `<div class="dfbar0">${DF_LOGO}<button class="dfback" id="dfBack">‹ Aujourd'hui</button></div>
       <div><p class="dfkick">Tier list du jour · ${esc(tlUni(T))}</p><h1 class="dfh" style="font-size:clamp(24px,7vw,36px)">${esc(T.crit)}</h1></div>
-      <p class="tlhint">${TL_SEL ? `Touche une ligne pour y placer <b>${esc(TL_SEL)}</b>` : left.length ? "Touche un personnage, puis une ligne" : "Tout est classé : valide ta tier list"}</p>
+      <p class="tlhint">${TL_SEL ? `Touche une ligne pour y placer <b>${esc(TL_SEL)}</b>` : left.length ? "Glisse chaque personnage sur sa ligne (ou touche-le, puis touche une ligne)" : "Tout est classé : valide ta tier list"}</p>
       <div class="tlrows">${TL_T.map((t, k) => `<div class="tlrow tl${k} ${TL_SEL ? "tgt" : ""}" data-t="${k}"><b>${t}</b><div>${T.L.filter(c => p[c.n] === k).map(c => tlTile(c)).join("")}</div></div>`).join("")}</div>
       <div class="tlpool">${left.map(c => tlTile(c)).join("")}</div>
       <button class="dfcta" id="tlOk" ${left.length ? "disabled" : ""}>${left.length ? `Encore ${left.length} à classer` : "Valider ma tier list · +15 ◆"}</button>`;
     box.querySelector("#dfBack").onclick = () => { TL_SEL = null; dfOpen("today"); };
     if (TL_SEL) box.querySelectorAll(`.tlt[data-n="${CSS.escape(TL_SEL)}"]`).forEach(e => e.classList.add("sel"));
-    box.querySelectorAll(".tlt").forEach(b => b.onclick = e => { e.stopPropagation(); const n = b.dataset.n, s = tlState();
+    const tap = n => { const s = tlState();
       if (TL_SEL === n){ TL_SEL = null; return draw(); }   // second toucher : désélectionne
-      if (s.tl.p[n] != null && !TL_SEL){ delete s.tl.p[n]; tcSave(s); TL_SEL = n; return draw(); }   // personnage classé : retour en réserve, prêt à être replacé
-      TL_SEL = n; try { tcSnd("flip0"); } catch {} draw(); });
-    box.querySelectorAll(".tlrow").forEach(r => r.onclick = () => { if (!TL_SEL) return; const s = tlState(); s.tl.p[TL_SEL] = +r.dataset.t; tcSave(s); TL_SEL = null; try { tcSnd("pop"); navigator.vibrate?.(15); } catch {} draw(); });
+      if (s.tl.p[n] != null && !TL_SEL){ tlPut(s, n, null); TL_SEL = n; return draw(); }   // personnage classé : retour en réserve, prêt à être replacé
+      TL_SEL = n; try { tcSnd("flip0"); } catch {} draw(); };
+    /* 2 nov. 2026 : on peut aussi glisser le personnage du doigt jusqu'à sa ligne (la ligne survolée s'éclaire) ; un simple toucher garde l'ancien geste */
+    box.querySelectorAll(".tlt").forEach(b => { b.onclick = e => e.stopPropagation(); b.onpointerdown = e => { e.preventDefault(); const n = b.dataset.n, r0 = b.getBoundingClientRect(), x0 = e.clientX, y0 = e.clientY; let ghost = null, over = null;
+      const move = ev => { const dx = ev.clientX - x0, dy = ev.clientY - y0; if (!ghost){ if (Math.hypot(dx, dy) < 8) return; ghost = b.cloneNode(true); ghost.classList.add("tlghost"); Object.assign(ghost.style, {position: "fixed", left: r0.left + "px", top: r0.top + "px", width: r0.width + "px", height: r0.height + "px", zIndex: 200, pointerEvents: "none"}); document.body.appendChild(ghost); b.style.opacity = ".25"; try { navigator.vibrate?.(10); } catch {} }
+        ghost.style.transform = `translate(${dx}px,${dy}px) scale(1.12) rotate(${Math.max(-8, Math.min(8, dx / 30))}deg)`;
+        const el = document.elementFromPoint(ev.clientX, ev.clientY), row = el && el.closest(".tlrow, .tlpool"); if (row !== over){ over && over.classList.remove("tgt"); over = row; over && over.classList.add("tgt"); }
+        const O = dfEl(); if (O){ if (ev.clientY < 70) O.scrollTop -= 14; else if (ev.clientY > innerHeight - 70) O.scrollTop += 14; } };
+      const up = ev => { removeEventListener("pointermove", move); removeEventListener("pointerup", up); removeEventListener("pointercancel", up);
+        if (!ghost) return tap(n); ghost.remove(); b.style.opacity = ""; over && over.classList.remove("tgt"); const s = tlState();
+        if (over && over.classList.contains("tlrow")){ tlPut(s, n, +over.dataset.t); try { tcSnd("pop"); navigator.vibrate?.(15); } catch {} } else if (over && over.classList.contains("tlpool")) tlPut(s, n, null);
+        TL_SEL = null; draw(); };
+      addEventListener("pointermove", move); addEventListener("pointerup", up); addEventListener("pointercancel", up); }; });
+    box.querySelectorAll(".tlrow").forEach(r => r.onclick = () => { if (!TL_SEL) return; const s = tlState(); tlPut(s, TL_SEL, +r.dataset.t); TL_SEL = null; try { tcSnd("pop"); navigator.vibrate?.(15); } catch {} draw(); });
     box.querySelector("#tlOk").onclick = async () => { const s = tlState(); if (T.L.some(c => s.tl.p[c.n] == null)) return; s.tl.done = true; if (!s.tl.paid){ s.tl.paid = 1; s.gems = (s.gems || 0) + 15; try { tcToast("Tier list du jour : +15 ◆"); } catch {} } tcSave(s);
       if (CP.user){ const r = await dfRpc("tier_submit", {p_day: T.d, p_picks: s.tl.p}); if (r){ const s2 = tlState(); s2.tl.sent = 1; s2.tl.st = r; tcSave(s2); } } draw(); }; };
   draw(); }
@@ -20720,8 +20735,8 @@ async function tlResults(box, T){ const s = tlState(), me = s.tl.p; let st = s.t
       <div class="tltabs">${["Toi", "Le monde", "Tes amis"].map((x, i) => `<button data-k="${i}" class="${i === TL_TAB ? "on" : ""}">${x}</button>`).join("")}</div>
       ${TL_TAB === 0 ? rows(me, true) : TL_TAB === 1 ? (st && st.n ? rows(W) : `<p class="dfnote">Pas encore assez de tier lists aujourd'hui.</p>`)
         : !CP.user ? `<p class="dfnote">Connecte-toi pour voir les tier lists de tes amis.</p>` : fr == null ? `<p class="dfnote">Chargement…</p>` : fr.length ? `<div class="tlfr">${fr.map(f => `<div><h5>${esc(f.name)}</h5>${rows(Object.fromEntries(Object.entries(f.picks || {}).map(([k, v]) => [k, +v])))}</div>`).join("")}</div>` : `<p class="dfnote">Aucun ami n'a encore fait la tier list du jour.</p>`}
-      <button class="dfcta" id="tlShare">↗ Partager ma tier list</button>`;
-    box.querySelector("#dfBack").onclick = () => dfOpen("today"); box.querySelector("#tlShare").onclick = e => tlShare(T, e.currentTarget);
+      <div class="dfrow"><button class="dfcta" id="tlShare">📷 Image</button><button class="dfcta" id="tlVid">🎬 Vidéo</button></div>`;
+    box.querySelector("#dfBack").onclick = () => dfOpen("today"); box.querySelector("#tlShare").onclick = e => tlShare(T, e.currentTarget); box.querySelector("#tlVid").onclick = e => tlVideo(T, e.currentTarget);
     box.querySelectorAll(".tltabs [data-k]").forEach(b => b.onclick = async () => { TL_TAB = +b.dataset.k; render(TL_TAB === 2 ? null : fr); if (TL_TAB === 2 && CP.user){ const L = await dfRpc("tier_friends", {p_day: T.d}); if (box.isConnected && TL_TAB === 2) render(L || []); } }); };
   render(null); }
 // ——— partage : la tier list en image (1080 × 1350) ———
@@ -20735,12 +20750,51 @@ async function tlShare(T, btn){ const t0 = btn.textContent; btn.disabled = true;
     const cols = ["#ff5964", "#ff9f43", "#ffd23f", "#5fd98a", "#5aa9ff"], ims = await Promise.all(T.L.map(c => dfImg(dfPort(c)))), im = Object.fromEntries(T.L.map((c, k) => [c.n, ims[k]]));
     TL_T.forEach((t, k) => { const y = 290 + k * 196, h = 182; g.fillStyle = "#ffffff12"; g.fillRect(60, y, 960, h); g.fillStyle = cols[k]; g.fillRect(60, y, 120, h); tx(t, 120, y + h / 2 + 26, 76, "#0b0a0e");
       T.L.filter(c => p[c.n] === k).forEach((c, j) => { const x = 196 + j * 138, w = 126, hh = 166; const i = im[c.n]; if (i){ g.save(); g.beginPath(); g.rect(x, y + 8, w, hh); g.clip(); const r = Math.max(w / i.width, hh / i.height); g.drawImage(i, x - (i.width * r - w) / 2, y + 8 - (i.height * r - hh) * .22, i.width * r, i.height * r); g.restore(); } }); });
-    tx("Et toi, tu classes comment ?", W / 2, 1290, 36, "#ffd9a0", 800); g.font = "600 24px 'JetBrains Mono', monospace"; g.fillStyle = "#8f889a"; g.fillText("hanko-game.github.io/mercato-anime", W / 2, 1330);
-    const blob = await new Promise(r => cv.toBlob(r, "image/png")), file = new File([blob], "hanko-tier-list.png", {type: "image/png"}), text = `Ma tier list du jour sur Hanko : ${T.crit} (${tlUni(T)}). Et toi ? https://hanko-game.github.io/mercato-anime/`;
+    tx("Et toi, tu classes comment ?", W / 2, 1290, 36, "#ffd9a0", 800); g.font = "700 22px 'JetBrains Mono', monospace"; g.fillStyle = "#fff"; g.fillText(tlRef(), W / 2, 1330);
+    const blob = await new Promise(r => cv.toBlob(r, "image/png")), file = new File([blob], "hanko-tier-list.png", {type: "image/png"}), text = `Ma tier list du jour sur Hanko : ${T.crit} (${tlUni(T)}). Et toi ? https://` + tlRef().replace(/#parrain=(.*)$/, (m, h) => "#parrain=" + encodeURIComponent(h));
     if (navigator.canShare && navigator.canShare({files: [file]})){ try { await navigator.share({files: [file], text}); return; } catch (e) { if (e && e.name === "AbortError") return; } }
     const url = URL.createObjectURL(blob); document.body.insertAdjacentHTML("beforeend", `<div class="dfshm"><div><img src="${url}" alt="Ma tier list Hanko"><a class="dfbtn" href="${url}" download="hanko-tier-list.png">Télécharger l'image</a><button class="dfbtn g" id="dfShX">Fermer</button></div></div>`);
     const M = document.body.lastElementChild; M.querySelector("#dfShX").onclick = () => { M.remove(); URL.revokeObjectURL(url); }; M.onclick = e => { if (e.target === M){ M.remove(); URL.revokeObjectURL(url); } };
   } catch (e) { console.warn("partage", e); } finally { btn.disabled = false; btn.textContent = t0; } }
+// ——— partage en vidéo (1080 × 1920, TikTok / Reels) : les personnages viennent se placer un par un, dans l'ordre où le joueur les a classés ———
+const tlRef = () => { let r = "hanko-game.github.io/mercato-anime"; try { const me = frMe(); if (me && me.id) r += "/#parrain=" + me.id; } catch {} return r; };
+function tlFrame(g, t, T, p, order, im, lg){ const W = 1080, H = 1920, cols = ["#ff5964", "#ff9f43", "#ffd23f", "#5fd98a", "#5aa9ff"], e3 = x => 1 - Math.pow(1 - Math.max(0, Math.min(1, x)), 3);
+  const bg = g.createRadialGradient(W / 2, 0, 60, W / 2, 300, H); bg.addColorStop(0, "#4a1018"); bg.addColorStop(1, "#0b0a0e"); g.fillStyle = bg; g.fillRect(0, 0, W, H);
+  const tx = (s, x, y, sz, c = "#fff", w = 900, a = "center", f = "Unbounded, system-ui") => { g.font = `${w} ${sz}px ${f}`; g.fillStyle = c; g.textAlign = a; g.fillText(s, x, y); };
+  g.font = "900 54px Unbounded, system-ui"; const tw = g.measureText("HANKO").width, x0 = W / 2 - (tw + 78) / 2; if (lg) g.drawImage(lg, x0, 70, 64, 64); tx("HANKO", x0 + 78, 122, 54, "#fff", 900, "left");
+  tx("Ma tier list du jour", W / 2, 214, 54); tx(T.crit + " · " + tlUni(T), W / 2, 272, 32, "#ffb3b8", 700);
+  const Y0 = 330, RH = 236, GAP = 14, slot = {}, cnt = [0, 0, 0, 0, 0];
+  order.forEach(n => { const k = p[n]; if (k == null) return; slot[n] = [k, cnt[k]++]; });
+  TL_T.forEach((l, k) => { const y = Y0 + k * (RH + GAP), a = e3((t - 150 - k * 90) / 400); g.globalAlpha = a; g.fillStyle = "#ffffff12"; g.fillRect(60, y, 960, RH); g.fillStyle = cols[k]; g.fillRect(60, y, 130, RH); tx(l, 125, y + RH / 2 + 30, 84, "#0b0a0e"); g.globalAlpha = 1; });
+  const ST = 900, STEP = 560;
+  order.forEach((n, i) => { const t0 = ST + i * STEP; if (t < t0 || !slot[n]) return; const [k, j] = slot[n], q = e3((t - t0) / 420), w = 140, h = 196, tx0 = 206 + j * 150, ty0 = Y0 + k * (RH + GAP) + (RH - h) / 2, sx = W / 2 - 110, sy = 1650, sw = 220, sh = 308;
+    const x = sx + (tx0 - sx) * q, y = sy + (ty0 - sy) * q, ww = sw + (w - sw) * q, hh = sh + (h - sh) * q, pop = q >= 1 ? 1 + .1 * Math.max(0, 1 - (t - t0 - 420) / 160) : 1, i2 = im[n];
+    g.save(); g.translate(x + ww / 2, y + hh / 2); g.scale(pop, pop); g.shadowColor = cols[k]; g.shadowBlur = q < 1 ? 40 : 12; g.fillStyle = "#000"; g.fillRect(-ww / 2, -hh / 2, ww, hh); g.shadowBlur = 0;
+    if (i2){ g.save(); g.beginPath(); g.rect(-ww / 2, -hh / 2, ww, hh); g.clip(); const r = Math.max(ww / i2.width, hh / i2.height); g.drawImage(i2, -i2.width * r / 2, -hh / 2 - (i2.height * r - hh) * .22, i2.width * r, i2.height * r); g.restore(); }
+    g.lineWidth = 4; g.strokeStyle = cols[k]; g.strokeRect(-ww / 2, -hh / 2, ww, hh);
+    if (q < 1){ g.fillStyle = "#fff"; g.font = "900 30px Unbounded, system-ui"; g.textAlign = "center"; g.fillText(n.split(" (")[0], 0, hh / 2 + 44); }
+    g.restore(); });
+  const tEnd = ST + order.length * STEP + 200, a = e3((t - tEnd) / 500);
+  if (a > 0){ g.globalAlpha = a; tx("Et toi, tu classes comment ?", W / 2, 1640, 46, "#ffd9a0", 900); g.fillStyle = "rgba(255,30,45,.16)"; g.fillRect(70, 1690, 940, 170); g.strokeStyle = "rgba(255,30,45,.6)"; g.lineWidth = 3; g.strokeRect(70, 1690, 940, 170);
+    tx("Joue gratuitement sur Hanko", W / 2, 1758, 40); tx(tlRef(), W / 2, 1806, 26, "#fff", 700, "center", "'JetBrains Mono', monospace"); if (tlRef().includes("#parrain=")) tx("MON LIEN PARRAIN · 3 BOOSTERS OFFERTS", W / 2, 1842, 20, "#ffb3b8", 700, "center", "'JetBrains Mono', monospace"); g.globalAlpha = 1; }
+  return tEnd + 1800; }
+async function tlVideo(T, btn){ const t0 = btn.textContent; btn.disabled = true; btn.textContent = "Vidéo…";
+  try { const s = tlState(), p = s.tl.p, order = [...(s.tl.o || []).filter(n => p[n] != null), ...T.L.map(c => c.n).filter(n => p[n] != null && !(s.tl.o || []).includes(n))];
+    const ims = await Promise.all(T.L.map(c => dfImg(dfPort(c)))), im = Object.fromEntries(T.L.map((c, k) => [c.n, ims[k]]));
+    const lg = await dfImg("data:image/svg+xml;charset=utf-8," + encodeURIComponent(DF_LOGO.replace(/^<div class="dflogo">/, "").replace(/HANKO <em>.*$/, "").replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" ')));
+    try { await document.fonts.load("900 60px Unbounded"); } catch {}
+    const cv = document.createElement("canvas"); cv.width = 1080; cv.height = 1920; const g = cv.getContext("2d"), DUR = tlFrame(g, 0, T, p, order, im, lg);
+    const mime = ["video/mp4;codecs=avc1.42E01E", "video/mp4", "video/webm;codecs=vp9", "video/webm"].find(m => window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m));
+    if (!mime || !cv.captureStream){ btn.disabled = false; btn.textContent = t0; return tlShare(T, btn); }   // enregistrement impossible ici : l'image
+    const rec = new MediaRecorder(cv.captureStream(30), {mimeType: mime, videoBitsPerSecond: 8e6}), chunks = []; rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+    await new Promise(r => { rec.onstart = r; rec.start(); setTimeout(r, 1200); });
+    await new Promise(res => { const st = performance.now(); rec.onstop = res; const loop = () => { const el = performance.now() - st; try { tlFrame(g, el, T, p, order, im, lg); } catch {} if (el < DUR) requestAnimationFrame(loop); else { try { rec.stop(); } catch { res(); } } }; requestAnimationFrame(loop); });
+    const ext = mime.includes("mp4") ? "mp4" : "webm", blob = new Blob(chunks, {type: mime}), file = new File([blob], "hanko-tier-list." + ext, {type: mime}), text = `Ma tier list du jour sur Hanko : ${T.crit} (${tlUni(T)}). Et toi ? https://` + tlRef().replace(/#parrain=(.*)$/, (m, h) => "#parrain=" + encodeURIComponent(h));
+    if (navigator.canShare && navigator.canShare({files: [file]})){ try { await navigator.share({files: [file], text}); return; } catch (e) { if (e && e.name === "AbortError") return; } }
+    const url = URL.createObjectURL(blob); document.body.insertAdjacentHTML("beforeend", `<div class="dfshm"><div><video src="${url}" autoplay loop muted playsinline controls style="width:100%;border-radius:14px"></video><a class="dfbtn" href="${url}" download="hanko-tier-list.${ext}">Télécharger la vidéo</a><button class="dfbtn g" id="dfShX">Fermer</button></div></div>`);
+    const M = document.body.lastElementChild; M.querySelector("#dfShX").onclick = () => { M.remove(); URL.revokeObjectURL(url); }; M.onclick = e => { if (e.target === M){ M.remove(); URL.revokeObjectURL(url); } };
+  } catch (e) { console.warn("vidéo", e); } finally { btn.disabled = false; btn.textContent = t0; } }
+window.__tlFrame = tlFrame;
 // rattrapage : une tier list validée hors connexion (ou avant le SQL) est envoyée dès que possible
 setInterval(async () => { try { if (!CP.user) return; const s = tlState(); if (!s.tl.done || s.tl.sent) return; const r = await dfRpc("tier_submit", {p_day: s.tl.d, p_picks: s.tl.p}); if (r){ const s2 = tlState(); s2.tl.sent = 1; s2.tl.st = r; tcSave(s2); } } catch {} }, 60000);
 </script>
