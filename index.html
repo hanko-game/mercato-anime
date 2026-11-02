@@ -15130,7 +15130,7 @@ if (matchMedia("(hover: none) and (pointer: coarse)").matches) document.addEvent
   /* 2 nov. 2026 : un filleul sans pseudo n'avait pas de fiche joueur (players) : son parrain voyait « Nouveau joueur » et ne le trouvait pas dans ses amis.
      On lui demande son pseudo (définitif) avant d'enregistrer le parrainage, et s'il est déjà filleul sans pseudo, à sa prochaine visite. */
   const rfName = parrain => new Promise(done => { if (frMe() || document.querySelector("#rfNameBox")) return done(!!frMe());
-    const M = document.createElement("div"); M.className = "tcview"; M.id = "rfNameBox"; M.style.cssText = "display:grid;place-items:center;align-content:center;background:rgba(5,5,7,.94)";
+    const M = document.createElement("div"); M.className = "tcview"; M.id = "rfNameBox"; M.style.cssText = "z-index:2147483000;display:grid;place-items:center;align-content:center;background:rgba(5,5,7,.94)";
     M.innerHTML = `<div class="box" style="max-width:420px;width:calc(100% - 32px)"><div class="head"><h2>Choisis ton pseudo</h2></div><p class="muted" style="margin:0 0 12px">${parrain ? `<b>${esc(parrain)}</b> t'a invité : ton pseudo lui permet de te retrouver dans ses amis.` : "Ton pseudo permet à tes amis de te retrouver."} Il ne pourra plus être changé.</p>
       <div class="row"><input id="rfNm" maxlength="16" placeholder="Ton pseudo" style="flex:1;min-width:150px"><button class="primary" id="rfNmOk">Valider</button></div><p class="small" id="rfNmErr" style="margin:8px 0 0;color:#ff8a93"></p></div>`;
     document.body.appendChild(M); const inp = M.querySelector("#rfNm"); setTimeout(() => inp.focus(), 50);
@@ -15140,14 +15140,13 @@ if (matchMedia("(hover: none) and (pointer: coarse)").matches) document.addEvent
   async function sync(){ if (RF.busy || !frsOn()) return; RF.busy = true;
     try {
       let pend = null; try { pend = localStorage.getItem(PK); } catch {}
-      if (pend && !frMe()){ RF.busy = false; await rfName(pend); RF.busy = true; }
+      if (!frMe()) return;   /* 2 nov. 2026 : pseudo obligatoire d'abord (demandé plus bas, une fois la sauvegarde du compte arrivée) ; le parrainage attend */
       if (pend){ const {data, error} = await CP.sb.rpc("referral_join", {referrer_handle: pend, dev: dev()});
         if (!error){ try { localStorage.removeItem(PK); } catch {}
           const why = {"trop tard": "ton compte a été créé il y a plus de 48 h", deja: "tu as déjà un parrain", inconnu: "ce joueur est introuvable", "soi-meme": "tu ne peux pas te parrainer toi-même", appareil: "cet appareil a déjà servi à un parrainage", connexion: "cette connexion a déjà servi à un parrainage de ce joueur"}[data];
           if (data === "ok"){ frToast(`Parrainage enregistré : ${pend} est maintenant ton ami. Ouvre 10 boosters et vous recevez chacun 3 boosters.`); try { frsLoad().then(() => { try { tabDot(); } catch {} }); } catch {} }   /* 1er nov. 2026 : amitié créée par le serveur (parrainage-amis-supabase.sql) */
           else if (why) frToast(`Le lien de parrainage de ${pend} n'a pas été pris en compte : ${why}.`); } }   /* comme Kyara : on dit pourquoi */
       const {data: st} = await CP.sb.rpc("referral_state"); if (st) RF.st = st;
-      if (st && st.parrain && !frMe() && !RF.asked){ RF.asked = 1; RF.busy = false; await rfName(st.parrain); RF.busy = true; }
       if (st && st.todo > 0){ const {data: R} = await CP.sb.rpc("referral_claim"); const n = R && R.boosters || 0;
         if (n > 0){ const s = tcLoad(); tcGive(s, "mix:0", n); tcSave(s); try { tabDot(); } catch {} SFX.play("win"); frToast(`Parrainage validé : +${n} boosters Mélange !`, "Ouvrir", () => tcShow("packs")); }
         if (R && R.tiers && R.tiers.length) setTimeout(() => grantTiers(R.tiers), n > 0 ? 2500 : 0);
@@ -15158,6 +15157,12 @@ if (matchMedia("(hover: none) and (pointer: coarse)").matches) document.addEvent
     } catch {} finally { RF.busy = false; } }
   setInterval(sync, 9e4); document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") sync(); });
   { let k = 0; const t = setInterval(() => { if (frsOn()){ clearInterval(t); sync(); } else if (++k > 60) clearInterval(t); }, 2000); }
+  /* compte connecté sans pseudo (nouveau compte, ou ancien compte qui ne l'avait jamais choisi) : on le demande tout de suite */
+  /* attendre que la sauvegarde du compte soit arrivée sur cet appareil (elle contient le pseudo) ; un compte qui a déjà une fiche joueur reprend son pseudo sans rien demander */
+  setInterval(async () => { try { if (RF.nmBusy || !frsOn() || frMe() || document.querySelector("#rfNameBox") || CP.syncing || lsGet("mercato-compte-uid", "") !== CP.user.id || document.querySelector("#cpKeepR")) return; RF.nmBusy = 1;
+    try { const {data} = await CP.sb.from("players").select("handle").eq("user_id", CP.user.id).maybeSingle(), h = data && frParse(data.handle);
+      if (h){ lsSet(FR_TAG, h.tag); frSetName(h.name); return; }
+      let pend = null; try { pend = localStorage.getItem(PK); } catch {} await rfName(pend); sync(); } finally { RF.nmBusy = 0; } } catch {} }, 2000);
 
   const panel = () => { const st = RF.st || {}, mine = st.mine || [], ok = mine.filter(x => x.ok).length, me = frMe(), L = link(), txt = "Viens jouer à Hanko avec moi : jeux d'anime et boosters de cartes à collectionner !";
     const sh = encodeURIComponent(txt + " " + L);
@@ -15433,7 +15438,8 @@ const KZ_TOP = {"3": {"lz": "50% 40%", "gg": "50% 30%", "tn": "50% 30%"}, "10": 
 .kz.k-20{background:conic-gradient(from var(--kza),#ff5f8f,#ffd34d,#5fe3a1,#5fb7ff,#b98cff,#ff5f8f);box-shadow:0 0 18px #ffffff55,0 10px 26px #0009}
 @media (prefers-reduced-motion:no-preference){.kz.k-20{animation:kzrot 4s linear infinite}}
 @keyframes kzrot{to{--kza:570deg}}
-.kz .in{position:relative;display:block;width:100%;height:100%;border-radius:12px;overflow:hidden;background:#0b0a0e}
+/* 2 nov. 2026 : sur iPhone (Safari), l'image débordait des coins arrondis et du bas : cadre intérieur posé en absolu (pas de hauteur 100 % dans une boîte à proportions) et découpe forcée */
+.kz .in{position:absolute;inset:2px;display:block;border-radius:12px;overflow:hidden;clip-path:inset(0 round 12px);-webkit-mask-image:-webkit-radial-gradient(white,black);isolation:isolate;transform:translateZ(0);background:#0b0a0e}
 .kz .in>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:var(--op,50% 30%)}
 .kz .sh{position:absolute;inset:0;z-index:4;pointer-events:none;mix-blend-mode:screen;opacity:0;background:linear-gradient(115deg,transparent 34%,#ffffff55 46%,#ffffffcc 50%,#ffffff55 54%,transparent 66%);background-size:260% 100%;background-position:120% 0}
 .kz.k-3 .sh{opacity:.2}.kz.k-10 .sh{opacity:.28}.kz.k-20 .sh{opacity:.32;background:linear-gradient(115deg,transparent 30%,#ff8fd2 44%,#8fd2ff 50%,#ffe68f 56%,transparent 70%);background-size:260% 100%}
