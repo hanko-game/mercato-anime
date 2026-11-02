@@ -9557,6 +9557,12 @@ setInterval(voxRender, 2000);
 .tc > .tcnew.v{color:#2a1a05;background:linear-gradient(180deg,#fff6cf 0%,#f5c84a 45%,#a8791a 100%);border-top-color:#fffbe8;border-bottom-color:#7a5510}
 .tc > .tcnew.v::before{content:"Nouvelle";text-shadow:0 1px 0 rgba(255,255,255,.5)}   /* 2 nov. 2026 : « Nouvelle » aussi pour une nouvelle version (le ruban doré la distingue) */
 .kfl .tc > .tcnew,.tccine .tc > .tcnew,.tcview .tc > .tcnew{top:28px;right:-44px;width:176px;padding:6px 0 5px}
+/* 2 nov. 2026 : le ruban « Nouvelle » cachait la rareté en haut à droite (« LÉG…AIRE ») : la ligne du haut s'arrête avant le ruban */
+/* en grand (cinématique, fiche) : la ligne s'arrête avant le ruban ; en petit (bilan, collection) il n'y a pas la place pour les deux,
+   la rareté se lit déjà à la couleur du cadre et dans le texte au-dessus des cartes */
+.tc:has(> .tcnew) > .tp > :not(:first-child){visibility:hidden}
+:is(.kfl,.tccine,.tcview) .tc:has(> .tcnew) > .tp{padding-right:34%!important}
+:is(.kfl,.tccine,.tcview) .tc:has(> .tcnew) > .tp > :not(:first-child){visibility:visible}
 .kfl .tc > .tcnew::before,.tccine .tc > .tcnew::before,.tcview .tc > .tcnew::before{font-size:10.5px}
 @keyframes tcribIn{from{transform:translate(26px,-26px) rotate(45deg);opacity:0}to{transform:rotate(45deg);opacity:1}}
 @keyframes tcribSh{0%{transform:translateX(-130%)}45%,100%{transform:translateX(130%)}}
@@ -14894,10 +14900,10 @@ document.addEventListener("contextmenu", e => { if (e.target.closest && !e.targe
     [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => { const o = a.createOscillator(), og = a.createGain(); o.type = i % 2 ? "triangle" : "sine"; o.frequency.value = f; og.gain.setValueAtTime(.0001, t + .05); og.gain.exponentialRampToValueAtTime(.08, t + .12); og.gain.exponentialRampToValueAtTime(.0001, t + 2.4); o.connect(og).connect(out); o.start(t + .05); o.stop(t + 2.45); }); }
   window.__ivTest = {draw: (g, D, t, W, H) => drawVideo(g, D, t, W, H), data: collectReplay, render, snd: {ivTing, ivRiser, ivCrack, ivBoom}};   /* contrôle image par image (tests) */
   async function record(btn){
-    const t0 = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<i aria-hidden="true">🎬</i>Vidéo en cours…';
+    const t0 = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<i aria-hidden="true">🎬</i><span style="white-space:nowrap">Préparation…</span>';
     try {
-      const D = await collectReplay(); if (!D){ btn.disabled = false; btn.innerHTML = t0; return share(btn); }
-      const poster = await render();
+      /* 2 nov. 2026 : le tirage (images, vraie carte, couleurs) est préparé dès l'écran de résultat ; ici on le reprend s'il est prêt */
+      const D = await (PREP.O === document.querySelector(".tcopen.res") && PREP.p ? PREP.p : collectReplay()); if (!D){ btn.disabled = false; btn.innerHTML = t0; return share(btn); }
       const mime = mimeFor(), W = 1080, H = 1920, cv = document.createElement("canvas"); cv.width = W; cv.height = H; const g = cv.getContext("2d");   /* 9:16 pour Reels et TikTok */
       if (!window.MediaRecorder || !cv.captureStream || !mime){ btn.disabled = false; btn.innerHTML = t0; return share(btn); }   // pas d'enregistrement possible ici : on retombe sur l'image
       /* les sons du jeu passent tous par le même moteur (SFX) : pendant l'enregistrement, tout ce qui part vers les haut-parleurs part aussi dans la vidéo */
@@ -14916,17 +14922,20 @@ document.addEventListener("contextmenu", e => { if (e.target.closest && !e.targe
       /* 1er nov. 2026 : la piste son ne démarrait qu'au premier bruit puis était collée au début → sons en avance. On la fait tourner dès le départ (souffle inaudible), on attend que l'enregistreur tourne, et l'animation suit l'horloge audio */
       let ka = null; if (dest){ try { await ac.resume(); const o = ac.createOscillator(), kg = ac.createGain(); kg.gain.value = 1e-4; oc.call(o, kg); oc.call(kg, dest); o.start(); ka = o; } catch {} }
       try { drawVideo(g, D, 0, W, H); } catch {}
-      await new Promise(r => { rec.onstart = r; rec.start(); setTimeout(r, 1500); }); await new Promise(r => setTimeout(r, 300));
+      await new Promise(r => { rec.onstart = r; rec.start(); setTimeout(r, 1500); }); await new Promise(r => setTimeout(r, 60));
       const clk = () => dest && ac.state === "running" ? ac.currentTime * 1000 : performance.now();
-      try { await new Promise(resolve => { const s0 = clk(), p0 = performance.now(); rec.onstop = resolve; const loop = () => { const ea = clk() - s0, ep = performance.now() - p0, el = ep - ea > 250 ? ep : ea; { const pc = Math.min(99, Math.round(el / DUR * 100)); if (pc !== btn.__pc){ btn.__pc = pc; btn.innerHTML = `<i aria-hidden="true">🎬</i>Vidéo en cours… ${pc} %`; } }   /* horloge audio en retard (appareil sans sortie son…) : l'animation suit l'horloge normale */ while (ei < ev.length && el >= ev[ei][0]){ try { ev[ei][1](); } catch {} ei++; } try { drawVideo(g, D, el, W, H); } catch (e) { if (!window.__dvErr) console.warn("vidéo", e);  window.__dvErr = String(e && e.stack || e); } if (el < DUR) requestAnimationFrame(loop); else { try { rec.stop(); } catch { resolve(); } } }; requestAnimationFrame(loop); }); } finally { setTimeout(() => { unhook(); try { ka && ka.stop(); } catch {} }, 300); }
+      try { await new Promise(resolve => { const s0 = clk(), p0 = performance.now(); rec.onstop = resolve; const loop = () => { const ea = clk() - s0, ep = performance.now() - p0, el = ep - ea > 250 ? ep : ea; { const pc = Math.min(99, Math.round(el / DUR * 100)); if (pc !== btn.__pc){ btn.__pc = pc; btn.innerHTML = `<i aria-hidden="true">🎬</i><span style="white-space:nowrap">Vidéo ${pc}\u00a0%</span>`; } }   /* horloge audio en retard (appareil sans sortie son…) : l'animation suit l'horloge normale */ while (ei < ev.length && el >= ev[ei][0]){ try { ev[ei][1](); } catch {} ei++; } try { drawVideo(g, D, el, W, H); } catch (e) { if (!window.__dvErr) console.warn("vidéo", e);  window.__dvErr = String(e && e.stack || e); } if (el < DUR) requestAnimationFrame(loop); else { try { rec.stop(); } catch { resolve(); } } }; requestAnimationFrame(loop); }); } finally { setTimeout(() => { unhook(); try { ka && ka.stop(); } catch {} }, 300); }
       const ext = mime.indexOf("mp4") >= 0 ? "mp4" : "webm", blob = new Blob(chunks, {type: mime}), file = new File([blob], "hanko-tirage." + ext, {type: mime}), text = "Mon tirage sur Hanko ! Joue avec moi : https://" + D.ref.replace("#", "#").replace(/#parrain=(.*)$/, (m, h) => "#parrain=" + encodeURIComponent(h));
       if (navigator.canShare && navigator.canShare({files: [file]})){ try { await navigator.share({files: [file], title: "Mon tirage Hanko", text}); return; } catch (e) { if (e && e.name === "AbortError") return; } }
       const url = URL.createObjectURL(blob), M = document.createElement("div"); M.className = "tcview tcsharebox"; M.style.cssText = "display:grid;place-items:center;align-content:center;overflow:auto;background:rgba(5,5,7,.92)";
       M.innerHTML = `<div style="width:min(100%,460px);padding:16px"><video class="shareimg" src="${url}" autoplay loop muted playsinline controls style="width:100%;max-width:420px;margin:0 auto 12px;border-radius:14px;display:block"></video><p class="small" style="text-align:center;margin:0 0 12px;color:#bbb">Télécharge la vidéo, puis publie-la sur TikTok ou Instagram.</p><div class="row"><a href="${url}" download="hanko-tirage.${ext}" style="border-radius:999px;padding:10px 18px;text-decoration:none;font-weight:700;background:var(--accent);color:#fff">Télécharger la vidéo</a><button class="ghost" id="tcVdX" style="border-radius:999px">Fermer</button></div></div>`;
       document.body.appendChild(M); const close = () => { M.remove(); URL.revokeObjectURL(url); }; M.querySelector("#tcVdX").onclick = close; M.onclick = e => { if (e.target === M) close(); };
     } catch {} finally { btn.disabled = false; btn.innerHTML = t0; } }
+  /* préparation de la vidéo en tâche de fond dès que l'écran de résultat s'affiche (photo de la vraie carte, moteur 3D chargé) */
+  const PREP = {O: null, p: null};
+  const prep = O => { if (PREP.O === O) return; PREP.O = O; PREP.p = null; setTimeout(() => { if (PREP.O !== O || !O.isConnected) return; PREP.p = collectReplay().then(D => { try { if (D && window.THREE && typeof HKInv !== "undefined"){ const c2 = document.createElement("canvas"); c2.width = 54; c2.height = 96; drawInv3D(c2.getContext("2d"), D, 0, 54, 96); } } catch {} return D; }).catch(() => null); }, 1200); };
   // bouton « Partager mon tirage » sous les cartes obtenues
-  const add = () => { const O = document.querySelector(".tcopen.res"); if (!O) return; const bv = O.querySelector("#tcVid"); if (bv && !bv.onclick) bv.onclick = e => record(e.currentTarget); const b2 = O.querySelector("#tcShare2"); if (b2){ if (!b2.onclick) b2.onclick = e => share(e.currentTarget); return; } if (O.querySelector("#tcShare")) return; const row = O.querySelector(".tcopen .tcrow"); if (!row) return;
+  const add = () => { const O = document.querySelector(".tcopen.res"); if (!O) return; prep(O); const bv = O.querySelector("#tcVid"); if (bv && !bv.onclick) bv.onclick = e => record(e.currentTarget); const b2 = O.querySelector("#tcShare2"); if (b2){ if (!b2.onclick) b2.onclick = e => share(e.currentTarget); return; } if (O.querySelector("#tcShare")) return; const row = O.querySelector(".tcopen .tcrow"); if (!row) return;
     const anchor = [...O.querySelectorAll("button")].find(b => /Ouvrir un autre|Changer de booster|Retour/.test(b.textContent) && b.offsetParent && b.getBoundingClientRect().top > row.getBoundingClientRect().top) || row;
     anchor.insertAdjacentHTML(anchor === row ? "afterend" : "beforebegin", `<div style="display:flex;justify-content:center;margin:14px 0"><button id="tcShare" class="ghost">↗ Partager mon tirage</button></div>`);
     O.querySelector("#tcShare").onclick = e => share(e.currentTarget); };
@@ -20176,11 +20185,11 @@ async function hkApp(){ const solo = appSolo(), ok = appPush(), ios = appIos(), 
   M.querySelector("#appIn") && (M.querySelector("#appIn").onclick = async () => { const p = APP.prompt; APP.prompt = null; p.prompt(); await p.userChoice.catch(() => {}); close(); });
   M.querySelector("#appNo") && (M.querySelector("#appNo").onclick = async e => { e.target.disabled = true; try { if (sub) await appPushOff(); else await appPushOn(); close(); frToast(sub ? "Notifications désactivées." : "Notifications activées."); } catch (x){ M.querySelector("#appErr").textContent = x.message || "Activation impossible."; e.target.disabled = false; } });
   M.querySelector("#appFree") && (M.querySelector("#appFree").onchange = async e => { const v = e.target.checked; try { localStorage.setItem("hanko-free-notif", v ? "1" : "0"); } catch {} try { await CP.sb.rpc("push_pref", {free_on: v, tz_min: new Date().getTimezoneOffset()}); } catch {} }); }
-/* 2 nov. 2026 : personne n'était abonné (le réglage était caché dans le menu). Dans l'application installée et connecté :
+/* 2 nov. 2026 : personne n'était abonné (le réglage était caché dans le menu). Sur le site comme dans l'application installée, une fois connecté :
    - autorisation jamais demandée → encart « Active les notifications » (sur iPhone, la demande doit venir d'un appui) ;
    - déjà autorisée → abonnement refait en silence à chaque ouverture (un abonnement perdu côté serveur se recrée tout seul). */
 async function appPushAuto(){ try {
-  if (!appPush() || !appSolo() || !frsOn()) return;
+  if (!appPush() || (appIos() && !appSolo()) || !frsOn()) return;   /* site (ordinateur, Android) et application ; sur iPhone, Safari ne les permet que dans l'application installée */
   const perm = Notification.permission;
   if (perm === "granted"){ if (appPushAuto.done) return; appPushAuto.done = 1; await appPushOn(); return; }
   if (perm !== "default" || document.querySelector("#appAsk")) return;
@@ -20859,7 +20868,7 @@ function tlFrame(g, t, T, p, order, im, lg){ const W = 1080, H = 1920, cols = ["
   if (a > 0){ g.globalAlpha = a; tx("Et toi, tu classes comment ?", W / 2, 1636, 46, "#ffd9a0", 900); g.beginPath(); g.roundRect ? g.roundRect(70, 1674, 940, 216, 32) : g.rect(70, 1674, 940, 216); g.fillStyle = "rgba(255,30,45,.16)"; g.fill(); g.strokeStyle = "rgba(255,30,45,.6)"; g.lineWidth = 3; g.stroke();
     tx("Joue gratuitement sur Hanko", W / 2, 1738, 42); g.fillStyle = "rgba(255,30,45,.35)"; g.fillRect(130, 1772, 820, 2); tx(tlRef(), W / 2, 1822, 26, "#fff", 700, "center", "'JetBrains Mono', monospace"); if (tlRef().includes("#parrain=")) tx("MON LIEN PARRAIN · 3 BOOSTERS OFFERTS", W / 2, 1864, 20, "#ffb3b8", 700, "center", "'JetBrains Mono', monospace"); g.globalAlpha = 1; }
   return tEnd + 1800; }
-async function tlVideo(T, btn){ const t0 = btn.textContent; btn.disabled = true; btn.textContent = "Vidéo en cours…";
+async function tlVideo(T, btn){ const t0 = btn.textContent; btn.disabled = true; btn.textContent = "Préparation…";
   try { const s = tlState(), p = s.tl.p, order = [...(s.tl.o || []).filter(n => p[n] != null), ...T.L.map(c => c.n).filter(n => p[n] != null && !(s.tl.o || []).includes(n))];
     const ims = await Promise.all(T.L.map(c => dfImg(dfPort(c)))), im = Object.fromEntries(T.L.map((c, k) => [c.n, ims[k]]));
     const lg = await dfImg("data:image/svg+xml;charset=utf-8," + encodeURIComponent(DF_LOGO.replace(/^<div class="dflogo">/, "").replace(/HANKO <em>.*$/, "").replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" ')));
@@ -20875,7 +20884,7 @@ async function tlVideo(T, btn){ const t0 = btn.textContent; btn.disabled = true;
     let ka = null; if (dest){ try { await ac.resume(); const o = ac.createOscillator(), kg = ac.createGain(); kg.gain.value = 1e-4; oc.call(o, kg); oc.call(kg, dest); o.start(); ka = o; } catch {} }
     const rec = new MediaRecorder(new MediaStream([...cv.captureStream(30).getVideoTracks(), ...(dest ? dest.stream.getAudioTracks() : [])]), {mimeType: mime, videoBitsPerSecond: 8e6}), chunks = []; rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
     try { await new Promise(r => { rec.onstart = r; rec.start(); setTimeout(r, 1200); }); await new Promise(r => setTimeout(r, 300));
-      await new Promise(res => { const st = performance.now(); rec.onstop = res; const loop = () => { const el = performance.now() - st; { const pc = Math.min(99, Math.round(el / DUR * 100)); if (pc !== btn.__pc){ btn.__pc = pc; btn.textContent = `Vidéo en cours… ${pc} %`; } } while (ei < ev.length && el >= ev[ei][0]){ try { ev[ei][1](); } catch {} ei++; } try { tlFrame(g, el, T, p, order, im, lg); } catch {} if (el < DUR) requestAnimationFrame(loop); else { try { rec.stop(); } catch { res(); } } }; requestAnimationFrame(loop); });
+      await new Promise(res => { const st = performance.now(); rec.onstop = res; const loop = () => { const el = performance.now() - st; { const pc = Math.min(99, Math.round(el / DUR * 100)); if (pc !== btn.__pc){ btn.__pc = pc; btn.textContent = `Vidéo ${pc}\u00a0%`; } } while (ei < ev.length && el >= ev[ei][0]){ try { ev[ei][1](); } catch {} ei++; } try { tlFrame(g, el, T, p, order, im, lg); } catch {} if (el < DUR) requestAnimationFrame(loop); else { try { rec.stop(); } catch { res(); } } }; requestAnimationFrame(loop); });
     } finally { setTimeout(() => { unhook(); try { ka && ka.stop(); } catch {} }, 300); }
     const ext = mime.includes("mp4") ? "mp4" : "webm", blob = new Blob(chunks, {type: mime}), file = new File([blob], "hanko-tier-list." + ext, {type: mime}), text = `Ma tier list du jour sur Hanko : ${T.crit} (${tlUni(T)}). Et toi ? https://` + tlRef().replace(/#parrain=(.*)$/, (m, h) => "#parrain=" + encodeURIComponent(h));
     if (navigator.canShare && navigator.canShare({files: [file]})){ try { await navigator.share({files: [file], text}); return; } catch (e) { if (e && e.name === "AbortError") return; } }
@@ -21123,9 +21132,11 @@ const HKInv = (() => {
           if (dx > .3){ g.globalCompositeOperation = "lighter"; g.globalAlpha = ka * .7; g.fillStyle = "#ff2040"; g.fillText(IV[key].kj, -dx / sc, 34); g.fillStyle = "#20d8ff"; g.fillText(IV[key].kj, dx / sc, 34); g.globalCompositeOperation = "source-over"; }
           g.globalAlpha = ka; g.fillStyle = "#fff"; g.shadowColor = ivCol(key, t, 1); g.shadowBlur = 30; g.fillText(IV[key].kj, 0, 34); g.restore(); }
         if (f > 0){ g.fillStyle = `rgba(255,255,255,${f})`; g.fillRect(-60, -60, 660, 1080); }
+        /* 2 nov. 2026 : sur téléphone la scène déborde à gauche et à droite (plein écran) : les textes tiennent dans les 400 points du centre, toujours visibles */
+        const fitF = (tx, w, sz, fam) => { let z = sz; g.font = `${w} ${z}px ${fam}`; while (z > 10 && g.measureText(tx).width > 400){ z--; g.font = `${w} ${z}px ${fam}`; } };
         const a1 = sg(t, HIT + 600, HIT + 1100), a2 = sg(t, HIT + 1500, HIT + 2000), p = D.odds; g.textAlign = "center";
-        if (a1 > 0){ g.save(); g.globalAlpha = a1; g.translate(0, (1 - eo3(a1)) * 20); g.fillStyle = ivCol(key, t, 1); g.font = `900 30px ${TTL}`; g.fillText(D.label || IV[key].n, 270, 718);
-          if (p != null){ const pt = p >= 10 ? p.toFixed(0) : p >= 1 ? p.toFixed(1).replace(".", ",") : p.toFixed(2).replace(".", ","); g.fillStyle = "#fff"; g.font = `700 18px ${MONO}`; g.fillText((D.pre || "") + `${pt} % DE CHANCE`, 270, 748); g.fillStyle = "#ffd9dc"; g.font = `700 15px ${MONO}`; g.fillText(`1 CHANCE SUR ${Math.max(2, Math.round(100 / p)).toLocaleString("fr-FR")} DANS CE BOOSTER`, 270, 772); } g.restore(); }
+        if (a1 > 0){ g.save(); g.globalAlpha = a1; g.translate(0, (1 - eo3(a1)) * 20); g.fillStyle = ivCol(key, t, 1); fitF(D.label || IV[key].n, 900, 30, TTL); g.fillText(D.label || IV[key].n, 270, 718);
+          if (p != null){ const pt = p >= 10 ? p.toFixed(0) : p >= 1 ? p.toFixed(1).replace(".", ",") : p.toFixed(2).replace(".", ","); const l1 = (D.pre || "") + `${pt}\u00a0% DE CHANCE`, l2 = `1 CHANCE SUR ${Math.max(2, Math.round(100 / p)).toLocaleString("fr-FR")} DANS CE BOOSTER`; g.fillStyle = "#fff"; fitF(l1, 700, 18, MONO); g.fillText(l1, 270, 748); g.fillStyle = "#ffd9dc"; fitF(l2, 700, 15, MONO); g.fillText(l2, 270, 772); } g.restore(); }
         if (D.cta && a2 > 0){ g.save(); g.globalAlpha = a2; g.translate(0, (1 - eo3(a2)) * 30); rr(g, 44, 794, 452, 152, 24); g.fillStyle = "rgba(255,30,45,.16)"; g.fill(); g.strokeStyle = "rgba(255,30,45,.65)"; g.lineWidth = 2; g.stroke();
           if (LOGO.complete) g.drawImage(LOGO, 72, 816, 48, 48); g.textAlign = "left"; g.fillStyle = "#fff"; g.font = `900 26px ${TTL}`; g.fillText("Joue gratuitement", 134, 838); g.fillStyle = "#ffb3b8"; g.font = `800 17px ${TTL}`; { let sub = D.ctaSub || "sur Hanko · Anime TCG"; g.font = `800 17px ${TTL}`; while (sub.length > 8 && g.measureText(sub).width > 340) sub = sub.slice(0, -2) + "…"; g.fillText(sub, 134, 864); } g.fillStyle = "rgba(255,30,45,.35)"; g.fillRect(72, 882, 396, 1.5);
           g.textAlign = "center"; g.fillStyle = "#fff"; g.font = `700 15px ${MONO}`; g.fillText(D.cta, 270, 908, 420); if (/#parrain=/.test(D.cta)){ g.fillStyle = "#ffb3b8"; g.font = `700 12px ${MONO}`; g.fillText("MON LIEN PARRAIN · 3 BOOSTERS OFFERTS", 270, 930); } g.restore(); }
