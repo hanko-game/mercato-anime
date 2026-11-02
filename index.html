@@ -14678,7 +14678,7 @@ document.addEventListener("contextmenu", e => { if (e.target.closest && !e.targe
     g.textAlign = "center"; g.font = `900 46px ${TTL}`; const tw = g.measureText("Mon tirage Hanko").width; if (ivLogo.complete) g.drawImage(ivLogo, W / 2 - tw / 2 - 66, 46, 54, 54); g.fillStyle = "#fff"; g.textAlign = "left"; g.fillText("Mon tirage Hanko", W / 2 - tw / 2 + 2, 92);
     g.textAlign = "center"; g.fillStyle = "#cfcbd6"; g.font = `700 24px ${MONO}`; g.fillText(fit(g, title.toUpperCase(), W - 140, 24, 700, MONO), W / 2, 138);
     // la carte la plus rare, en grand, avec le kanji de sa rareté
-    const bw = 400, bh = bw * 666 / 450, bx = W / 2, by = 570, bit = {img: await load(best.src || tcArt(best.c, best.fin) || tcBase(best.c)), col: colOfIt(best), frm: frameOf(best.c.r, best.fin), name: best.c.n, lab: best.ar ? "AR" : best.fin && TC_FIN[best.fin] ? TC_FIN[best.fin][0] : TC_R[best.c.r][0]};
+    const bw = 370, bh = bw * 666 / 450, bx = W / 2, by = 560, bit = {img: await load(best.src || tcArt(best.c, best.fin) || tcBase(best.c)), col: colOfIt(best), frm: frameOf(best.c.r, best.fin), name: best.c.n, lab: best.ar ? "AR" : best.fin && TC_FIN[best.fin] ? TC_FIN[best.fin][0] : TC_R[best.c.r][0]};
     g.save(); g.globalAlpha = .9; g.font = '900 120px "Zen Kaku Gothic New", sans-serif'; g.fillStyle = "#fff"; g.shadowColor = colA(1); g.shadowBlur = 40; g.fillText(K.kj, W / 2, 262); g.restore();
     for (const [b, a] of [[90, .55], [45, .8]]){ g.save(); g.shadowColor = colA(a); g.shadowBlur = b; rr(g, bx - bw / 2, by - bh / 2, bw, bh, 22); g.fillStyle = colA(1); g.fill(); g.restore(); }
     drawMini(g, bx, by, bw, bit, {glow: 40});
@@ -14686,9 +14686,9 @@ document.addEventListener("contextmenu", e => { if (e.target.closest && !e.targe
     // rareté et chance : pourcentage, puis « 1 chance sur X dans ce booster »
     const Ov = document.querySelector(".tcopen.res"), op = Ov && Ov.dataset.oddsp ? parseFloat(Ov.dataset.oddsp) : null, olab = ((Ov && Ov.dataset.oddslab) || TC_R[best.c.r][0] || "").toUpperCase();
     let yy = by + bh / 2 + 62; g.fillStyle = colA(1); g.font = `900 40px ${TTL}`; g.fillText(olab, W / 2, yy);
-    if (op != null && op > 0){ const pt = op >= 10 ? op.toFixed(0) : op >= 1 ? op.toFixed(1).replace(".", ",") : op.toFixed(2).replace(".", ","); g.fillStyle = "#fff"; g.font = `800 28px ${MONO}`; g.fillText(`${pt} % DE CHANCE · 1 CHANCE SUR ${Math.max(2, Math.round(100 / op)).toLocaleString("fr-FR")} DANS CE BOOSTER`, W / 2, yy + 44); yy += 44; }
+    if (op != null && op > 0){ const pt = op >= 10 ? op.toFixed(0) : op >= 1 ? op.toFixed(1).replace(".", ",") : op.toFixed(2).replace(".", ","); g.fillStyle = "#fff"; g.font = `800 28px ${MONO}`; g.fillText(`${pt} % DE CHANCE`, W / 2, yy + 44); g.fillStyle = "#ffd9dc"; g.font = `800 26px ${MONO}`; g.fillText(`1 CHANCE SUR ${Math.max(2, Math.round(100 / op)).toLocaleString("fr-FR")} DANS CE BOOSTER`, W / 2, yy + 82); yy += 82; }
     // les autres cartes, en petit, chacune avec le halo de sa rareté
-    if (shown.length){ const sw = 118, gap = 18, n = shown.length + (more > 0 ? 1 : 0), x0 = W / 2 - ((n - 1) * (sw + gap)) / 2, sy = yy + 120, imgs = await Promise.all(shown.map(x => load(x.src || tcArt(x.c, x.fin) || tcBase(x.c))));
+    if (shown.length){ const sw = 118, gap = 18, n = shown.length + (more > 0 ? 1 : 0), x0 = W / 2 - ((n - 1) * (sw + gap)) / 2, sy = yy + 104, imgs = await Promise.all(shown.map(x => load(x.src || tcArt(x.c, x.fin) || tcBase(x.c))));
       shown.forEach((x, k) => { const it = {img: imgs[k], col: colOfIt(x), frm: frameOf(x.c.r, x.fin), name: x.c.n, lab: x.ar ? "AR" : x.fin && TC_FIN[x.fin] ? TC_FIN[x.fin][0] : TC_R[x.c.r][0]}, hb = RANK.indexOf(x.c.r) >= 3 ? 34 : 14; drawMini(g, x0 + k * (sw + gap), sy, sw, it, {glow: hb}); });
       if (more > 0){ g.fillStyle = "#cfcbd6"; g.font = `800 26px ${MONO}`; g.fillText("+" + more, x0 + shown.length * (sw + gap), sy + 10); } }
     // appel à jouer et lien de parrainage
@@ -14749,15 +14749,19 @@ document.addEventListener("contextmenu", e => { if (e.target.closest && !e.targe
     let ref = "hanko-game.github.io/mercato-anime"; try { const me = typeof frMe === "function" ? frMe() : null; if (me && me.id) ref += "/#parrain=" + me.id; } catch {}
     return {items, pal, ref, rev: [...items].reverse(), uni: {k: uni[1], n: uni[0]}, title: shown || (key ? tcName(key) : "Booster " + uni[0]), pouch, best: items[0], oddsp: O && O.dataset.oddsp ? parseFloat(O.dataset.oddsp) : null, oddslab: (O && O.dataset.oddslab) || ""};
   }
-  function drawMini(g, cx, cy, w, it, o){ o = o || {}; const h = w * 666 / 450, x = cx - w / 2, y = cy - h / 2;
+  /* 2 nov. 2026 : carte avec une vraie marge intérieure (l'illustration ne touche plus le cadre) et un texte décollé des bords */
+  function drawMini(g, cx, cy, w, it, o){ o = o || {}; const h = w * 666 / 450, x = cx - w / 2, y = cy - h / 2, lw = Math.max(3, w * .03), pad = lw * 1.6, R = Math.max(10, w * .06);
     g.save(); if (o.rot){ g.translate(cx, cy); g.rotate(o.rot); g.translate(-cx, -cy); } g.globalAlpha = o.alpha == null ? 1 : o.alpha;
-    const gw = o.glow || w * .06; { g.save(); g.shadowColor = it.col; g.shadowBlur = gw; rr(g, x, y, w, h, 14); g.fillStyle = it.col; g.fill(); g.restore(); }
-    g.save(); rr(g, x, y, w, h, 14); g.fillStyle = "#0e0e12"; g.fill(); g.clip();
-    if (it.img){ const s = Math.max(w / it.img.naturalWidth, h / it.img.naturalHeight), iw = it.img.naturalWidth * s, ih = it.img.naturalHeight * s; g.drawImage(it.img, x + (w - iw) / 2, y + (h - ih) * .1, iw, ih); }
-    const sh = g.createLinearGradient(0, y + h * .5, 0, y + h); sh.addColorStop(0, "transparent"); sh.addColorStop(1, "rgba(0,0,0,.92)"); g.fillStyle = sh; g.fillRect(x, y, w, h); g.restore();
-    { const lw = Math.max(3, w * .032), F = it.frm || [it.col]; let st = F[0]; if (F.length > 1){ st = g.createLinearGradient(x, y, x + w, y + h); F.forEach((c, i) => st.addColorStop(i / (F.length - 1), c)); } g.save(); rr(g, x + lw / 2, y + lw / 2, w - lw, h - lw, 14 - lw / 2); g.lineWidth = lw; g.strokeStyle = st; g.stroke(); g.restore(); }
-    g.textAlign = "left"; g.fillStyle = "#fff"; g.font = `900 ${w * .092 | 0}px ${TTL}`; g.fillText(fit(g, it.name, w - 22, w * .092 | 0, 900, TTL), x + 12, y + h - 28 * (w / 230));
-    g.fillStyle = it.col; g.font = `800 ${w * .058 | 0}px ${MONO}`; g.fillText((it.lab || "").toUpperCase(), x + 12, y + h - 11 * (w / 230)); g.textAlign = "center"; g.restore(); }
+    const gw = o.glow || w * .06; { g.save(); g.shadowColor = it.col; g.shadowBlur = gw; rr(g, x, y, w, h, R); g.fillStyle = it.col; g.fill(); g.restore(); }
+    { const F = it.frm || [it.col]; let st = F[0]; if (F.length > 1){ st = g.createLinearGradient(x, y, x + w, y + h); F.forEach((c, i) => st.addColorStop(i / (F.length - 1), c)); } rr(g, x, y, w, h, R); g.fillStyle = st; g.fill(); }
+    const ix = x + pad, iy = y + pad, iw0 = w - pad * 2, ih0 = h - pad * 2, ir = Math.max(6, R - pad * .6);
+    g.save(); rr(g, ix, iy, iw0, ih0, ir); g.fillStyle = "#0e0e12"; g.fill(); g.clip();
+    if (it.img){ const s = Math.max(iw0 / it.img.naturalWidth, ih0 / it.img.naturalHeight), iw = it.img.naturalWidth * s, ih = it.img.naturalHeight * s; g.drawImage(it.img, ix + (iw0 - iw) / 2, iy + (ih0 - ih) * .1, iw, ih); }
+    const sh = g.createLinearGradient(0, iy + ih0 * .55, 0, iy + ih0); sh.addColorStop(0, "transparent"); sh.addColorStop(1, "rgba(0,0,0,.92)"); g.fillStyle = sh; g.fillRect(ix, iy, iw0, ih0);
+    const tx = ix + w * .07, nb = w * .088 | 0, lb = w * .055 | 0;
+    g.textAlign = "left"; g.fillStyle = "#fff"; g.font = `900 ${nb}px ${TTL}`; g.fillText(fit(g, it.name, iw0 - w * .14, nb, 900, TTL), tx, iy + ih0 - w * .135);
+    g.fillStyle = it.col; g.font = `800 ${lb}px ${MONO}`; g.fillText((it.lab || "").toUpperCase(), tx, iy + ih0 - w * .065); g.restore();
+    g.textAlign = "center"; g.restore(); }
   function drawOpening(g, D, poster, t, W, H){ const RED = "#ff1e2d", B = 1750, Cs = 1750, Cend = 6000;
     g.fillStyle = "#050507"; g.fillRect(0, 0, W, H);
     const gl = g.createRadialGradient(W / 2, H * .42, 40, W / 2, H * .42, 780); gl.addColorStop(0, "rgba(255,30,45,.16)"); gl.addColorStop(1, "transparent"); g.fillStyle = gl; g.fillRect(0, 0, W, H);
@@ -14850,8 +14854,8 @@ document.addEventListener("contextmenu", e => { if (e.target.closest && !e.targe
       // fin : rareté et chance réelle, puis l'appel à jouer
       const a1 = sg(t, IV_HIT + 600, IV_HIT + 1100), a2 = sg(t, IV_HIT + 1500, IV_HIT + 2000); g.textAlign = "center";
       if (a1 > 0){ g.save(); g.globalAlpha = a1; g.fillStyle = ivCol(key, t, 1); g.font = `900 30px ${TTL}`; g.fillText((D.oddslab || IV[key].n).toUpperCase(), 270, 718);
-        if (D.oddsp != null){ const pt = D.oddsp >= 10 ? D.oddsp.toFixed(0) : D.oddsp >= 1 ? D.oddsp.toFixed(1).replace(".", ",") : D.oddsp.toFixed(2).replace(".", ","); g.fillStyle = "#fff"; g.font = `700 18px ${MONO}`; g.fillText(`${pt} % DE CHANCE${D.oddsp < 5 ? " · 1 BOOSTER SUR " + Math.max(2, Math.round(100 / D.oddsp)) : ""}`, 270, 750); } g.restore(); }
-      if (a2 > 0){ g.save(); g.globalAlpha = a2; g.translate(0, (1 - eo3(a2)) * 30); rr(g, 50, 790, 440, 128, 22); g.fillStyle = "rgba(255,30,45,.16)"; g.fill(); g.strokeStyle = "rgba(255,30,45,.65)"; g.lineWidth = 2; g.stroke();
+        if (D.oddsp != null){ const pt = D.oddsp >= 10 ? D.oddsp.toFixed(0) : D.oddsp >= 1 ? D.oddsp.toFixed(1).replace(".", ",") : D.oddsp.toFixed(2).replace(".", ","); g.fillStyle = "#fff"; g.font = `700 18px ${MONO}`; g.fillText(`${pt} % DE CHANCE`, 270, 748); g.fillStyle = "#ffd9dc"; g.font = `700 15px ${MONO}`; g.fillText(`1 CHANCE SUR ${Math.max(2, Math.round(100 / D.oddsp)).toLocaleString("fr-FR")} DANS CE BOOSTER`, 270, 772); } g.restore(); }
+      if (a2 > 0){ g.save(); g.globalAlpha = a2; g.translate(0, 14 + (1 - eo3(a2)) * 30); rr(g, 50, 790, 440, 128, 22); g.fillStyle = "rgba(255,30,45,.16)"; g.fill(); g.strokeStyle = "rgba(255,30,45,.65)"; g.lineWidth = 2; g.stroke();
         if (ivLogo.complete) g.drawImage(ivLogo, 76, 812, 46, 46); g.textAlign = "left"; g.fillStyle = "#fff"; g.font = `900 26px ${TTL}`; g.fillText("Joue gratuitement", 134, 834); g.fillStyle = "#ffb3b8"; g.font = `800 17px ${TTL}`; g.fillText(fit(g, "sur Hanko · " + D.title, 340, 17, 800, TTL), 134, 860);
         g.textAlign = "center"; g.fillStyle = "#fff"; g.font = `700 15px ${MONO}`; g.fillText(fit(g, D.ref, 420, 15, 700, MONO), 270, 898); if (D.ref.includes("#parrain=")){ g.fillStyle = "#ffb3b8"; g.font = `700 12px ${MONO}`; g.fillText("MON LIEN PARRAIN · 3 BOOSTERS OFFERTS", 270, 912); } g.restore(); } }
     g.restore(); }
