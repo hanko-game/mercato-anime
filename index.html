@@ -15127,15 +15127,27 @@ if (matchMedia("(hover: none) and (pointer: coarse)").matches) document.addEvent
         setTimeout(() => frToast(`${pd.id} t'invite sur Hanko : crée ton compte, ouvre 10 boosters et vous recevez chacun 3 boosters.`), 1200); } } } catch {} };
   rfHash(); addEventListener("hashchange", rfHash);
   const link = () => { const me = frMe(); return me ? FR_SITE + "#parrain=" + encodeURIComponent(me.id) : FR_SITE; };
+  /* 2 nov. 2026 : un filleul sans pseudo n'avait pas de fiche joueur (players) : son parrain voyait « Nouveau joueur » et ne le trouvait pas dans ses amis.
+     On lui demande son pseudo (définitif) avant d'enregistrer le parrainage, et s'il est déjà filleul sans pseudo, à sa prochaine visite. */
+  const rfName = parrain => new Promise(done => { if (frMe() || document.querySelector("#rfNameBox")) return done(!!frMe());
+    const M = document.createElement("div"); M.className = "tcview"; M.id = "rfNameBox"; M.style.cssText = "display:grid;place-items:center;align-content:center;background:rgba(5,5,7,.94)";
+    M.innerHTML = `<div class="box" style="max-width:420px;width:calc(100% - 32px)"><div class="head"><h2>Choisis ton pseudo</h2></div><p class="muted" style="margin:0 0 12px">${parrain ? `<b>${esc(parrain)}</b> t'a invité : ton pseudo lui permet de te retrouver dans ses amis.` : "Ton pseudo permet à tes amis de te retrouver."} Il ne pourra plus être changé.</p>
+      <div class="row"><input id="rfNm" maxlength="16" placeholder="Ton pseudo" style="flex:1;min-width:150px"><button class="primary" id="rfNmOk">Valider</button></div><p class="small" id="rfNmErr" style="margin:8px 0 0;color:#ff8a93"></p></div>`;
+    document.body.appendChild(M); const inp = M.querySelector("#rfNm"); setTimeout(() => inp.focus(), 50);
+    const ok = async () => { const name = cleanName(inp.value, ""); if (!name || name.length < 2){ M.querySelector("#rfNmErr").textContent = "2 caractères au minimum."; return inp.focus(); }
+      frSetName(name); try { await frsHello(); } catch {} M.remove(); try { SFX.play("pop"); } catch {} done(true); };
+    M.querySelector("#rfNmOk").onclick = ok; inp.onkeydown = e => { if (e.key === "Enter") ok(); }; });
   async function sync(){ if (RF.busy || !frsOn()) return; RF.busy = true;
     try {
       let pend = null; try { pend = localStorage.getItem(PK); } catch {}
+      if (pend && !frMe()){ RF.busy = false; await rfName(pend); RF.busy = true; }
       if (pend){ const {data, error} = await CP.sb.rpc("referral_join", {referrer_handle: pend, dev: dev()});
         if (!error){ try { localStorage.removeItem(PK); } catch {}
           const why = {"trop tard": "ton compte a été créé il y a plus de 48 h", deja: "tu as déjà un parrain", inconnu: "ce joueur est introuvable", "soi-meme": "tu ne peux pas te parrainer toi-même", appareil: "cet appareil a déjà servi à un parrainage", connexion: "cette connexion a déjà servi à un parrainage de ce joueur"}[data];
           if (data === "ok"){ frToast(`Parrainage enregistré : ${pend} est maintenant ton ami. Ouvre 10 boosters et vous recevez chacun 3 boosters.`); try { frsLoad().then(() => { try { tabDot(); } catch {} }); } catch {} }   /* 1er nov. 2026 : amitié créée par le serveur (parrainage-amis-supabase.sql) */
           else if (why) frToast(`Le lien de parrainage de ${pend} n'a pas été pris en compte : ${why}.`); } }   /* comme Kyara : on dit pourquoi */
       const {data: st} = await CP.sb.rpc("referral_state"); if (st) RF.st = st;
+      if (st && st.parrain && !frMe() && !RF.asked){ RF.asked = 1; RF.busy = false; await rfName(st.parrain); RF.busy = true; }
       if (st && st.todo > 0){ const {data: R} = await CP.sb.rpc("referral_claim"); const n = R && R.boosters || 0;
         if (n > 0){ const s = tcLoad(); tcGive(s, "mix:0", n); tcSave(s); try { tabDot(); } catch {} SFX.play("win"); frToast(`Parrainage validé : +${n} boosters Mélange !`, "Ouvrir", () => tcShow("packs")); }
         if (R && R.tiers && R.tiers.length) setTimeout(() => grantTiers(R.tiers), n > 0 ? 2500 : 0);
@@ -15159,7 +15171,7 @@ if (matchMedia("(hover: none) and (pointer: coarse)").matches) document.addEvent
       ${(() => { try { return tcLoad().refChoice ? `<div class="row" style="justify-content:center;margin:-4px 0 14px"><button class="primary" id="refPickGo">Choisir mon booster Or</button></div>` : ""; } catch { return ""; } })()}
       <p class="small" style="margin:0 0 14px">10 filleuls validés par jour au plus · même appareil ou même connexion refusés · un seul parrain par compte</p>
       <label class="f">Tes filleuls <small style="font-weight:500;color:var(--muted)">${ok} validé${ok > 1 ? "s" : ""} · ${mine.length - ok} en cours</small></label>
-      ${!frsOn() ? `<p class="muted">Connecte-toi à ton compte (page Moi) pour suivre tes filleuls et recevoir tes boosters.</p>` : !RF.st ? `<p class="muted">Chargement…</p>` : mine.length ? `<div class="reflist">${mine.map(x => `<div><span>${esc(x.handle || "Nouveau joueur")}</span>${x.ok ? `<b class="ok">Validé ✔</b>` : `<span style="display:flex;align-items:center;gap:8px"><span class="refbar"><i style="width:${Math.round(x.opened / 10 * 100)}%"></i></span><small>${x.opened < 10 || x.wait == null ? x.opened + "/10" : x.wait > 0 ? `10/10 · validé dans ${x.wait} min` : "10/10 · validation en cours…"}</small></span>`}</div>`).join("")}</div>` : `<p class="muted">Personne pour l'instant. Ton premier filleul te rapporte 3 boosters.</p>`}
+      ${!frsOn() ? `<p class="muted">Connecte-toi à ton compte (page Moi) pour suivre tes filleuls et recevoir tes boosters.</p>` : !RF.st ? `<p class="muted">Chargement…</p>` : mine.length ? `<div class="reflist">${mine.map(x => `<div><span>${esc(x.handle || "Pseudo pas encore choisi")}</span>${x.ok ? `<b class="ok">Validé ✔</b>` : `<span style="display:flex;align-items:center;gap:8px"><span class="refbar"><i style="width:${Math.round(x.opened / 10 * 100)}%"></i></span><small>${x.opened < 10 || x.wait == null ? x.opened + "/10" : x.wait > 0 ? `10/10 · validé dans ${x.wait} min` : "10/10 · validation en cours…"}</small></span>`}</div>`).join("")}</div>` : `<p class="muted">Personne pour l'instant. Ton premier filleul te rapporte 3 boosters.</p>`}
       <div id="refRank"></div>
       <label class="f" style="margin-top:16px">Comment ça marche</label>
       <ol class="refsteps"><li><i>1</i><div><b>Partage ton lien</b><span>WhatsApp, Telegram, X… ou copie-le où tu veux.</span></div></li>
@@ -20973,6 +20985,8 @@ new MutationObserver(() => { const sh = document.querySelector("#nvPk .nvsh>div"
 /* 2 nov. 2026 : Invocation 3D (src/invgl.part) */
 .tccine.hkinv{display:block;padding:0;background:#05030a;animation:none;gap:0}
 .hkinv .hkst{position:absolute;left:50%;top:50%;width:min(100vw,calc(100dvh * 9 / 16));aspect-ratio:9/16;transform:translate(-50%,-50%);overflow:visible}
+/* 2 nov. 2026 : téléphone plus haut que 9:16 → la scène remplit toute la hauteur (plus de bandes noires en haut et en bas), seuls les bords gauche et droit débordent */
+@media (max-aspect-ratio:9/16){.hkinv .hkst{width:calc(100dvh * 9 / 16);height:100dvh;aspect-ratio:auto}}
 .hkinv .hkc{position:absolute;left:50%;top:45%;width:61.1%;transform:translate(-50%,-50%);perspective:900px;opacity:0;pointer-events:none}
 .hkinv .hkc.on{opacity:1;animation:hkfl 3.8s ease-in-out infinite}
 .hkinv .hkc .tc,.hkinv .hkc .tc.hlon:not(.no){animation:none;filter:drop-shadow(0 0 1px var(--rc))}
@@ -21008,7 +21022,7 @@ const HKInv = (() => {
   const cnv = (w, h) => { const c = document.createElement("canvas"); c.width = w; c.height = h; return c; };
 
   function create(host, opt = {}){ T = window.THREE;
-    host.style.position = host.style.position || "relative";
+    if (getComputedStyle(host).position === "static") host.style.position = "relative";   // la scène du jeu (.hkst) reste en absolu, centrée
     const wrap = document.createElement("div"); wrap.style.cssText = "position:absolute;inset:0;transform-origin:50% 50%;will-change:transform"; host.appendChild(wrap);
     const DPR = Math.min(devicePixelRatio || 1, opt.dpr || 2), mk2 = () => { const c = cnv(540 * DPR, 960 * DPR); c.style.cssText = "position:absolute;inset:0;width:100%;height:100%;pointer-events:none"; wrap.appendChild(c); const g = c.getContext("2d"); return g; };
     const gB = mk2();
