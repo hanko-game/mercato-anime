@@ -14728,13 +14728,19 @@ document.addEventListener("contextmenu", e => { if (e.target.closest && !e.targe
     const sc = x => RANK.indexOf(x.c.r) * 10 + (x.fin && x.fin !== "H" ? 5 : x.fin ? 1 : 0);
     L.sort((a, b) => sc(b) - sc(a)); L = L.slice(0, 30);
     const imgs = await Promise.all(L.map(x => load(x.src || tcArt(x.c, x.fin) || tcBase(x.c))));
-    const items = L.map((x, i) => ({img: imgs[i], col: colOf(x.c.r, x.fin), frm: frameOf(x.c.r, x.fin), name: x.c.n, lab: x.ar ? "AR" : (x.fin && TC_FIN[x.fin] ? TC_FIN[x.fin][0] : (TC_R[x.c.r] ? TC_R[x.c.r][0] : x.c.r))}));
+    const items = L.map((x, i) => ({img: imgs[i], r: x.c.r, fin: x.fin, col: colOf(x.c.r, x.fin), frm: frameOf(x.c.r, x.fin), name: x.c.n, lab: x.ar ? "AR" : (x.fin && TC_FIN[x.fin] ? TC_FIN[x.fin][0] : (TC_R[x.c.r] ? TC_R[x.c.r][0] : x.c.r))}));
     const O = document.querySelector(".tcopen.res"), key = O && O.dataset.key;
     /* 1er nov. 2026 : le nom et l'univers viennent du booster réellement ouvert (en-tête de l'écran d'ouverture), jamais de la meilleure carte */
     let ku = null; try { ku = key ? tcParse(key).u : null; } catch {} const uni = TC_PACKS[ku] || TC_PACKS.mix;
     const hb = O && O.querySelector(".otop b"), shown = hb ? [...hb.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join("").trim() : "";
     let pouch = null; try { pouch = key ? await load(tcPouchShot(key) || tcPouchImg(key)) : null; } catch {}
-    return {items, rev: [...items].reverse(), uni: {k: uni[1], n: uni[0]}, title: shown || (key ? tcName(key) : "Booster " + uni[0]), pouch, best: items[0], oddsp: O && O.dataset.oddsp ? parseFloat(O.dataset.oddsp) : null, oddslab: (O && O.dataset.oddslab) || ""};
+    /* couleurs vives de l'illustration de la meilleure carte (particules, halo, onde de choc de la vidéo) */
+    let pal = []; try { const im = items[0] && items[0].img; if (im){ const c = document.createElement("canvas"); c.width = 12; c.height = 18; const x = c.getContext("2d"); x.drawImage(im, 0, 0, 12, 18); const d = x.getImageData(0, 0, 12, 18).data, P = [];
+      for (let i = 0; i < d.length; i += 4){ const r = d[i], g2 = d[i + 1], b = d[i + 2], mx = Math.max(r, g2, b), mn = Math.min(r, g2, b); if (mx > 90 && mx - mn > 60) P.push([mx - mn + mx * .3, r, g2, b]); }
+      P.sort((a, b) => b[0] - a[0]); for (const q of P){ if (pal.every(c2 => Math.abs(c2[0] - q[1]) + Math.abs(c2[1] - q[2]) + Math.abs(c2[2] - q[3]) > 120)) pal.push([q[1], q[2], q[3]]); if (pal.length >= 3) break; } } } catch {}
+    /* 2 nov. 2026 : lien de parrainage du joueur sur la vidéo (sans « https:// », pour qu'il se recopie facilement) */
+    let ref = "hanko-game.github.io/mercato-anime"; try { const me = typeof frMe === "function" ? frMe() : null; if (me && me.id) ref += "/#parrain=" + me.id; } catch {}
+    return {items, pal, ref, rev: [...items].reverse(), uni: {k: uni[1], n: uni[0]}, title: shown || (key ? tcName(key) : "Booster " + uni[0]), pouch, best: items[0], oddsp: O && O.dataset.oddsp ? parseFloat(O.dataset.oddsp) : null, oddslab: (O && O.dataset.oddslab) || ""};
   }
   function drawMini(g, cx, cy, w, it, o){ o = o || {}; const h = w * 666 / 450, x = cx - w / 2, y = cy - h / 2;
     g.save(); if (o.rot){ g.translate(cx, cy); g.rotate(o.rot); g.translate(-cx, -cy); } g.globalAlpha = o.alpha == null ? 1 : o.alpha;
@@ -14787,6 +14793,62 @@ document.addEventListener("contextmenu", e => { if (e.target.closest && !e.targe
         g.save(); rr(g, px, py, pw2, 56, 28); g.fillStyle = "rgba(0,0,0,.55)"; g.fill(); g.lineWidth = 2.5; g.strokeStyle = D.best.col; g.stroke(); g.fillStyle = "#fff"; g.textBaseline = "middle"; g.fillText(fit(g, lbl, pw2 - 36, 30, 800, "Inter, system-ui, sans-serif"), W / 2, py + 29); g.textBaseline = "alphabetic"; g.restore(); } }
     if (t >= Cend){ const f = Math.min(1, (t - Cend) / 450), ph2 = poster.height * W / poster.width; g.save(); g.globalAlpha = f; g.fillStyle = "#050507"; g.fillRect(0, 0, W, H); g.drawImage(poster, 0, (H - ph2) / 2, W, ph2); g.restore(); }
   }
+  /* ===== 2 nov. 2026 : vidéo « Invocation » (choisie par l'utilisateur sur data/coffrets/videos-rarete.html) =====
+     Le reste du tirage défile en haut, un socle de sceaux se forme, un faisceau monte avec la silhouette de la meilleure carte, puis révélation
+     (éclair, onde de choc, kanji). Socle, faisceau et kanji aux couleurs de la rareté ; particules, halo et onde aux couleurs de l'illustration.
+     Fausse piste : pour une Légendaire ou mieux, le faisceau commence violet (Épique) puis craque vers la rareté au-dessus, jusqu'à la vraie.
+     Fin : rareté, chance réelle, puis « Joue gratuitement sur Hanko » et le lien. Dessin sur une grille 540 × 960 agrandie ×2. */
+  const IV = {R: {rgb: [77, 163, 255], kj: "希少", n: "RARE"}, E: {rgb: [176, 124, 255], kj: "叙事", n: "ÉPIQUE"}, L: {rgb: [255, 201, 58], kj: "伝説", n: "LÉGENDAIRE"}, M: {rgb: [255, 61, 90], kj: "神話", n: "MYTHIQUE"}, X: {rgb: [110, 240, 255], kj: "覚醒", n: "ÉVEIL", rb: true}};
+  const ivKey = it => it.r === "X" ? "X" : it.r === "M" ? "M" : it.r === "L" ? "L" : it.r === "E" ? "E" : "R";
+  const ivChain = k => k === "L" ? ["E", "L"] : k === "M" ? ["E", "L", "M"] : k === "X" ? ["E", "L", "X"] : [k];
+  const ivCol = (k, t, a, j = 0) => IV[k].rb ? `hsla(${(t / 8 + j * 40) % 360},95%,65%,${a})` : `rgba(${IV[k].rgb.join(",")},${a})`;
+  const ivLogo = (() => { const i = new Image(); i.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="200" height="200"><path d="M50 3l40.7 23.5v47L50 97 9.3 73.5v-47z" fill="#ff1e2d"/><path d="M50 12l32.9 19v38L50 88 17.1 69V31z" fill="#120506"/><rect x="31" y="28" width="11" height="44" rx="2.5" fill="#ff1e2d"/><rect x="58" y="28" width="11" height="44" rx="2.5" fill="#ff1e2d"/><path d="M27 60l46-21v10L27 70z" fill="#ff1e2d"/></svg>'); return i; })();
+  const cl1 = x => Math.max(0, Math.min(1, x)), sg = (t, a, b) => cl1((t - a) / (b - a)), eo3 = x => 1 - Math.pow(1 - cl1(x), 3);
+  const IV_UP = [3000, 3550], IV_HIT = 4100, IV_DUR = 7400, IV_P = 1750;
+  /* 2 nov. 2026 : la vidéo commence par l'ouverture du vrai sachet (son design réel, il tremble puis sa bande s'arrache), puis l'invocation */
+  const drawVideo = (g, D, t, W, H) => t < IV_P ? drawOpening(g, D, null, t, W, H) : drawInvocation(g, D, t - IV_P, W, H);
+  function drawInvocation(g, D, t, W, H){ const best = D.items[0], key = ivKey(best), chain = ivChain(key), pal = D.pal && D.pal.length ? D.pal : [IV[key].rgb];
+    const stage = t < IV_UP[0] ? 0 : t < IV_UP[1] ? 1 : 2, kNow = chain[Math.min(stage, chain.length - 1)], pc = (j, a) => { const c = pal[j % pal.length]; return `rgba(${c[0]},${c[1]},${c[2]},${a})`; };
+    g.save(); g.scale(W / 540, H / 960); const w0 = 540, h0 = 960; g.fillStyle = "#05030a"; g.fillRect(0, 0, w0, h0);
+    const beam = sg(t, 2300, IV_HIT), crack = IV_UP.slice(0, chain.length - 1).some(u => t > u && t < u + 160) && t < IV_HIT, sh = beam * 2.5 + (crack ? 5 : 0) + (t > IV_HIT && t < IV_HIT + 300 ? 8 * (1 - sg(t, IV_HIT, IV_HIT + 300)) : 0);
+    g.translate((Math.random() - .5) * sh, (Math.random() - .5) * sh);
+    const gl = g.createRadialGradient(270, 595, 20, 270, 595, 520); gl.addColorStop(0, ivCol(kNow, t, .12 + beam * .35)); gl.addColorStop(1, "transparent"); g.fillStyle = gl; g.fillRect(0, 0, w0, h0);
+    // socle de sceaux, couleur de la rareté du moment
+    g.save(); g.globalAlpha = 1 - sg(t, IV_HIT + 200, IV_HIT + 800); g.translate(270, 710); g.scale(1, .32); const R = 210 * (.6 + eo3(t / 900) * .4);
+    { const sgr = g.createRadialGradient(0, 0, 10, 0, 0, R * 1.1); sgr.addColorStop(0, ivCol(kNow, t, .35 + beam * .4)); sgr.addColorStop(1, "transparent"); g.fillStyle = sgr; g.beginPath(); g.arc(0, 0, R * 1.1, 0, 6.28); g.fill(); }
+    for (let j = 0; j < 3; j++){ g.save(); g.rotate((j % 2 ? -1 : 1) * t / (900 + j * 400)); g.strokeStyle = ivCol(kNow, t, .55 + beam * .45, j); g.lineWidth = 3.4 - j * .8; g.shadowColor = ivCol(kNow, t, 1, j); g.shadowBlur = 12; g.beginPath(); g.arc(0, 0, R - j * 42, 0, 6.28); g.stroke(); g.shadowBlur = 0;
+      g.font = '900 26px "Zen Kaku Gothic New", "Hiragino Sans", sans-serif'; g.fillStyle = ivCol(kNow, t, .45 + beam * .55, j); const kj = IV[kNow].kj + "召喚" + IV[kNow].kj + "封印"; for (let i = 0; i < 8; i++){ g.save(); g.rotate(i / 8 * 6.28); g.fillText(kj[i % kj.length], -12, -(R - j * 42) + 30); g.restore(); } g.restore(); }
+    g.restore();
+    // particules aux couleurs de l'illustration
+    for (let i = 0; i < 50; i++){ const p = ((t / 1600 + i * .137) % 1), x = 270 + Math.sin(i * 12.9) * 230 * (1 - p * .5), y = 750 - p * 700; g.fillStyle = pc(i, (1 - p) * (.3 + beam * .7)); g.fillRect(x, y, 2 + (i % 3), 2 + (i % 3)); }
+    // le reste du tirage défile en haut
+    { const others = D.items.slice(1), n = Math.min(6, others.length), cw = n > 4 ? 78 : 104, gap = cw + 12, x0 = 270 - (n - 1) * gap / 2;
+      for (let j = 0; j < n; j++){ const it = others[others.length - 1 - j], a = sg(t, 500 + j * 250, 800 + j * 250), out = sg(t, 2300, 2700); if (a <= 0) continue; drawMini(g, x0 + j * gap, 160 + (1 - eo3(a)) * -60, cw, it, {alpha: a * (1 - out), glow: 12}); }
+      if (others.length > n){ const a = sg(t, 500 + n * 250, 800 + n * 250) * (1 - sg(t, 2300, 2700)); if (a > 0){ g.save(); g.globalAlpha = a; g.fillStyle = "#cfcbd6"; g.textAlign = "center"; g.font = `700 16px ${MONO}`; g.fillText(`+ ${others.length - n} CARTES`, 270, 245 + (n > 4 ? 0 : 30)); g.restore(); } } }
+    // faisceau et silhouette ; craquement à chaque montée de rareté (fausse piste)
+    const bw0 = best.img ? 290 : 290, bh = bw0 * 666 / 450;
+    if (beam > 0 && t < IV_HIT + 500){ const bw = 40 + beam * 170, gr = g.createLinearGradient(270 - bw, 0, 270 + bw, 0); gr.addColorStop(0, "transparent"); gr.addColorStop(.5, ivCol(kNow, t, .25 + beam * .6)); gr.addColorStop(1, "transparent");
+      g.globalCompositeOperation = "screen"; g.fillStyle = gr; g.fillRect(0, 0, w0, 730); g.globalCompositeOperation = "source-over";
+      if (t < IV_HIT){ const cx = 270, cy = 595 - eo3(beam) * 210, sw = 250 + beam * 40, shh = sw * 666 / 450; g.save(); g.globalAlpha = beam; g.shadowColor = ivCol(kNow, t, 1); g.shadowBlur = 40 + beam * 60; rr(g, cx - sw / 2, cy - shh / 2, sw, shh, sw * .06); g.fillStyle = "#000"; g.fill(); g.shadowBlur = 0; g.strokeStyle = "#fff"; g.lineWidth = 3; g.stroke(); g.restore(); }
+      for (const u of IV_UP.slice(0, chain.length - 1)){ if (t < u || t > u + 260) continue; const f = 1 - sg(t, u, u + 260); g.save(); g.globalCompositeOperation = "screen"; g.fillStyle = ivCol(kNow, t, .55 * f); g.fillRect(0, 0, w0, h0); g.strokeStyle = `rgba(255,255,255,${f})`; g.lineWidth = 3; g.beginPath(); let x = 270, y = 120; g.moveTo(x, y); for (let i = 0; i < 9; i++){ x += (Math.random() - .5) * 70; y += 70; g.lineTo(x, y); } g.stroke(); g.restore(); } }
+    // révélation
+    if (t >= IV_HIT){ const r = sg(t, IV_HIT, IV_HIT + 400), f = 1 - sg(t, IV_HIT, IV_HIT + 250), cy = 432 + Math.sin(t / 380) * 8, cw2 = 330 * (1.25 - eo3(r) * .25);
+      { const hg = g.createRadialGradient(270, cy, 30, 270, cy, 360); hg.addColorStop(0, pc(0, .55)); hg.addColorStop(.5, pc(1, .18)); hg.addColorStop(1, "transparent"); g.fillStyle = hg; g.fillRect(0, 0, w0, h0); }
+      g.save(); g.translate(270, cy); g.scale(t < IV_HIT + 400 ? 1 : 1 - .05 * Math.sin(t / 500), 1); drawMini(g, 0, 0, cw2, best, {glow: 70});
+      { const ch = cw2 * 666 / 450, ho = ((t - IV_HIT - 200) / 1700) % 1.4; g.save(); rr(g, -cw2 / 2, -ch / 2, cw2, ch, 14); g.clip(); g.globalCompositeOperation = "overlay"; const x = -cw2 + ho * cw2 * 2.4, hg2 = g.createLinearGradient(x, -ch / 2, x + cw2 * .8, ch / 2); ["#ff004000", "#ff0040aa", "#ffe600aa", "#00ff88aa", "#00b3ffaa", "#b400ffaa", "#b400ff00"].forEach((c, i, A) => hg2.addColorStop(i / (A.length - 1), c)); g.fillStyle = hg2; g.fillRect(-cw2 / 2, -ch / 2, cw2, ch); g.restore(); }
+      g.restore();
+      g.strokeStyle = pc(0, 1 - r); g.lineWidth = 14 * (1 - r) + 1; g.beginPath(); g.arc(270, cy, 40 + r * 520, 0, 6.28); g.stroke(); g.strokeStyle = pc(1, (1 - r) * .7); g.lineWidth = 6 * (1 - r) + 1; g.beginPath(); g.arc(270, cy, 20 + r * 400, 0, 6.28); g.stroke();
+      const kk = sg(t, IV_HIT + 50, IV_HIT + 320); g.save(); g.globalAlpha = .9 * eo3(kk) * (1 - sg(t, 6000, 6600) * .6); g.translate(270, 82); g.scale(2.6 - eo3(kk) * 1.6, 2.6 - eo3(kk) * 1.6); g.font = '900 92px "Zen Kaku Gothic New", "Hiragino Sans", sans-serif'; g.textAlign = "center"; g.fillStyle = "#fff"; g.shadowColor = ivCol(key, t, 1); g.shadowBlur = 30; g.fillText(IV[key].kj, 0, 34); g.restore();
+      if (f > 0){ g.fillStyle = `rgba(255,255,255,${f})`; g.fillRect(-30, -30, w0 + 60, h0 + 60); }
+      // fin : rareté et chance réelle, puis l'appel à jouer
+      const a1 = sg(t, IV_HIT + 600, IV_HIT + 1100), a2 = sg(t, IV_HIT + 1500, IV_HIT + 2000); g.textAlign = "center";
+      if (a1 > 0){ g.save(); g.globalAlpha = a1; g.fillStyle = ivCol(key, t, 1); g.font = `900 30px ${TTL}`; g.fillText((D.oddslab || IV[key].n).toUpperCase(), 270, 718);
+        if (D.oddsp != null){ const pt = D.oddsp >= 10 ? D.oddsp.toFixed(0) : D.oddsp >= 1 ? D.oddsp.toFixed(1).replace(".", ",") : D.oddsp.toFixed(2).replace(".", ","); g.fillStyle = "#fff"; g.font = `700 18px ${MONO}`; g.fillText(`${pt} % DE CHANCE${D.oddsp < 5 ? " · 1 BOOSTER SUR " + Math.max(2, Math.round(100 / D.oddsp)) : ""}`, 270, 750); } g.restore(); }
+      if (a2 > 0){ g.save(); g.globalAlpha = a2; g.translate(0, (1 - eo3(a2)) * 30); rr(g, 50, 790, 440, 128, 22); g.fillStyle = "rgba(255,30,45,.16)"; g.fill(); g.strokeStyle = "rgba(255,30,45,.65)"; g.lineWidth = 2; g.stroke();
+        if (ivLogo.complete) g.drawImage(ivLogo, 76, 812, 46, 46); g.textAlign = "left"; g.fillStyle = "#fff"; g.font = `900 26px ${TTL}`; g.fillText("Joue gratuitement", 134, 834); g.fillStyle = "#ffb3b8"; g.font = `800 17px ${TTL}`; g.fillText(fit(g, "sur Hanko · " + D.title, 340, 17, 800, TTL), 134, 860);
+        g.textAlign = "center"; g.fillStyle = "#fff"; g.font = `700 15px ${MONO}`; g.fillText(fit(g, D.ref, 420, 15, 700, MONO), 270, 898); if (D.ref.includes("#parrain=")){ g.fillStyle = "#ffb3b8"; g.font = `700 12px ${MONO}`; g.fillText("MON LIEN PARRAIN · 3 BOOSTERS OFFERTS", 270, 912); } g.restore(); } }
+    g.restore(); }
+  window.__ivTest = {draw: (g, D, t, W, H) => drawVideo(g, D, t, W, H), data: collectReplay};   /* contrôle image par image (tests) */
   async function record(btn){
     const t0 = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<i aria-hidden="true">🎬</i>Vidéo…';
     try {
@@ -14801,18 +14863,18 @@ document.addEventListener("contextmenu", e => { if (e.target.closest && !e.targe
       const stream = new MediaStream([...cv.captureStream(30).getVideoTracks(), ...(dest ? dest.stream.getAudioTracks() : [])]), chunks = []; let rec;
       try { rec = new MediaRecorder(stream, {mimeType: mime, videoBitsPerSecond: 9e6}); } catch { unhook(); btn.disabled = false; btn.innerHTML = t0; return share(btn); }
       rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
-      const DUR = 8400, N = D.rev.length, Cs = 1750, Cend = 6000, step = (Cend - Cs) / N;
-      const ev = [[0, () => tcSnd("rustle")], [820, () => tcSnd("charge")], [1330, () => { tcSnd("rip"); SFX.play("pop"); }], [Cend + 250, () => SFX.play("fanfare")]];
-      for (let j = 0; j < N; j++) if (j === N - 1 || N <= 12 || j % Math.ceil(N / 12) === 0) ev.push([revAt(j, N), j === N - 1 ? () => { tcSnd("cele"); SFX.play("win"); } : () => tcSnd("deal")]);
-      if (N > 1) ev.push([Math.max(Cs + 100, revAt(N - 1, N) - 950), () => tcRiser(.9, 1.15)]);   /* montée avant la plus belle carte */
+      const DUR = IV_P + IV_DUR, N = D.items.length, chain = ivChain(ivKey(D.items[0])), PO = IV_P;   /* 2 nov. 2026 : ouverture du sachet puis « Invocation » */
+      const ev = [[0, () => tcSnd("rustle")], [820, () => tcSnd("charge")], [1330, () => { tcSnd("rip"); SFX.play("pop"); }], [PO + 2300, () => tcRiser(1.8, 1.2)], [PO + IV_HIT, () => { tcSnd("cele"); SFX.play("win"); }], [PO + IV_HIT + 1500, () => SFX.play("fanfare")]];
+      for (let j = 0; j < Math.min(6, N - 1); j++) ev.push([PO + 500 + j * 250, () => tcSnd("deal")]);
+      if (chain.length > 1) IV_UP.slice(0, chain.length - 1).forEach(u => ev.push([PO + u, () => { tcSnd("flip2"); try { navigator.vibrate?.(20); } catch {} }]));
       ev.sort((a, b) => a[0] - b[0]); let ei = 0;
       /* 1er nov. 2026 : la piste son ne démarrait qu'au premier bruit puis était collée au début → sons en avance. On la fait tourner dès le départ (souffle inaudible), on attend que l'enregistreur tourne, et l'animation suit l'horloge audio */
       let ka = null; if (dest){ try { await ac.resume(); const o = ac.createOscillator(), kg = ac.createGain(); kg.gain.value = 1e-4; oc.call(o, kg); oc.call(kg, dest); o.start(); ka = o; } catch {} }
-      try { drawOpening(g, D, poster, 0, W, H); } catch {}
+      try { drawVideo(g, D, 0, W, H); } catch {}
       await new Promise(r => { rec.onstart = r; rec.start(); setTimeout(r, 1500); }); await new Promise(r => setTimeout(r, 300));
       const clk = () => dest && ac.state === "running" ? ac.currentTime * 1000 : performance.now();
-      try { await new Promise(resolve => { const s0 = clk(); rec.onstop = resolve; const loop = () => { const el = clk() - s0; while (ei < ev.length && el >= ev[ei][0]){ try { ev[ei][1](); } catch {} ei++; } try { drawOpening(g, D, poster, el, W, H); } catch (e) { if (!window.__dvErr) console.warn("vidéo", e);  window.__dvErr = String(e && e.stack || e); } if (el < DUR) requestAnimationFrame(loop); else { try { rec.stop(); } catch { resolve(); } } }; requestAnimationFrame(loop); }); } finally { setTimeout(() => { unhook(); try { ka && ka.stop(); } catch {} }, 300); }
-      const ext = mime.indexOf("mp4") >= 0 ? "mp4" : "webm", blob = new Blob(chunks, {type: mime}), file = new File([blob], "hanko-tirage." + ext, {type: mime}), text = "Mon tirage sur Hanko !";
+      try { await new Promise(resolve => { const s0 = clk(), p0 = performance.now(); rec.onstop = resolve; const loop = () => { const ea = clk() - s0, ep = performance.now() - p0, el = ep - ea > 250 ? ep : ea;   /* horloge audio en retard (appareil sans sortie son…) : l'animation suit l'horloge normale */ while (ei < ev.length && el >= ev[ei][0]){ try { ev[ei][1](); } catch {} ei++; } try { drawVideo(g, D, el, W, H); } catch (e) { if (!window.__dvErr) console.warn("vidéo", e);  window.__dvErr = String(e && e.stack || e); } if (el < DUR) requestAnimationFrame(loop); else { try { rec.stop(); } catch { resolve(); } } }; requestAnimationFrame(loop); }); } finally { setTimeout(() => { unhook(); try { ka && ka.stop(); } catch {} }, 300); }
+      const ext = mime.indexOf("mp4") >= 0 ? "mp4" : "webm", blob = new Blob(chunks, {type: mime}), file = new File([blob], "hanko-tirage." + ext, {type: mime}), text = "Mon tirage sur Hanko ! Joue avec moi : https://" + D.ref.replace("#", "#").replace(/#parrain=(.*)$/, (m, h) => "#parrain=" + encodeURIComponent(h));
       if (navigator.canShare && navigator.canShare({files: [file]})){ try { await navigator.share({files: [file], title: "Mon tirage Hanko", text}); return; } catch (e) { if (e && e.name === "AbortError") return; } }
       const url = URL.createObjectURL(blob), M = document.createElement("div"); M.className = "tcview tcsharebox"; M.style.cssText = "display:grid;place-items:center;align-content:center;overflow:auto;background:rgba(5,5,7,.92)";
       M.innerHTML = `<div style="width:min(100%,460px);padding:16px"><video class="shareimg" src="${url}" autoplay loop muted playsinline controls style="width:100%;max-width:420px;margin:0 auto 12px;border-radius:14px;display:block"></video><p class="small" style="text-align:center;margin:0 0 12px;color:#bbb">Télécharge la vidéo, puis publie-la sur TikTok ou Instagram.</p><div class="row"><a href="${url}" download="hanko-tirage.${ext}" style="border-radius:999px;padding:10px 18px;text-decoration:none;font-weight:700;background:var(--accent);color:#fff">Télécharger la vidéo</a><button class="ghost" id="tcVdX" style="border-radius:999px">Fermer</button></div></div>`;
