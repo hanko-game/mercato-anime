@@ -787,7 +787,7 @@ body[data-u="db"] .mini img,body[data-u="db"] .slot img,.uni[data-u="db"] img{ob
     <label class="f step"><i>02</i>Mode d'enchère</label>
     <div class="modes">
       <button class="mode sel" data-m="live"><b>Classique</b><span>Le tireur ouvre, puis vous surenchérissez chacun votre tour jusqu'à ce que l'un passe.</span></button>
-      <button class="mode" data-m="bluff"><b>Bluff</b><span>Enchères progressives, mais seul le tireur voit qui est tombé. L'adversaire surenchérit sans savoir : bluffe pour faire monter le prix !</span></button>
+      <button class="mode" data-m="bluff"><b>À l'aveugle</b><span>Enchères progressives, mais seul le tireur voit qui est tombé. L'adversaire surenchérit sans savoir : bluffe pour faire monter le prix !</span></button>
     </div>
     <label class="f step" style="margin-top:16px"><i>03</i>Où jouer ?</label>
     <div class="where">
@@ -835,7 +835,7 @@ body[data-u="db"] .mini img,body[data-u="db"] .slot img,.uni[data-u="db"] img{ob
       <li>Le joueur qui tire <b>ne peut pas laisser filer</b> : il doit miser au moins <b>10M</b>. Si l'adversaire ne surenchérit pas, il garde le personnage.</li>
       <li>Toutes les mises se font <b>par tranches de 10M</b> : 10, 20, 30…</li>
       <li><b>Classique</b> : après l'ouverture, chacun peut surenchérir (d'au moins 10M) à tour de rôle, sans limite, jusqu'à ce que l'un des deux passe.</li>
-      <li><b>Bluff</b> : comme le mode classique, mais l'adversaire ne voit ni le nom ni l'image du personnage : il est révélé une fois l'enchère terminée.</li>
+      <li><b>À l'aveugle</b> : comme le mode classique, mais l'adversaire ne voit ni le nom ni l'image du personnage : il est révélé une fois l'enchère terminée.</li>
       <li>Le gagnant paie sa mise. <b>Si tu remportes un personnage tiré par ton adversaire, c'est toi qui tires ensuite.</b></li>
       <li>Tu peux miser <b>tout ton argent restant</b>. S'il te reste moins de 10M, tu mises ce qu'il te reste, même 0.</li>
       <li>Quand un joueur a ses 5 personnages, <b>tous les tirages suivants sont pour l'autre</b> : plus d'enchère, c'est le hasard qui complète son équipe (gratuitement).</li>
@@ -964,7 +964,7 @@ const UNI = {
   ds:{name:"Demon Slayer",title:"MERCATO DEMON SLAYER",cur:"Sen",unit:"pourfendeur",units:"pourfendeurs",team:"escouade",all:"toute l'escouade",preview:["Tanjiro Kamado","Nezuko Kamado","Kyojuro Rengoku"]},
   mha:{name:"My Hero Academia",title:"MERCATO MY HERO ACADEMIA",cur:"Yens",unit:"héros",units:"héros",team:"agence",all:"toute l'agence",preview:["Izuku Midoriya","Katsuki Bakugo","All Might"]}
 };
-const MODES = {live:"Classique",bluff:"Mode bluff"};   // l'enchère à l'aveugle a été retirée du menu (demande de l'utilisateur, 14 oct. 2026) ; son code reste pour les parties déjà commencées
+const MODES = {live:"Classique",bluff:"À l'aveugle"};   /* 2 nov. 2026 : « Bluff » renommé « À l'aveugle » */   // l'enchère à l'aveugle a été retirée du menu (demande de l'utilisateur, 14 oct. 2026) ; son code reste pour les parties déjà commencées
 const TIER = {M:"Mythique",L:"Légendaire",E:"Épique",R:"Rare",C:"Commun"};
 const WEIGHT = {M:0.8,L:1,E:1,R:1,C:0.8};
 const BUDGET = 300, MIN = 10, MAX = 5;
@@ -15759,7 +15759,7 @@ function gtRender(){
     box.innerHTML = `${back ? `<div class="gtme go"><div><b>Tu organisais le tournoi ${esc(back.T.code)}</b><span>Il n'est pas terminé : tu peux le reprendre là où il en était.</span></div><span class="row"><button class="primary" id="gtResume">Reprendre</button><button class="ghost" id="gtDrop">Abandonner</button></span></div>` : ""}
       ${backJ ? `<div class="gtme go"><div><b>Tu étais dans le tournoi ${esc(backJ.code)}</b><span>Tu retrouves ta place en le rejoignant de nouveau.</span></div><span class="row"><button class="primary" id="gtRejoin">Y retourner</button><button class="ghost" id="gtDropJ">Oublier</button></span></div>` : ""}
       <label class="f step"><i>01</i>Univers</label><div class="gtseg" id="gtUnis">${Object.keys(UNI).map(k => `<button class="${k === GT.cfg.u ? "sel" : ""}" data-gtu="${k}"><b>${esc(UNI[k].name)}</b></button>`).join("")}</div>
-      <label class="f step" style="margin-top:16px"><i>02</i>Mode d'enchère</label>${seg("data-gtm", [["live", "Classique", "Chacun voit le personnage tiré."], ["bluff", "Bluff", "Seul le tireur sait qui est tombé."]], GT.cfg.mode)}
+      <label class="f step" style="margin-top:16px"><i>02</i>Mode d'enchère</label>${seg("data-gtm", [["live", "Classique", "Chacun voit le personnage tiré."], ["bluff", "À l'aveugle", "Seul le tireur sait qui est tombé."]], GT.cfg.mode)}
       <label class="f step" style="margin-top:16px"><i>03</i>Joueurs maximum</label><div class="gtsz" role="radiogroup" aria-label="Joueurs maximum">${[4, 8, 16, 32, 64].map(n => `<button role="radio" aria-checked="${n === GT.cfg.size}" class="${n === GT.cfg.size ? "sel" : ""}" data-gts="${n}">${n}</button>`).join("")}</div><p class="gthint">${({4: "Demi-finales puis finale", 8: "Quarts puis finale", 16: "Huitièmes puis finale", 32: "Seizièmes puis finale · parfait pour un stream", 64: "Trente-deuxièmes puis finale · pour un gros stream"})[GT.cfg.size]}</p><p class="small" style="margin:4px 2px 0;color:var(--muted)">Tu peux lancer dès 4 joueurs : le tableau prend la plus grande taille possible.</p>
       <div class="online" style="margin-top:16px"><div><label class="f" for="gtMe">Ton pseudo</label><input id="gtMe" maxlength="16" placeholder="Ton pseudo" value="${esc(me)}"></div>
         <div class="grid2"><div class="panel" style="background:var(--panel2)"><b>Créer un tournoi</b><p class="small" style="margin:4px 0 10px">Tu es l'organisateur : tu reçois un code à envoyer aux autres, et tu joues aussi.</p><button class="primary" id="gtHost">Créer le tournoi</button></div>
@@ -15856,7 +15856,7 @@ function mjNew(u, names, fmt, mode){
     // places alternées : en équipes, deux coéquipiers ne se suivent jamais dans l'ordre des enchères
     players: names.map((name, i) => ({name, budget: BUDGET, team: [], t: nt ? i % nt : -1})),
     pool: DATA[u].map((_, i) => i).filter(i => DATA[u][i].nw !== 1), drawer: Math.floor(Math.random() * n), cur: null, ph: null, log: [], over: false};
-  mjLog(`${MJ_FMT[fmt]}${MJ.mode === "bluff" ? " en bluff" : ""} à ${n} joueurs${nt ? " : " + [...Array(nt).keys()].map(k => mjTeamName(k) + " (" + MJ.players.filter(p => p.t === k).map(p => esc(p.name)).join(", ") + ")").join(" · ") : ""}.`);
+  mjLog(`${MJ_FMT[fmt]}${MJ.mode === "bluff" ? " à l'aveugle" : ""} à ${n} joueurs${nt ? " : " + [...Array(nt).keys()].map(k => mjTeamName(k) + " (" + MJ.players.filter(p => p.t === k).map(p => esc(p.name)).join(", ") + ")").join(" · ") : ""}.`);
   mjLog(`Tirage au sort : ${esc(MJ.players[MJ.drawer].name)} commence.`);
   mjNext();
 }
@@ -16023,10 +16023,10 @@ function mjLobbyRender(){ const L = MJN.lobby, host = MJN.role === "host", n = L
   lobby(`<h2>Mercato à plusieurs · ${UNI[MJN.u].name}</h2>${MJN.code ? `<p class="muted">Code de la partie :</p><div class="code">${MJN.code}</div>` : ""}
     <div class="ucp" style="justify-content:center">${L.map(p => `<span>${esc(p.name)}</span>`).join("")}</div><p class="small">${n}/8 joueurs${n < 3 ? " · il en faut au moins 3" : ""}</p>
     ${host ? `<div class="mjcnt" style="justify-content:center">${fmts.map(f => `<button data-mjf="${f}" class="${MJN.fmt === f ? "sel" : ""}">${MJ_FMT[f]}</button>`).join("")}</div>
-      ${MJN.fmt === "melee" ? `<div class="mjcnt" style="justify-content:center">${[["live", "Classique"], ["bluff", "Bluff"]].map(([m, t]) => `<button data-mjm="${m}" class="${MJN.mode === m ? "sel" : ""}">${t}</button>`).join("")}</div>${MJN.mode === "bluff" ? `<p class="small" style="max-width:48ch">Bluff : seul celui qui tire voit le personnage, les autres enchérissent sur un mystère.</p>` : ""}` : ""}
+      ${MJN.fmt === "melee" ? `<div class="mjcnt" style="justify-content:center">${[["live", "Classique"], ["bluff", "À l'aveugle"]].map(([m, t]) => `<button data-mjm="${m}" class="${MJN.mode === m ? "sel" : ""}">${t}</button>`).join("")}</div>${MJN.mode === "bluff" ? `<p class="small" style="max-width:48ch">Bluff : seul celui qui tire voit le personnage, les autres enchérissent sur un mystère.</p>` : ""}` : ""}
       ${n % 2 ? `<p class="small">Avec un nombre pair de joueurs, vous pouvez aussi jouer en équipes.</p>` : ""}
       <button class="primary" id="mjStart" ${n < 3 ? "disabled" : ""}>Lancer le mercato</button><p class="small" style="max-width:48ch">Tes amis ouvrent ce site, choisissent Mercato, « En ligne », puis « Rejoindre » avec le code.</p>`
-      : (MJN.fmt === "melee" && MJN.mode === "bluff" ? `<p class="small">Mode Bluff : seul celui qui tire voit le personnage.</p>` : "") + waitHTML("L'hôte va lancer la partie…")}<button class="ghost" id="cancelLobby">Quitter</button>`);
+      : (MJN.fmt === "melee" && MJN.mode === "bluff" ? `<p class="small">Mode à l'aveugle : seul celui qui tire voit le personnage.</p>` : "") + waitHTML("L'hôte va lancer la partie…")}<button class="ghost" id="cancelLobby">Quitter</button>`);
   $("#cancelLobby").onclick = () => { mjLeave(); show("home"); };
   document.querySelectorAll("[data-mjm]").forEach(b => b.onclick = () => { MJN.mode = b.dataset.mjm; mjBroadcastLobby(); });
   document.querySelectorAll("[data-mjf]").forEach(b => b.onclick = () => { MJN.fmt = b.dataset.mjf; mjBroadcastLobby(); });
