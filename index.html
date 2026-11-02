@@ -9389,7 +9389,7 @@ function profApply(prevName){
   $("#qjName").classList.toggle("hidden", !!name);
   $("#profBox").innerHTML = name
     ? `<label class="f">Ton profil · 名前</label><div class="profrow"><div class="who">${esc(name)}</div>
-        <div class="row"><button class="primary" id="profOpen">Records et parties</button><button class="ghost" id="profEdit">Changer de pseudo</button></div></div>`
+        <div class="row"><button class="primary" id="profOpen">Records et parties</button><span class="small" style="align-self:center">Ton pseudo est définitif</span></div></div>`
     : `<label class="f">Ton profil · 名前</label>
        <div class="row" style="margin-bottom:8px"><input id="profName" maxlength="16" placeholder="Ton pseudo" style="flex:1;min-width:150px"><button class="primary" id="profSave">Créer</button></div><p class="small">Juste un pseudo, sans mot de passe : il garde tes records et tes parties.</p>`;
   $("#profSave") && ($("#profSave").onclick = profSave);
@@ -9410,6 +9410,7 @@ function profSave(){
   const name = cleanName($("#profName").value, "");
   if (!name) return $("#profName").focus();
   const old = profGet();
+  if (old?.name && old.name !== name) return profApply(old.name);   /* 2 nov. 2026 : le pseudo ne se change plus une fois choisi */
   lsSet(PROF_KEY, {name, since: old?.since || Date.now()});
   if (old?.name && old.name !== name) histRename(old.name, name);
   SFX.play("pop"); profApply(old?.name || "");
@@ -11410,7 +11411,7 @@ async function tcPlFill(root){ const dd = root && root.querySelector("[data-fpl]
 // carte en grand, qui s'incline sous le doigt ou la souris ; un toucher la retourne pour lire la fiche
 function tcView(c, want){
   try { const s0 = tcLoad(); if (s0.own[c.id] && !(s0.tuto && s0.tuto.view)){ s0.tuto = s0.tuto || {claimed: []}; s0.tuto.view = 1; tcSave(s0); } } catch {}
-  const s = tcLoad(), fins = ["", ...Object.keys(TC_FIN).filter(k => s.fin[c.id] && s.fin[c.id][k] && tcVersOf(c).includes(k))]; let f = tcBestFin(s, c), back = false; if (want != null && want !== "*" && tcHas(s, c, want)) f = want; else if (want === "P" && TC_PROMO[c.id]) f = "P";   /* aperçu de la carte Promo d'un coffret, même pas encore obtenue */
+  const s = tcLoad(), fins = ["", ...Object.keys(TC_FIN).filter(k => s.fin[c.id] && s.fin[c.id][k] && tcVersOf(c).includes(k))]; let f = tcBestFin(s, c), back = false; if (want != null && want !== "*" && (tcHas(s, c, want) || want === "" || tcVersOf(c).includes(want))) f = want; if (!fins.includes(f)) fins.push(f);   /* 2 nov. 2026 : on montre toujours la version affichée à l'écran (avant : la meilleure possédée) */   /* aperçu de la carte Promo d'un coffret, même pas encore obtenue */
   document.querySelector(".tcview")?.remove();
   document.body.insertAdjacentHTML("beforeend", `<div class="tcview r-${c.r}" role="dialog" aria-modal="true" aria-label="${esc(c.n)}"><button class="ghost vx" id="tcvX">✕ Fermer</button><div class="v3d"><div class="vcard"><div class="vf"></div><div class="vb">${tcBack(c.r)}<div class="tcfiche-w">${tcSheet(c, s, f)}</div></div></div></div>
     <div class="vbar">${fins.length > 1 ? `<div class="tcchips">${fins.map(k => `<button data-tcf="${k}">${k ? TC_FIN[k][0] + (k === "B" ? " · 2e illustration" : k === "C" ? " · 3e illustration" : "") : "Normale"}</button>`).join("")}</div>` : ""}<div class="row" style="justify-content:center"><button id="tcvSheet">Lire la fiche</button>${s.own[c.id] ? `<button class="ghost" id="tcvLock" aria-pressed="${!!(s.lock || {})[c.id]}">${(s.lock || {})[c.id] ? "🔒 Verrouillée" : "🔓 Verrouiller"}</button>` : ""}${s.own[c.id] && typeof hvSellForm === "function" ? `<button class="ghost" id="tcvSell" ${(s.lock || {})[c.id] ? "hidden" : ""}>◆ Vendre au marché</button>` : ""}</div><p class="small">Fais glisser pour incliner la carte, touche-la pour lire sa fiche.</p></div></div>`);
@@ -13156,7 +13157,8 @@ async function frInvite(id, code, btn){
 // ---- affichage ----
 // choisir ou changer son pseudo depuis le panneau Amis : même effet que dans le profil, et le salon personnel suit le nouvel identifiant
 function frSetName(name){
-  const old = profGet(); lsSet(PROF_KEY, {name, since: old?.since || Date.now()});
+  const old = profGet(); if (old?.name && old.name !== name) return;   /* 2 nov. 2026 : pseudo définitif une fois choisi */
+  lsSet(PROF_KEY, {name, since: old?.since || Date.now()});
   if (old?.name && old.name !== name) histRename(old.name, name);
   if (FR.host){ try { FR.host.leave(); } catch {} FR.host = null; }
   SFX.play("pop"); profApply(old?.name || "");
@@ -15239,7 +15241,7 @@ function gxItem(r, byId){
   const m = String(r.card_id).match(/^s:([^:]+):(.+)$/);
   if (m){ const c = (HS_DATA[m[1]] || []).find(x => hsKey(x) === m[2]); if (!c || hsRk(c) < 4) return null; const [lab, col] = HS_R[c[9]]; return {r, img: hsImg(c), n: c[4], lab, col, open: () => hsZoom(m[1], m[2])}; }
   const c = byId.get(r.card_id), f = r.fin || ""; if (!c || !gxBig({r: c.r, f})) return null;
-  return {r, card: c, f, img: tcArt(c, f) || tcArt(c), n: c.n, lab: GX_FIN[f] ? TC_FIN[f][0] : f && TC_FIN[f] ? TC_FIN[f][0] : TC_R[c.r][0], col: GX_FIN[f] || GX_COL[c.r] || "#c9a2ff", open: () => tcView(c, f || undefined)};
+  return {r, card: c, f, img: tcArt(c, f) || tcArt(c), n: c.n, lab: GX_FIN[f] ? TC_FIN[f][0] : f && TC_FIN[f] ? TC_FIN[f][0] : TC_R[c.r][0], col: GX_FIN[f] || GX_COL[c.r] || "#c9a2ff", open: () => tcView(c, f || "")};
 }
 function gxDraw(){
   const byId = new Map(tcCards().map(c => [c.id, c])), rows = GX.rows.map(r => gxItem(r, byId)).filter(Boolean).slice(0, 20);
@@ -15344,10 +15346,10 @@ async function kjProfile(h){ if (!CP.user) return frToast("Connecte-toi à ton c
   const miss = !p.me && p.own ? tcCards().filter(c => (s.own[c.id] || 0) >= 2 && !(p.own[c.id] > 0)).sort((a, b) => rk(b) - rk(a)).slice(0, 12) : [], ver = id => { const f = p.fin && p.fin[id]; return f ? Object.keys(f).sort((a, b) => (TC_FIN[a][2] || 9) - (TC_FIN[b][2] || 9))[0] || "" : ""; };
   box.innerHTML = `<div class="kjf"><div class="st"><span>${esc(p.handle)}</span>${lv ? `<span><b>${lv}</b></span>` : ""}${p.n != null ? `<span><b>${hvN(p.n)}</b> cartes</span>` : ""}${p.ser ? `<span><b>${hvN(p.ser)}</b> cartes de série</span>` : ""}</div>
     ${p.private ? `<p class="hv-note">Ce joueur garde son profil privé.</p>` : !p.own ? `<p class="hv-note">Ce joueur garde sa collection privée.</p>` : ""}
-    ${top.length ? `<h3>Sa vitrine</h3><div class="gr">${top.map(c => `<button data-kjv="${esc(c.id)}">${hvMini(c.id, ver(c.id), 92)}</button>`).join("")}</div>` : ""}
+    ${top.length ? `<h3>Sa vitrine</h3><div class="gr">${top.map(c => `<button data-kjv="${esc(c.id)}" data-kjf="${esc(ver(c.id) || "")}">${hvMini(c.id, ver(c.id), 92)}</button>`).join("")}</div>` : ""}
     ${miss.length ? `<h3>Il lui manque (tes doubles)</h3><div class="gr">${miss.map(c => `<button data-kjg="${esc(c.id)}" aria-label="Proposer ${esc(c.n)}">${hvMini(c.id, "", 76)}</button>`).join("")}</div><p class="hv-note">Touche une carte pour la lui proposer en échange.</p>` : ""}
     ${p.me ? "" : `<div class="hv-row"><button class="ghost" id="kjAdd">Ajouter en ami</button><button class="primary" id="kjTr">Proposer un échange</button></div><p class="err"></p><button class="linkq" id="kjRep">Signaler ce joueur</button>`}</div>`;
-  box.querySelectorAll("[data-kjv]").forEach(b => b.onclick = () => tcView(byId.get(b.dataset.kjv)));
+  box.querySelectorAll("[data-kjv]").forEach(b => b.onclick = () => tcView(byId.get(b.dataset.kjv), b.dataset.kjf || ""))   /* la version affichée dans sa vitrine, pas la nôtre */;
   box.querySelectorAll("[data-kjg]").forEach(b => b.onclick = () => hvNewTrade({to: p.handle, give: {c: b.dataset.kjg, v: ""}}));
   const tr = box.querySelector("#kjTr"); if (tr) tr.onclick = () => hvNewTrade({to: p.handle}); const rp = box.querySelector("#kjRep"); if (rp) rp.onclick = () => hkReport("joueur", p.handle, p.handle);
   const ad = box.querySelector("#kjAdd"); if (ad) ad.onclick = async () => { ad.disabled = true; try { const r = await frsSend(p.handle); frToast(typeof r === "string" ? r : r && (r.ok || r.err) || "Demande envoyée."); } catch { frToast("Demande impossible pour l'instant."); ad.disabled = false; } }; }
