@@ -14904,7 +14904,18 @@ document.addEventListener("contextmenu", e => { if (e.target.closest && !e.targe
     try {
       /* 2 nov. 2026 : le tirage (images, vraie carte, couleurs) est préparé dès l'écran de résultat ; ici on le reprend s'il est prêt */
       const D = await (PREP.O === document.querySelector(".tcopen.res") && PREP.p ? PREP.p : collectReplay()); if (!D){ btn.disabled = false; btn.innerHTML = t0; return share(btn); }
-      const mime = mimeFor(), W = 1080, H = 1920, cv = document.createElement("canvas"); cv.width = W; cv.height = H; const g = cv.getContext("2d");   /* 9:16 pour Reels et TikTok */
+      const W = 1080, H = 1920, cv = document.createElement("canvas"); cv.width = W; cv.height = H; const g = cv.getContext("2d");   /* 9:16 pour Reels et TikTok */
+      const setPc = pc => { pc = Math.min(99, Math.round(pc)); if (pc !== btn.__pc){ btn.__pc = pc; btn.innerHTML = `<i aria-hidden="true">🎬</i><span style="white-space:nowrap">Vidéo ${pc}\u00a0%</span>`; } };
+      const DUR = IV_P + IV_DUR, N = D.items.length, chain = ivChain(ivKey(D.items[0])), PO = IV_P;   /* 2 nov. 2026 : ouverture du sachet puis « Invocation » */
+      /* 2 nov. 2026 : sons refaits — « ting » qui monte pour chaque autre carte, montée de tension jusqu'à la révélation (coupure juste avant), impact */
+      const ev = [[0, () => tcSnd("rustle")], [820, () => tcSnd("charge")], [1330, () => { tcSnd("rip"); SFX.play("pop"); }], [PO + 2000, () => ivRiser((IV_HIT - 2000 - 110) / 1000)], [PO + IV_HIT, () => ivBoom()], [PO + IV_HIT + 1600, () => SFX.play("fanfare")]];
+      for (let j = 0; j < Math.min(6, N - 1); j++){ const jj = j; ev.push([PO + 500 + j * 250, () => ivTing(jj)]); }
+      if (chain.length > 1) IV_UP.slice(0, chain.length - 1).forEach(u => ev.push([PO + u - 240, () => { ivCrack(); try { navigator.vibrate?.(20); } catch {} }]));
+      ev.sort((a, b) => a[0] - b[0]); let ei = 0;
+      /* 2 nov. 2026 : d'abord le nouveau moteur (MP4 standard fabriqué image par image, accepté par TikTok) ; l'enregistrement en direct ne sert plus que de secours */
+      let blob = null, mime = "video/mp4";
+      try { const dr = t => drawVideo(g, D, t, W, H); dr.canvas = cv; blob = await hkMp4({W, H, dur: DUR, draw: dr, sounds: ev, prog: p => setPc(p * 100)}); } catch (e){ try { hkDiag("mp4", e); } catch {} blob = null; }
+      if (!blob){ mime = mimeFor();
       if (!window.MediaRecorder || !cv.captureStream || !mime){ btn.disabled = false; btn.innerHTML = t0; return share(btn); }   // pas d'enregistrement possible ici : on retombe sur l'image
       /* les sons du jeu passent tous par le même moteur (SFX) : pendant l'enregistrement, tout ce qui part vers les haut-parleurs part aussi dans la vidéo */
       const ac = SFX.ac(), wasOn = SFX.on, P = AudioNode.prototype, oc = P.connect; let dest = null;
@@ -14913,25 +14924,19 @@ document.addEventListener("contextmenu", e => { if (e.target.closest && !e.targe
       const stream = new MediaStream([...cv.captureStream(30).getVideoTracks(), ...(dest ? dest.stream.getAudioTracks() : [])]), chunks = []; let rec;
       try { rec = new MediaRecorder(stream, {mimeType: mime, videoBitsPerSecond: 9e6}); } catch { unhook(); btn.disabled = false; btn.innerHTML = t0; return share(btn); }
       rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
-      const DUR = IV_P + IV_DUR, N = D.items.length, chain = ivChain(ivKey(D.items[0])), PO = IV_P;   /* 2 nov. 2026 : ouverture du sachet puis « Invocation » */
-      /* 2 nov. 2026 : sons refaits — « ting » qui monte pour chaque autre carte, montée de tension jusqu'à la révélation (coupure juste avant), impact */
-      const ev = [[0, () => tcSnd("rustle")], [820, () => tcSnd("charge")], [1330, () => { tcSnd("rip"); SFX.play("pop"); }], [PO + 2000, () => ivRiser((IV_HIT - 2000 - 110) / 1000)], [PO + IV_HIT, () => ivBoom()], [PO + IV_HIT + 1600, () => SFX.play("fanfare")]];
-      for (let j = 0; j < Math.min(6, N - 1); j++){ const jj = j; ev.push([PO + 500 + j * 250, () => ivTing(jj)]); }
-      if (chain.length > 1) IV_UP.slice(0, chain.length - 1).forEach(u => ev.push([PO + u - 240, () => { ivCrack(); try { navigator.vibrate?.(20); } catch {} }]));
-      ev.sort((a, b) => a[0] - b[0]); let ei = 0;
       /* 1er nov. 2026 : la piste son ne démarrait qu'au premier bruit puis était collée au début → sons en avance. On la fait tourner dès le départ (souffle inaudible), on attend que l'enregistreur tourne, et l'animation suit l'horloge audio */
       let ka = null; if (dest){ try { await ac.resume(); const o = ac.createOscillator(), kg = ac.createGain(); kg.gain.value = 1e-4; oc.call(o, kg); oc.call(kg, dest); o.start(); ka = o; } catch {} }
       try { drawVideo(g, D, 0, W, H); } catch {}
       await new Promise(r => { rec.onstart = r; rec.start(); setTimeout(r, 1500); }); await new Promise(r => setTimeout(r, 60));
       const clk = () => dest && ac.state === "running" ? ac.currentTime * 1000 : performance.now();
-      try { await new Promise(resolve => { const s0 = clk(), p0 = performance.now(); rec.onstop = resolve; const loop = () => { const ea = clk() - s0, ep = performance.now() - p0, el = ep - ea > 250 ? ep : ea; { const pc = Math.min(99, Math.round(el / DUR * 100)); if (pc !== btn.__pc){ btn.__pc = pc; btn.innerHTML = `<i aria-hidden="true">🎬</i><span style="white-space:nowrap">Vidéo ${pc}\u00a0%</span>`; } }   /* horloge audio en retard (appareil sans sortie son…) : l'animation suit l'horloge normale */ while (ei < ev.length && el >= ev[ei][0]){ try { ev[ei][1](); } catch {} ei++; } try { drawVideo(g, D, el, W, H); } catch (e) { if (!window.__dvErr) console.warn("vidéo", e);  window.__dvErr = String(e && e.stack || e); } if (el < DUR) requestAnimationFrame(loop); else { try { rec.stop(); } catch { resolve(); } } }; requestAnimationFrame(loop); }); } finally { setTimeout(() => { unhook(); try { ka && ka.stop(); } catch {} }, 300); }
-      const ext = mime.indexOf("mp4") >= 0 ? "mp4" : "webm", blob = new Blob(chunks, {type: mime}), file = new File([blob], "hanko-tirage." + ext, {type: mime}), text = "Mon tirage sur Hanko ! Joue avec moi : https://" + D.ref.replace("#", "#").replace(/#parrain=(.*)$/, (m, h) => "#parrain=" + encodeURIComponent(h));
+      try { await new Promise(resolve => { const s0 = clk(), p0 = performance.now(); rec.onstop = resolve; const loop = () => { const ea = clk() - s0, ep = performance.now() - p0, el = ep - ea > 250 ? ep : ea; setPc(el / DUR * 100);   /* horloge audio en retard (appareil sans sortie son…) : l'animation suit l'horloge normale */ while (ei < ev.length && el >= ev[ei][0]){ try { ev[ei][1](); } catch {} ei++; } try { drawVideo(g, D, el, W, H); } catch (e) { if (!window.__dvErr) console.warn("vidéo", e);  window.__dvErr = String(e && e.stack || e); } if (el < DUR) requestAnimationFrame(loop); else { try { rec.stop(); } catch { resolve(); } } }; requestAnimationFrame(loop); }); } finally { setTimeout(() => { unhook(); try { ka && ka.stop(); } catch {} }, 300); }
+      blob = new Blob(chunks, {type: mime}); }
+      const ext = mime.indexOf("mp4") >= 0 ? "mp4" : "webm", file = new File([blob], "hanko-tirage." + ext, {type: mime.split(";")[0]}), text = "Mon tirage sur Hanko ! Joue avec moi : https://" + D.ref.replace("#", "#").replace(/#parrain=(.*)$/, (m, h) => "#parrain=" + encodeURIComponent(h));
       if (navigator.canShare && navigator.canShare({files: [file]})){ try { await navigator.share({files: [file], title: "Mon tirage Hanko", text}); return; } catch (e) { if (e && e.name === "AbortError") return; } }
       const url = URL.createObjectURL(blob), M = document.createElement("div"); M.className = "tcview tcsharebox"; M.style.cssText = "display:grid;place-items:center;align-content:center;overflow:auto;background:rgba(5,5,7,.92)";
       M.innerHTML = `<div style="width:min(100%,460px);padding:16px"><video class="shareimg" src="${url}" autoplay loop muted playsinline controls style="width:100%;max-width:420px;margin:0 auto 12px;border-radius:14px;display:block"></video><p class="small" style="text-align:center;margin:0 0 12px;color:#bbb">Télécharge la vidéo, puis publie-la sur TikTok ou Instagram.</p><div class="row"><a href="${url}" download="hanko-tirage.${ext}" style="border-radius:999px;padding:10px 18px;text-decoration:none;font-weight:700;background:var(--accent);color:#fff">Télécharger la vidéo</a><button class="ghost" id="tcVdX" style="border-radius:999px">Fermer</button></div></div>`;
       document.body.appendChild(M); const close = () => { M.remove(); URL.revokeObjectURL(url); }; M.querySelector("#tcVdX").onclick = close; M.onclick = e => { if (e.target === M) close(); };
-    } catch {} finally { btn.disabled = false; btn.innerHTML = t0; } }
-  /* préparation de la vidéo en tâche de fond dès que l'écran de résultat s'affiche (photo de la vraie carte, moteur 3D chargé) */
+    } catch {} finally { btn.disabled = false; btn.innerHTML = t0; } }  /* préparation de la vidéo en tâche de fond dès que l'écran de résultat s'affiche (photo de la vraie carte, moteur 3D chargé) */
   const PREP = {O: null, p: null};
   const prep = O => { if (PREP.O === O) return; PREP.O = O; PREP.p = null; setTimeout(() => { if (PREP.O !== O || !O.isConnected) return; PREP.p = collectReplay().then(D => { try { if (D && window.THREE && typeof HKInv !== "undefined"){ const c2 = document.createElement("canvas"); c2.width = 54; c2.height = 96; drawInv3D(c2.getContext("2d"), D, 0, 54, 96); } } catch {} return D; }).catch(() => null); }, 1200); };
   // bouton « Partager mon tirage » sous les cartes obtenues
@@ -20874,19 +20879,26 @@ async function tlVideo(T, btn){ const t0 = btn.textContent; btn.disabled = true;
     const lg = await dfImg("data:image/svg+xml;charset=utf-8," + encodeURIComponent(DF_LOGO.replace(/^<div class="dflogo">/, "").replace(/HANKO <em>.*$/, "").replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" ')));
     try { await document.fonts.load("900 60px Unbounded"); } catch {}
     const cv = document.createElement("canvas"); cv.width = 1080; cv.height = 1920; const g = cv.getContext("2d"), DUR = tlFrame(g, 0, T, p, order, im, lg);
-    const mime = ["video/mp4;codecs=avc1.42E01E,mp4a.40.2", "video/mp4;codecs=avc1.42E01E", "video/mp4", "video/webm;codecs=vp9,opus", "video/webm"].find(m => window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m));
+    const snd = k => { try { tcSnd(k); } catch {} };
+    const ST = 900, STEP = 560, ev = [[200, () => snd("rustle")]]; order.forEach((n, i) => { const t1 = ST + i * STEP; ev.push([t1 - 260, () => snd("flip0")], [t1 + 400, () => snd("pop")]); }); ev.push([ST + order.length * STEP + 700, () => { try { SFX.play("fanfare"); } catch {} }]); ev.sort((x, y) => x[0] - y[0]); let ei = 0;
+    const setPc = pc => { pc = Math.min(99, Math.round(pc)); if (pc !== btn.__pc){ btn.__pc = pc; btn.textContent = `Vidéo ${pc}\u00a0%`; } };
+    /* 2 nov. 2026 : MP4 standard fabriqué image par image (accepté par TikTok, plus rapide) ; l'enregistrement en direct reste en secours */
+    let blob = null, mime = "video/mp4";
+    try { const dr = t => tlFrame(g, t, T, p, order, im, lg); dr.canvas = cv; blob = await hkMp4({W: 1080, H: 1920, dur: DUR, draw: dr, sounds: ev, prog: x => setPc(x * 100)}); } catch (e){ try { hkDiag("mp4", e); } catch {} blob = null; }
+    if (!blob){
+    mime = ["video/mp4;codecs=avc1.42E01E,mp4a.40.2", "video/mp4;codecs=avc1.42E01E", "video/mp4", "video/webm;codecs=vp9,opus", "video/webm"].find(m => window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m));
     if (!mime || !cv.captureStream){ btn.disabled = false; btn.textContent = t0; return tlShare(T, btn); }   // enregistrement impossible ici : l'image
     /* 2 nov. 2026 : bruitages dans la vidéo (sélection, envol, placement sur la ligne, fin) : les sons du jeu passent par SFX, on les recopie dans l'enregistrement */
     const ac = SFX.ac(), wasOn = SFX.on, P = AudioNode.prototype, oc = P.connect; let dest = null;
     if (ac && ac.createMediaStreamDestination){ dest = ac.createMediaStreamDestination(); SFX.on = true; P.connect = function(n, ...r){ if (n === ac.destination){ try { oc.call(this, dest); } catch {} return n; } return oc.call(this, n, ...r); };   /* 2 nov. 2026 : pendant l'enregistrement, les sons vont seulement dans la vidéo, plus dans les haut-parleurs */ }
-    const unhook = () => { P.connect = oc; SFX.on = wasOn; }, snd = k => { try { tcSnd(k); } catch {} };
-    const ST = 900, STEP = 560, ev = [[200, () => snd("rustle")]]; order.forEach((n, i) => { const t1 = ST + i * STEP; ev.push([t1 - 260, () => snd("flip0")], [t1 + 400, () => snd("pop")]); }); ev.push([ST + order.length * STEP + 700, () => { try { SFX.play("fanfare"); } catch {} }]); ev.sort((x, y) => x[0] - y[0]); let ei = 0;
+    const unhook = () => { P.connect = oc; SFX.on = wasOn; };
     let ka = null; if (dest){ try { await ac.resume(); const o = ac.createOscillator(), kg = ac.createGain(); kg.gain.value = 1e-4; oc.call(o, kg); oc.call(kg, dest); o.start(); ka = o; } catch {} }
     const rec = new MediaRecorder(new MediaStream([...cv.captureStream(30).getVideoTracks(), ...(dest ? dest.stream.getAudioTracks() : [])]), {mimeType: mime, videoBitsPerSecond: 8e6}), chunks = []; rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
     try { await new Promise(r => { rec.onstart = r; rec.start(); setTimeout(r, 1200); }); await new Promise(r => setTimeout(r, 300));
-      await new Promise(res => { const st = performance.now(); rec.onstop = res; const loop = () => { const el = performance.now() - st; { const pc = Math.min(99, Math.round(el / DUR * 100)); if (pc !== btn.__pc){ btn.__pc = pc; btn.textContent = `Vidéo ${pc}\u00a0%`; } } while (ei < ev.length && el >= ev[ei][0]){ try { ev[ei][1](); } catch {} ei++; } try { tlFrame(g, el, T, p, order, im, lg); } catch {} if (el < DUR) requestAnimationFrame(loop); else { try { rec.stop(); } catch { res(); } } }; requestAnimationFrame(loop); });
+      await new Promise(res => { const st = performance.now(); rec.onstop = res; const loop = () => { const el = performance.now() - st; setPc(el / DUR * 100); while (ei < ev.length && el >= ev[ei][0]){ try { ev[ei][1](); } catch {} ei++; } try { tlFrame(g, el, T, p, order, im, lg); } catch {} if (el < DUR) requestAnimationFrame(loop); else { try { rec.stop(); } catch { res(); } } }; requestAnimationFrame(loop); });
     } finally { setTimeout(() => { unhook(); try { ka && ka.stop(); } catch {} }, 300); }
-    const ext = mime.includes("mp4") ? "mp4" : "webm", blob = new Blob(chunks, {type: mime}), file = new File([blob], "hanko-tier-list." + ext, {type: mime}), text = `Ma tier list du jour sur Hanko : ${T.crit} (${tlUni(T)}). Et toi ? https://` + tlRef().replace(/#parrain=(.*)$/, (m, h) => "#parrain=" + encodeURIComponent(h));
+    blob = new Blob(chunks, {type: mime}); }
+    const ext = mime.includes("mp4") ? "mp4" : "webm", file = new File([blob], "hanko-tier-list." + ext, {type: mime.split(";")[0]}), text = `Ma tier list du jour sur Hanko : ${T.crit} (${tlUni(T)}). Et toi ? https://` + tlRef().replace(/#parrain=(.*)$/, (m, h) => "#parrain=" + encodeURIComponent(h));
     if (navigator.canShare && navigator.canShare({files: [file]})){ try { await navigator.share({files: [file], text}); return; } catch (e) { if (e && e.name === "AbortError") return; } }
     const url = URL.createObjectURL(blob); document.body.insertAdjacentHTML("beforeend", `<div class="dfshm"><div><video src="${url}" autoplay loop muted playsinline controls style="width:100%;border-radius:14px"></video><a class="dfbtn" href="${url}" download="hanko-tier-list.${ext}">Télécharger la vidéo</a><button class="dfbtn g" id="dfShX">Fermer</button></div></div>`);
     const M = document.body.lastElementChild; M.querySelector("#dfShX").onclick = () => { M.remove(); URL.revokeObjectURL(url); }; M.onclick = e => { if (e.target === M){ M.remove(); URL.revokeObjectURL(url); } };
@@ -21257,6 +21269,44 @@ async function hkCardShot(c, f, W = 900){ try {
     const lay = document.createElement("canvas"); lay.width = cv.width; lay.height = cv.height; const g0 = g; { const gl2 = lay.getContext("2d"); for (let k = 0; k < 4; k++){ gl2.clearRect(0, 0, lay.width, lay.height); gl2.drawImage(top, 0, 0, lay.width, lay.height); await wait(k ? 140 : 260); } gl2.clearRect(0, 0, lay.width, lay.height); gl2.drawImage(top, 0, 0, lay.width, lay.height); }
     g0.drawImage(lay, 0, 0); lay.width = lay.height = 0; }
   g.getImageData(0, 0, 1, 1); return cv; } catch (e) { console.warn("carte", e); return null; } }
+/* ===== 2 nov. 2026 : vidéos de partage fabriquées image par image (et non plus filmées en direct) =====
+   Les vidéos filmées par le navigateur (MediaRecorder) sortent sur iPhone en MP4 fragmenté, à cadence variable : lisibles sur le téléphone,
+   mais l'éditeur de TikTok / Reels se fige dessus. Ici : 30 images par seconde exactes, encodées par le téléphone (WebCodecs, H.264),
+   son calculé hors temps réel (OfflineAudioContext, puis AAC), le tout rangé dans un MP4 standard (bibliothèque mp4-muxer).
+   Plus rapide que le temps réel. Renvoie null si l'appareil ne sait pas faire : on garde alors l'ancien enregistrement. */
+let HK_MUX = null;
+const hkMuxLib = () => HK_MUX || (HK_MUX = window.Mp4Muxer ? Promise.resolve(window.Mp4Muxer) : new Promise((ok, ko) => { const s = document.createElement("script"); s.src = "https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/build/mp4-muxer.min.js"; s.onload = () => window.Mp4Muxer ? ok(window.Mp4Muxer) : ko(new Error("mp4-muxer")); s.onerror = () => { HK_MUX = null; ko(new Error("mp4-muxer")); }; document.head.appendChild(s); }));
+async function hkMp4({W, H, dur, draw, sounds = [], prog = () => {}, fps = 30}){
+  if (!window.VideoEncoder || !window.VideoFrame || !window.OfflineAudioContext) return null;
+  const vcodecs = ["avc1.640028", "avc1.4D0028", "avc1.42E028"]; let vc = null;
+  for (const codec of vcodecs){ try { const r = await VideoEncoder.isConfigSupported({codec, width: W, height: H, bitrate: 6e6, framerate: fps}); if (r.supported){ vc = r.config; break; } } catch {} }
+  if (!vc) return null;
+  let M; try { M = await hkMuxLib(); } catch { return null; }
+  /* son : chaque bruitage est joué dans un contexte audio hors ligne dont l'horloge est avancée au moment voulu */
+  let abuf = null, ac2 = null;
+  if (sounds.length && window.AudioEncoder){ try { const SR = 48000; for (const ch of [2, 1]){ const r = await AudioEncoder.isConfigSupported({codec: "mp4a.40.2", sampleRate: SR, numberOfChannels: ch, bitrate: 128000}); if (r.supported){ ac2 = r.config; break; } } } catch {} }
+  if (ac2){ const off = new OfflineAudioContext(ac2.numberOfChannels, Math.ceil(ac2.sampleRate * (dur / 1000 + .3)), ac2.sampleRate); let now = 0;
+    const px = new Proxy(off, {get: (o, k) => { if (k === "currentTime") return now; if (k === "state") return "running"; if (k === "resume") return () => Promise.resolve(); const v = o[k]; return typeof v === "function" ? v.bind(o) : v; }});
+    const ac0 = SFX.ac, on0 = SFX.on; SFX.ac = () => px; SFX.on = true;
+    try { for (const [t, f] of [...sounds].sort((x, y) => x[0] - y[0])){ now = Math.max(0, t / 1000); try { f(); } catch {} } } finally { SFX.ac = ac0; SFX.on = on0; }
+    try { abuf = await off.startRendering(); } catch { abuf = null; } }
+  if (sounds.length && !abuf) try { hkDiag("mp4son", window.AudioEncoder ? "son non rendu" : "AudioEncoder absent : vidéo sans son"); } catch {}
+  const target = new M.ArrayBufferTarget(), mux = new M.Muxer({target, fastStart: "in-memory", firstTimestampBehavior: "offset",
+    video: {codec: "avc", width: W, height: H, frameRate: fps}, ...(abuf ? {audio: {codec: "aac", numberOfChannels: ac2.numberOfChannels, sampleRate: ac2.sampleRate}} : {})});
+  let fail = null; const ve = new VideoEncoder({output: (c, m) => mux.addVideoChunk(c, m), error: e => { fail = e; }});
+  ve.configure({...vc, bitrate: 6e6, framerate: fps, latencyMode: "quality"});
+  const N = Math.ceil(dur / 1000 * fps), cv = draw.canvas;
+  for (let i = 0; i <= N; i++){ if (fail) throw fail; draw(i * 1000 / fps);
+    const fr = new VideoFrame(cv, {timestamp: Math.round(i * 1e6 / fps), duration: Math.round(1e6 / fps)}); ve.encode(fr, {keyFrame: i % fps === 0}); fr.close();
+    if (i % 6 === 0){ prog(i / N * (abuf ? .9 : 1)); await new Promise(r => setTimeout(r, 0)); }
+    while (ve.encodeQueueSize > 4) await new Promise(r => setTimeout(r, 4)); }
+  await ve.flush(); ve.close(); if (fail) throw fail;
+  if (abuf){ let afail = null; const ae = new AudioEncoder({output: (c, m) => mux.addAudioChunk(c, m), error: e => { afail = e; }}); ae.configure(ac2);
+    const n = abuf.length, nc = ac2.numberOfChannels, step = 4096;
+    for (let p0 = 0; p0 < n; p0 += step){ const len = Math.min(step, n - p0), data = new Float32Array(len * nc); for (let c = 0; c < nc; c++) data.set(abuf.getChannelData(Math.min(c, abuf.numberOfChannels - 1)).subarray(p0, p0 + len), c * len);
+      ae.encode(new AudioData({format: "f32-planar", sampleRate: ac2.sampleRate, numberOfFrames: len, numberOfChannels: nc, timestamp: Math.round(p0 / ac2.sampleRate * 1e6), data})); }
+    await ae.flush(); ae.close(); if (afail) throw afail; }
+  mux.finalize(); prog(1); return new Blob([target.buffer], {type: "video/mp4"}); }
 function tcInvGL(c, o, key){ return new Promise(async res => {
   const IVr = HKInv.IV[key], col = `rgb(${IVr.rgb.join(",")})`, lab = (TC_R[tcER(c, c.f)][0] + (c.f && c.f !== "H" ? " · " + TC_FIN[c.f][1] : "")).toUpperCase();
   const im = await new Promise(r => { const i = new Image(); let ok = 0; i.onload = () => { ok = 1; r(i); }; i.onerror = () => r(null); i.src = tcArt(c, c.f); setTimeout(() => !ok && r(i.complete && i.naturalWidth ? i : null), 1200); });
