@@ -11521,6 +11521,8 @@ function tcOddsPct(c, key){ try { const {t} = tcParse(key), R = TC_T[t].rate; le
 function tcCine(c, o = {}){
   return new Promise(res => {
     const sty = c.f === "Z" ? "Z" : c.f === "G" ? "G" : c.f === "K" ? "M" : c.f === "S" ? "S" : c.f === "W" ? "L" : c.r === "X" ? "X" : c.r === "M" ? "M" : c.r === "L" ? "L" : "E", myth = sty !== "L" && sty !== "E", calm = tcCalm(), mini = !!o.mini || (sty === "E" && !o.full);
+    /* 2 nov. 2026 : Épique (grand format), Légendaire, Mythique et Éveil passent par l'Invocation 3D (src/invgl.part) ; les versions spéciales gardent leur cinématique */
+    if (!mini && !calm && window.THREE && /^[ELMX]$/.test(sty) && typeof tcInvGL === "function"){ tcInvGL(c, o, sty).then(res, () => res()); return; }
     try {   /* 19 oct. 2026 : si la cinématique échoue, on la retire et on continue (avant, l'écran restait bloqué) */
     const img = tcArt(c, c.f); document.querySelectorAll(".tccine").forEach(x => x.remove());
     document.body.insertAdjacentHTML("beforeend", `<div class="tccine r-${tcER(c, c.f)} y${sty} ${mini ? "mini" : ""} ${TC_LITE ? "lite" : ""}" role="dialog" aria-modal="true" aria-label="${TC_R[tcER(c, c.f)][0]} : ${esc(c.n)}">
@@ -20940,6 +20942,207 @@ new MutationObserver(() => { const sh = document.querySelector("#nvPk .nvsh>div"
   const s = tcLoad(), n = Object.keys(CT_UP).filter(r => ctCount(s, r) >= CT_N).length;
   sh.querySelector(".nvtb").insertAdjacentHTML("afterend", `<button class="ctgo"><i>契</i><span><b>Contrats de rareté</b><span>10 doublons → 1 carte de la rareté au-dessus</span></span><u>${n ? n + " prêt" + (n > 1 ? "s" : "") : "Voir"}</u></button>`);
   sh.querySelector(".ctgo").onclick = ctOpen; }).observe(document.body, {childList: true, subtree: true});
+</script>
+
+<style>
+/* 2 nov. 2026 : Invocation 3D (src/invgl.part) */
+.tccine.hkinv{display:block;padding:0;background:#05030a;animation:none;gap:0}
+.hkinv .hkst{position:absolute;left:50%;top:50%;width:min(100vw,calc(100dvh * 9 / 16));aspect-ratio:9/16;transform:translate(-50%,-50%);overflow:visible}
+.hkinv .hkc{position:absolute;left:50%;top:45%;width:61.1%;transform:translate(-50%,-50%);perspective:900px;opacity:0;pointer-events:none}
+.hkinv .hkc.on{opacity:1;animation:hkfl 3.8s ease-in-out infinite}
+.hkinv .hkc .tc{width:100%;margin:0;transition:transform .25s ease-out;box-shadow:0 0 0 1px var(--rc),0 0 60px color-mix(in srgb,var(--rc) 60%,transparent),0 30px 60px rgba(0,0,0,.7)}
+@keyframes hkfl{0%,100%{transform:translate(-50%,-50%) rotateY(-5deg)}50%{transform:translate(-50%,calc(-50% - 1.6%)) rotateY(5deg)}}
+</style>
+<script>
+/* ===================================================================================
+   2 nov. 2026 : « Invocation » en vraie 3D (WebGL) pour l'ouverture des boosters (Épique et plus) — même déroulé que la vidéo de partage :
+   socle de sceaux, silhouette qui monte dans le faisceau, fausse piste (violet → or → rouge…), retournement en 3D, kanji, chance.
+   Trois couches : 2D derrière, la carte en WebGL, 2D devant ; après le retournement, la vraie carte du jeu prend la place de la carte 3D.
+   Démo et réglages : data/coffrets/invocation-gl.html (même moteur).
+   =================================================================================== */
+const HKInv = (() => {
+  let T = null, RND = null;
+  const IV = {E: {rgb: [176, 124, 255], kj: "叙事", n: "ÉPIQUE"}, L: {rgb: [255, 201, 58], kj: "伝説", n: "LÉGENDAIRE"}, M: {rgb: [255, 61, 90], kj: "神話", n: "MYTHIQUE"}, X: {rgb: [110, 240, 255], kj: "覚醒", n: "ÉVEIL", rb: true}};
+  const ivChain = k => k === "L" ? ["E", "L"] : k === "M" ? ["E", "L", "M"] : k === "X" ? ["E", "L", "X"] : [k];
+  const ivCol = (k, t, a, j = 0) => IV[k].rb ? `hsla(${(t / 8 + j * 40) % 360},95%,65%,${a})` : `rgba(${IV[k].rgb.join(",")},${a})`;
+  const cl1 = x => Math.max(0, Math.min(1, x)), sg = (t, a, b) => cl1((t - a) / (b - a)), eo3 = x => 1 - Math.pow(1 - cl1(x), 3), backOut = x => 1 + 2.2 * Math.pow(x - 1, 3) + 1.2 * Math.pow(x - 1, 2);
+  const UP = [3000, 3550], HIT = 4100, DUR = 7400, TTL = "Unbounded, system-ui", MONO = '"JetBrains Mono", monospace', KJF = '900 92px "Zen Kaku Gothic New", "Hiragino Sans", sans-serif';
+  const LOGO = new Image(); LOGO.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="200" height="200"><path d="M50 3l40.7 23.5v47L50 97 9.3 73.5v-47z" fill="#ff1e2d"/><path d="M50 12l32.9 19v38L50 88 17.1 69V31z" fill="#120506"/><rect x="31" y="28" width="11" height="44" rx="2.5" fill="#ff1e2d"/><rect x="58" y="28" width="11" height="44" rx="2.5" fill="#ff1e2d"/><path d="M27 60l46-21v10L27 70z" fill="#ff1e2d"/></svg>');
+  const rr = (g, x, y, w, h, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
+  const line = (g, pts) => { g.beginPath(); pts.forEach((p, i) => i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])); g.stroke(); };
+  /* face d'une carte du jeu (illustration, cadre de la couleur de la rareté, nom) */
+  function face(g, c, cx, cy, w, o = {}){ const h = w * 666 / 450; g.save(); g.translate(cx, cy); g.globalAlpha = o.alpha == null ? 1 : o.alpha;
+    if (o.glow){ g.shadowColor = c.col; g.shadowBlur = o.glow; } rr(g, -w / 2, -h / 2, w, h, w * .06); g.fillStyle = c.col; g.fill(); g.shadowBlur = 0;
+    g.save(); rr(g, -w / 2 + w * .025, -h / 2 + w * .025, w * .95, h - w * .05, w * .05); g.clip(); g.fillStyle = "#0e0e12"; g.fillRect(-w / 2, -h / 2, w, h);
+    if (c.img){ const s = Math.max(w / c.img.width, h / c.img.height), iw = c.img.width * s, ih = c.img.height * s; g.drawImage(c.img, -iw / 2, -h / 2 - (ih - h) * .1, iw, ih); }
+    const sh = g.createLinearGradient(0, h * .1, 0, h / 2); sh.addColorStop(0, "transparent"); sh.addColorStop(1, "rgba(0,0,0,.9)"); g.fillStyle = sh; g.fillRect(-w / 2, -h / 2, w, h);
+    g.fillStyle = "#fff"; g.textAlign = "left"; let fs = w * .085 | 0; g.font = `900 ${fs}px ${TTL}`; while (fs > 10 && g.measureText(c.name).width > w * .86){ fs--; g.font = `900 ${fs}px ${TTL}`; } g.fillText(c.name, -w / 2 + w * .07, h / 2 - w * .13);
+    g.fillStyle = c.col; g.font = `700 ${w * .055 | 0}px ${MONO}`; g.fillText(c.lab, -w / 2 + w * .07, h / 2 - w * .06); g.restore(); g.restore(); }
+  const tex = c => { const t = new T.CanvasTexture(c); t.encoding = T.sRGBEncoding; t.anisotropy = 8; return t; };
+  const cnv = (w, h) => { const c = document.createElement("canvas"); c.width = w; c.height = h; return c; };
+
+  function create(host, opt = {}){ T = window.THREE;
+    host.style.position = host.style.position || "relative";
+    const wrap = document.createElement("div"); wrap.style.cssText = "position:absolute;inset:0;transform-origin:50% 50%;will-change:transform"; host.appendChild(wrap);
+    const DPR = Math.min(devicePixelRatio || 1, opt.dpr || 2), mk2 = () => { const c = cnv(540 * DPR, 960 * DPR); c.style.cssText = "position:absolute;inset:0;width:100%;height:100%;pointer-events:none"; wrap.appendChild(c); const g = c.getContext("2d"); return g; };
+    const gB = mk2();
+    if (RND){ let lost = true; try { lost = RND.getContext().isContextLost(); } catch {} if (lost){ try { RND.dispose(); } catch {} RND = null; } } const R = RND = RND || new T.WebGLRenderer({antialias: true, alpha: true, premultipliedAlpha: true}); R.setPixelRatio(DPR); R.setClearColor(0, 0); R.outputEncoding = T.sRGBEncoding; R.domElement.style.cssText = "position:absolute;inset:0;width:100%;height:100%;pointer-events:none"; wrap.appendChild(R.domElement);
+    const gF = mk2();
+    R.setSize(540, 960, false);
+    // caméra calée sur la grille 540 × 960 : à z = 0, une unité = un point de la grille
+    const S = new T.Scene(), cam = new T.PerspectiveCamera(30, 540 / 960, 10, 6000); cam.position.set(0, 0, 480 / Math.tan(15 * Math.PI / 180)); cam.lookAt(0, 0, 0);
+    // la carte : faces en forme de carte arrondie, tranche en volume
+    const CW = 330, CH = CW * 666 / 450, shape = new T.Shape(); { const w = CW, h = CH, r = CW * .06, x = -w / 2, y = -h / 2; shape.moveTo(x + r, y); shape.lineTo(x + w - r, y); shape.quadraticCurveTo(x + w, y, x + w, y + r); shape.lineTo(x + w, y + h - r); shape.quadraticCurveTo(x + w, y + h, x + w - r, y + h); shape.lineTo(x + r, y + h); shape.quadraticCurveTo(x, y + h, x, y + h - r); shape.lineTo(x, y + r); shape.quadraticCurveTo(x, y, x + r, y); }
+    const faceGeo = () => { const g = new T.ShapeGeometry(shape, 12), p = g.attributes.position, uv = g.attributes.uv; for (let i = 0; i < p.count; i++) uv.setXY(i, (p.getX(i) + CW / 2) / CW, (p.getY(i) + CH / 2) / CH); return g; };
+    const DEP = 7, card = new T.Group(); S.add(card);
+    const frontC = cnv(900, 1332), frontT = tex(frontC), backC = cnv(450, 666), backT = tex(backC);
+    const mFront = new T.MeshBasicMaterial({map: frontT}), front = new T.Mesh(faceGeo(), mFront); front.position.z = DEP / 2; card.add(front);
+    const back = new T.Mesh(faceGeo(), new T.MeshBasicMaterial({map: backT})); back.rotation.y = Math.PI; back.position.z = -DEP / 2; card.add(back);
+    const mEdge = new T.MeshBasicMaterial({color: 0xffffff}), edge = new T.Mesh(new T.ExtrudeGeometry(shape, {depth: DEP, bevelEnabled: false, curveSegments: 12}), [new T.MeshBasicMaterial({visible: false}), mEdge]); edge.position.z = -DEP / 2; card.add(edge);
+    // reflet holo discret et reflet de lumière qui suit l'inclinaison
+    const holoC = cnv(512, 512); { const g = holoC.getContext("2d"), gr = g.createLinearGradient(0, 0, 512, 512); ["#ff004000", "#ff0040", "#ffe600", "#00ff88", "#00b3ff", "#b400ff", "#b400ff00"].forEach((c, i, A) => gr.addColorStop(i / (A.length - 1), c)); g.fillStyle = gr; g.fillRect(0, 0, 512, 512); }
+    const holoT = tex(holoC); holoT.wrapS = T.RepeatWrapping; holoT.repeat.set(.5, 1);
+    const holo = new T.Mesh(faceGeo(), new T.MeshBasicMaterial({map: holoT, transparent: true, opacity: 0, blending: T.AdditiveBlending, depthWrite: false})); holo.position.z = DEP / 2 + .3; card.add(holo);
+    const specC = cnv(512, 64); { const g = specC.getContext("2d"), gr = g.createLinearGradient(0, 0, 512, 0); gr.addColorStop(0, "rgba(255,255,255,0)"); gr.addColorStop(.5, "rgba(255,255,255,1)"); gr.addColorStop(1, "rgba(255,255,255,0)"); g.fillStyle = gr; g.fillRect(0, 0, 512, 64); }
+    const specT = tex(specC); specT.repeat.set(.6, 1); const spec = new T.Mesh(faceGeo(), new T.MeshBasicMaterial({map: specT, transparent: true, opacity: 0, blending: T.AdditiveBlending, depthWrite: false})); spec.position.z = DEP / 2 + .4; spec.rotation.z = 0; card.add(spec);
+
+    let D = null, t0 = 0, raf = 0, ev = [], swapped = false, bolt = {u: -1, f: -1, p: null};
+    const boltPts = u => { const f = performance.now() / 45 | 0; if (bolt.u === u && bolt.f === f) return bolt.p; let x = 270, y = 100; const m = [[x, y]]; for (let i = 0; i < 9; i++){ x += (Math.random() - .5) * 70; y += 62; m.push([x, y]); }
+      const br = [2, 4, 6].map(b => { let [xx, yy] = m[b]; const d = b % 4 ? 1 : -1, q = [[xx, yy]]; for (let j = 0; j < 3; j++){ xx += d * (18 + Math.random() * 26); yy += 18 + Math.random() * 24; q.push([xx, yy]); } return q; }); bolt = {u, f, p: [m, ...br]}; return bolt.p; };
+
+    function drawBack(g, t, s){ const {key, kNow, beam, pre, C, pc, sA, Rr} = s;
+      g.setTransform(DPR, 0, 0, DPR, 0, 0); g.globalCompositeOperation = "source-over"; g.globalAlpha = 1; g.fillStyle = "#05030a"; g.fillRect(0, 0, 540, 960);
+      for (let i = 0; i < 3; i++){ const x = 270 + Math.sin(t / 2300 + i * 2.1) * 150, y = 560 + Math.cos(t / 2900 + i * 1.7) * 230, gg = g.createRadialGradient(x, y, 0, x, y, 420); gg.addColorStop(0, i ? C(.06 + beam * .08, i) : C(.12 + beam * .3)); gg.addColorStop(1, "transparent"); g.fillStyle = gg; g.fillRect(0, 0, 540, 960); }
+      if (sA > 0){ g.save(); g.globalAlpha = sA; g.translate(270, 710); g.scale(1, .32);
+        { const sgr = g.createRadialGradient(0, 0, 10, 0, 0, Rr * 1.15); sgr.addColorStop(0, ivCol(kNow, t, .4 + beam * .4)); sgr.addColorStop(1, "transparent"); g.fillStyle = sgr; g.beginPath(); g.arc(0, 0, Rr * 1.15, 0, 6.28); g.fill(); }
+        g.globalCompositeOperation = "lighter";
+        g.save(); g.rotate(t / 3200); g.strokeStyle = ivCol(kNow, t, .35 + beam * .45); g.lineWidth = 2; for (let i = 0; i < 72; i++){ const a = i / 72 * 6.28, r1 = Rr + 12, r2 = Rr + (i % 6 ? 22 : 36); g.beginPath(); g.moveTo(Math.cos(a) * r1, Math.sin(a) * r1); g.lineTo(Math.cos(a) * r2, Math.sin(a) * r2); g.stroke(); } g.restore();
+        for (let j = 0; j < 3; j++){ g.save(); g.rotate((j % 2 ? -1 : 1) * t / (900 + j * 400)); g.strokeStyle = ivCol(kNow, t, .55 + beam * .45, j); g.lineWidth = 3.4 - j * .8; g.shadowColor = ivCol(kNow, t, 1, j); g.shadowBlur = 16; g.beginPath(); g.arc(0, 0, Rr - j * 42, 0, 6.28); g.stroke(); g.shadowBlur = 0;
+          g.font = '900 26px "Zen Kaku Gothic New", "Hiragino Sans", sans-serif'; g.fillStyle = ivCol(kNow, t, .45 + beam * .55, j); const kj = IV[kNow].kj + "召喚" + IV[kNow].kj + "封印"; for (let i = 0; i < 8; i++){ g.save(); g.rotate(i / 8 * 6.28); g.fillText(kj[i % kj.length], -12, -(Rr - j * 42) + 30); g.restore(); } g.restore(); }
+        g.save(); g.rotate(-t / 1500); g.strokeStyle = ivCol(kNow, t, .3 + beam * .5); g.lineWidth = 2.2; const hr = Rr - 128; for (let s2 = 0; s2 < 2; s2++){ g.beginPath(); for (let i = 0; i <= 3; i++){ const a = i / 3 * 6.28 + s2 * Math.PI / 3 - Math.PI / 2; i ? g.lineTo(Math.cos(a) * hr, Math.sin(a) * hr) : g.moveTo(Math.cos(a) * hr, Math.sin(a) * hr); } g.stroke(); } g.restore();
+        if (beam > 0) for (let p = 0; p < 2; p++){ const q = (t / (720 - beam * 320) + p * .5) % 1; g.strokeStyle = ivCol(kNow, t, (1 - q) * .55 * beam); g.lineWidth = 3; g.beginPath(); g.arc(0, 0, 30 + q * (Rr + 50), 0, 6.28); g.stroke(); }
+        g.restore();
+        if (beam > 0){ g.save(); g.globalCompositeOperation = "lighter"; for (let i = 0; i < 16; i++){ const a = i / 16 * 6.28 + t / 1900, x = 270 + Math.cos(a) * Rr, y = 710 + Math.sin(a) * Rr * .32, fr = Math.sin(a) > 0 ? 1 : .45, hg = (110 + (i * 37 % 100)) * beam * (.7 + .3 * Math.sin(t / 110 + i)), lg = g.createLinearGradient(0, y, 0, y - hg);
+          lg.addColorStop(0, ivCol(kNow, t, .6 * fr * sA, i)); lg.addColorStop(1, "transparent"); g.fillStyle = lg; g.fillRect(x - 1.6, y - hg, 3.2, hg); } g.restore(); } }
+      { g.save(); g.globalCompositeOperation = "lighter"; const fade = t < HIT ? 1 : 1 - sg(t, HIT, HIT + 500), cyS = 595 - eo3(beam) * 210;
+        for (let i = 0; i < 72; i++){ const sp = .6 + (i * 53 % 10) / 10, p = (t / 1600 * sp + i * .137) % 1, ang = i * 2.4 + t / 900 * sp, rad = (50 + (i * 97 % 190)) * (1 - p * .5);
+          let x = 270 + Math.cos(ang) * rad, y = 750 - p * 700; x += (270 - x) * pre * .85; y += (cyS - y) * pre * .85;
+          const z = .55 + (i * 31 % 10) / 10 * .9, a = (1 - p * .8) * (.22 + beam * .78) * fade; if (a < .02) continue;
+          g.fillStyle = C(a * .22, i % 6); g.beginPath(); g.arc(x, y, 4.5 * z, 0, 6.28); g.fill(); g.fillStyle = C(a, i % 6); g.beginPath(); g.arc(x, y, 1.4 * z, 0, 6.28); g.fill(); } g.restore(); }
+      if (D.others && D.others.length){ const n = Math.min(4, D.others.length), cw = 104, gap = cw + 12, x0 = 270 - (n - 1) * gap / 2;
+        for (let j = 0; j < n; j++){ const a = sg(t, 500 + j * 250, 800 + j * 250), out = sg(t, 2300, 2700); if (a <= 0 || out >= 1) continue; face(g, D.others[j], x0 + j * gap, 160 + (1 - eo3(a)) * -60, cw, {alpha: a * (1 - out), glow: 12}); } }
+      if (beam > 0 && t < HIT + 500){ const bw = 40 + beam * 170, bA = 1 - sg(t, HIT, HIT + 500); g.save(); g.globalAlpha = bA; g.globalCompositeOperation = "screen";
+        let gr = g.createLinearGradient(270 - bw, 0, 270 + bw, 0); gr.addColorStop(0, "transparent"); gr.addColorStop(.5, ivCol(kNow, t, .22 + beam * .55)); gr.addColorStop(1, "transparent"); g.fillStyle = gr; g.fillRect(0, 0, 540, 730);
+        g.globalCompositeOperation = "lighter"; const cw = 5 + beam * 16; gr = g.createLinearGradient(270 - cw, 0, 270 + cw, 0); gr.addColorStop(0, "transparent"); gr.addColorStop(.5, `rgba(255,255,255,${.1 + beam * .35})`); gr.addColorStop(1, "transparent"); g.fillStyle = gr; g.fillRect(270 - cw, 0, cw * 2, 730);
+        for (let i = 0; i < 7; i++){ const x = 270 + Math.sin(t / 95 + i * 7.3) * bw * .55; g.fillStyle = ivCol(kNow, t, .1 * beam, i); g.fillRect(x - 1, 0, 2, 730); } g.restore(); }
+      // lueur derrière la carte (la carte elle-même est en WebGL)
+      if (t < HIT && beam > 0){ const {cy, sw, hb} = s.sil, sh = sw * 666 / 450; g.save(); g.globalAlpha = beam; g.shadowColor = ivCol(kNow, t, 1); g.shadowBlur = 40 + beam * 60 + hb * 35; rr(g, 270 - sw / 2, cy - sh / 2, sw, sh, sw * .06); g.fillStyle = "#000"; g.fill(); g.restore(); }
+      if (t >= HIT){ const cy = s.cy;
+        { const ra = eo3(sg(t, HIT, HIT + 260)) * (1 - sg(t, HIT + 300, HIT + 2400) * .65); g.save(); g.globalCompositeOperation = "lighter"; g.translate(270, cy); g.rotate(t / 4200);
+          for (let i = 0; i < 16; i++){ g.rotate(6.28 / 16); const Lr = 560, w = i % 2 ? .045 : .085, lg = g.createLinearGradient(0, 0, 0, -Lr); lg.addColorStop(0, pc(i, .32 * ra)); lg.addColorStop(1, "transparent"); g.fillStyle = lg; g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.tan(w) * Lr, -Lr); g.lineTo(-Math.tan(w) * Lr, -Lr); g.closePath(); g.fill(); } g.restore(); }
+        { const hg = g.createRadialGradient(270, cy, 30, 270, cy, 360); hg.addColorStop(0, pc(0, .5)); hg.addColorStop(.5, pc(1, .16)); hg.addColorStop(1, "transparent"); g.fillStyle = hg; g.fillRect(0, 0, 540, 960); }
+        { const q = sg(t, HIT, HIT + 800); if (q < 1){ g.save(); g.translate(270, 710); g.scale(1, .3); g.strokeStyle = pc(0, (1 - q) * .8); g.lineWidth = 10 * (1 - q) + 1; g.beginPath(); g.arc(0, 0, 60 + eo3(q) * 420, 0, 6.28); g.stroke(); g.restore(); } }
+        { const w = s.cw * Math.max(.05, Math.abs(Math.cos(card.rotation.y))), h = s.cw * 666 / 450; g.save(); g.shadowColor = D.card.col; g.shadowBlur = 60; rr(g, 270 - w / 2, cy - h / 2, w, h, 18); g.fillStyle = "#000"; g.fill(); g.restore(); } } }
+
+    function drawFront(g, t, s){ const {key, kNow, crF, cu, pc} = s;
+      g.setTransform(DPR, 0, 0, DPR, 0, 0); g.clearRect(0, 0, 540, 960); g.globalCompositeOperation = "source-over"; g.globalAlpha = 1;
+      if (crF > 0){ g.save(); g.globalCompositeOperation = "screen"; g.fillStyle = ivCol(kNow, t, .45 * crF); g.fillRect(-30, -30, 600, 1020); g.globalCompositeOperation = "lighter"; g.lineCap = g.lineJoin = "round"; const L = boltPts(cu);
+        for (const [lw, c] of [[16, ivCol(kNow, t, .25 * crF)], [7, ivCol(kNow, t, .6 * crF)], [2.6, `rgba(255,255,255,${crF})`]]){ g.strokeStyle = c; L.forEach((pts, i) => { g.lineWidth = i ? lw * .6 : lw; line(g, pts); }); } g.restore(); }
+      if (t >= HIT){ const r = sg(t, HIT, HIT + 400), f = 1 - sg(t, HIT, HIT + 230), cy = s.cy;
+        g.save(); g.globalCompositeOperation = "lighter"; g.strokeStyle = pc(0, 1 - r); g.lineWidth = 14 * (1 - r) + 1; g.beginPath(); g.arc(270, cy, 40 + eo3(r) * 520, 0, 6.28); g.stroke(); const r2 = sg(t, HIT + 70, HIT + 520); g.strokeStyle = pc(2, (1 - r2) * .7); g.lineWidth = 6 * (1 - r2) + 1; g.beginPath(); g.arc(270, cy, 20 + eo3(r2) * 400, 0, 6.28); g.stroke();
+        const q = (t - HIT) / 1000; if (q < 1.6){ g.lineCap = "round"; for (let i = 0; i < 48; i++){ const a0 = i * 2.39996, v = 240 + (i * 71 % 10) * 48, vx = Math.cos(a0) * v, vy = Math.sin(a0) * v - 140, P = s2 => [270 + vx * s2, cy + vy * s2 + 420 * s2 * s2], q0 = Math.max(0, q - .05), al = 1 - q / 1.6;
+          g.strokeStyle = pc(i, al); g.lineWidth = i % 3 ? 2 : 3.2; g.beginPath(); g.moveTo(...P(q0)); g.lineTo(...P(q)); g.stroke(); } }
+        { const fa = 1 - sg(t, HIT, HIT + 750); if (fa > 0){ let lg = g.createLinearGradient(0, 0, 540, 0); lg.addColorStop(0, "transparent"); lg.addColorStop(.5, pc(0, .4 * fa)); lg.addColorStop(1, "transparent"); g.fillStyle = lg; g.fillRect(-40, cy - 22 * fa, 620, 44 * fa);
+          lg = g.createLinearGradient(0, 0, 540, 0); lg.addColorStop(0, "transparent"); lg.addColorStop(.5, `rgba(255,255,255,${.95 * fa})`); lg.addColorStop(1, "transparent"); g.fillStyle = lg; g.fillRect(-40, cy - 2.5 * fa - .5, 620, 5 * fa + 1); } }
+        g.restore();
+        { const kk = sg(t, HIT + 50, HIT + 300), sc = 2.6 - eo3(kk) * 1.6, dx = (1 - eo3(sg(t, HIT + 50, HIT + 650))) * 9, ka = .92 * eo3(kk) * (1 - sg(t, 6000, 6600) * .6);
+          g.save(); g.translate(270, 82); g.scale(sc, sc); g.font = KJF; g.textAlign = "center";
+          if (dx > .3){ g.globalCompositeOperation = "lighter"; g.globalAlpha = ka * .7; g.fillStyle = "#ff2040"; g.fillText(IV[key].kj, -dx / sc, 34); g.fillStyle = "#20d8ff"; g.fillText(IV[key].kj, dx / sc, 34); g.globalCompositeOperation = "source-over"; }
+          g.globalAlpha = ka; g.fillStyle = "#fff"; g.shadowColor = ivCol(key, t, 1); g.shadowBlur = 30; g.fillText(IV[key].kj, 0, 34); g.restore(); }
+        if (f > 0){ g.fillStyle = `rgba(255,255,255,${f})`; g.fillRect(-60, -60, 660, 1080); }
+        const a1 = sg(t, HIT + 600, HIT + 1100), a2 = sg(t, HIT + 1500, HIT + 2000), p = D.odds; g.textAlign = "center";
+        if (a1 > 0){ g.save(); g.globalAlpha = a1; g.translate(0, (1 - eo3(a1)) * 20); g.fillStyle = ivCol(key, t, 1); g.font = `900 30px ${TTL}`; g.fillText(D.label || IV[key].n, 270, 718);
+          if (p != null){ const pt = p >= 10 ? p.toFixed(0) : p >= 1 ? p.toFixed(1).replace(".", ",") : p.toFixed(2).replace(".", ","); g.fillStyle = "#fff"; g.font = `700 18px ${MONO}`; g.fillText((D.pre || "") + `${pt} % DE CHANCE`, 270, 748); g.fillStyle = "#ffd9dc"; g.font = `700 15px ${MONO}`; g.fillText(`1 CHANCE SUR ${Math.max(2, Math.round(100 / p)).toLocaleString("fr-FR")} DANS CE BOOSTER`, 270, 772); } g.restore(); }
+        if (D.cta && a2 > 0){ g.save(); g.globalAlpha = a2; g.translate(0, 14 + (1 - eo3(a2)) * 30); rr(g, 50, 790, 440, 128, 22); g.fillStyle = "rgba(255,30,45,.16)"; g.fill(); g.strokeStyle = "rgba(255,30,45,.65)"; g.lineWidth = 2; g.stroke();
+          if (LOGO.complete) g.drawImage(LOGO, 76, 812, 46, 46); g.textAlign = "left"; g.fillStyle = "#fff"; g.font = `900 26px ${TTL}`; g.fillText("Joue gratuitement", 134, 834); g.fillStyle = "#ffb3b8"; g.font = `800 17px ${TTL}`; g.fillText("sur Hanko · Anime TCG", 134, 860);
+          g.textAlign = "center"; g.fillStyle = "#fff"; g.font = `700 15px ${MONO}`; g.fillText(D.cta, 270, 898); g.fillStyle = "#ffb3b8"; g.font = `700 12px ${MONO}`; g.fillText("MON LIEN PARRAIN · 3 BOOSTERS OFFERTS", 270, 912); g.restore(); }
+        if (!D.cta && a2 > 0){ g.save(); g.globalAlpha = a2 * (.55 + .45 * Math.sin(t / 260)); g.fillStyle = "#cfcbd6"; g.font = `700 14px ${MONO}`; g.fillText("TOUCHE POUR CONTINUER", 270, 900); g.restore(); } }
+      const vg = g.createRadialGradient(270, 470, 260, 270, 470, 640); vg.addColorStop(0, "transparent"); vg.addColorStop(1, "rgba(0,0,0,.55)"); g.fillStyle = vg; g.fillRect(0, 0, 540, 960); }
+
+    /* dos de la silhouette : noir, lueur intérieure, logo qui bat, contour de lumière qui tourne */
+    function paintBack(t, kNow, beam, hb){ const g = backC.getContext("2d"), w = 450, h = 666; g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, w, h); g.translate(w / 2, h / 2);
+      rr(g, -w / 2, -h / 2, w, h, w * .06); g.fillStyle = "#000"; g.fill(); const ig = g.createRadialGradient(0, 0, 0, 0, 0, w * .6); ig.addColorStop(0, ivCol(kNow, t, .08 + hb * .22)); ig.addColorStop(1, "transparent"); g.fillStyle = ig; g.fill();
+      if (LOGO.complete){ g.globalAlpha = .18 + hb * .55; g.drawImage(LOGO, -w * .19, -w * .19, w * .38, w * .38); g.globalAlpha = 1; }
+      let st = "#fff"; if (g.createConicGradient){ const cg = g.createConicGradient(t / 260, 0, 0); cg.addColorStop(0, "#fff"); cg.addColorStop(.12, ivCol(kNow, t, 1)); cg.addColorStop(.5, ivCol(kNow, t, .3)); cg.addColorStop(.88, ivCol(kNow, t, 1)); cg.addColorStop(1, "#fff"); st = cg; }
+      g.strokeStyle = st; g.lineWidth = (3 + hb * 2) * 450 / 270; rr(g, -w / 2 + 3, -h / 2 + 3, w - 6, h - 6, w * .06); g.stroke(); backT.needsUpdate = true; }
+
+    function frame(now){ raf = requestAnimationFrame(frame); if (!D) return; let t = now - t0 + (D.start || 0); if (t > DUR + 600){ if (D.loop){ t0 = now; t = D.start || 0; ev.forEach(e => e.done = true); } else t = DUR; }
+      ev.forEach(e => { if (!e.done && t >= e[0]){ e.done = true; try { e[1](); } catch {} } });
+      const key = D.key, chain = ivChain(key), pal = D.pal || [IV[key].rgb], stg = t < UP[0] ? 0 : t < UP[1] ? 1 : 2, kNow = chain[Math.min(stg, chain.length - 1)], pc = (j, a) => { const c = pal[j % pal.length]; return `rgba(${c[0]},${c[1]},${c[2]},${a})`; };
+      const C = (a, j = 0) => t < HIT ? ivCol(kNow, t, a, j) : pc(j, a), beam = sg(t, 2300, HIT), pre = t < HIT ? eo3(sg(t, HIT - 260, HIT)) : 0, punch = t >= HIT ? 1 - eo3(sg(t, HIT, HIT + 550)) : 0;
+      const ups = UP.slice(0, chain.length - 1), cu = ups.find(u => t >= u && t < u + 260 && t < HIT), crF = cu == null ? 0 : 1 - sg(t, cu, cu + 260);
+      const sA = 1 - sg(t, HIT + 200, HIT + 900), Rr = 210 * (.6 + eo3(t / 900) * .4);
+      const sil = {cy: 595 - eo3(beam) * 210, sw: (250 + beam * 40) * (1 - pre * .05), hb: Math.pow(Math.max(0, Math.sin(t * (.004 + beam * beam * .016))), 10)};
+      const r = sg(t, HIT, HIT + 400), cw = 330 * (1.25 - eo3(r) * .25), cy = 432 + Math.sin(t / 380) * 8;
+      const s = {key, kNow, beam, pre, C, pc, sA, Rr, crF, cu, sil, cw, cy};
+      // la carte en 3D
+      if (t < HIT){ card.visible = beam > 0; paintBack(t, kNow, beam, sil.hb); const sc = sil.sw / CW; card.scale.set(sc, sc, 1); card.position.set(0, 480 - sil.cy, 0);
+        card.rotation.set(Math.sin(t / 700) * .05 * beam, Math.PI + Math.sin(t / 610) * .16 * beam, Math.sin(t / 420) * .022 * beam); mEdge.color.setStyle(ivCol(kNow, t, 1).replace(/,[^,]*\)$/, ")").replace("rgba", "rgb").replace("hsla", "hsl")); holo.material.opacity = 0; spec.material.opacity = 0; }
+      else { if (D.onSwap && t >= HIT + 430){ if (!swapped){ swapped = true; try { D.onSwap(); } catch {} } } card.visible = !(D.onSwap && swapped); const fl = sg(t, HIT, HIT + 420), idle = sg(t, HIT + 420, HIT + 1000), tilt = Math.sin((t - HIT) / 950) * idle, sc = cw / CW;
+        card.scale.set(sc, sc, 1); card.position.set(0, 480 - cy, 0); card.rotation.set(Math.sin((t - HIT) / 1300) * .07 * idle, Math.PI * (1 - backOut(fl)) + tilt * .26, -tilt * .02);
+        mEdge.color.setStyle(D.card.col); holo.material.opacity = .14 * idle; holoT.offset.x = ((t - HIT) / 2600) % 2; spec.material.opacity = .16 * idle; specT.offset.x = -.2 - tilt * .45; }
+      drawBack(gB, t, s); R.render(S, cam); drawFront(gF, t, s);
+      // tremblement et coups de zoom sur l'ensemble
+      const sh = beam * 1.8 + crF * 4.5 + punch * 8, zs = 1 + punch * .07 + crF * .025 - pre * .025, k = host.clientWidth / 540;
+      wrap.style.transform = `translate(${((Math.random() - .5) * sh * k).toFixed(2)}px,${((Math.random() - .5) * sh * k).toFixed(2)}px) scale(${zs.toFixed(4)})`; }
+
+    function play(data, sounds){ D = data; t0 = performance.now(); swapped = false; ev = (sounds || []).map(e => Object.assign([...e], {done: false}));
+      const g = frontC.getContext("2d"); g.clearRect(0, 0, 900, 1332); face(g, D.card, 450, 666, 900); frontT.needsUpdate = true; if (!raf) raf = requestAnimationFrame(frame); }
+    const skip = () => { if (!D) return; const t = performance.now() - t0 + (D.start || 0); if (t < HIT - 50){ t0 -= HIT - 50 - t; ev.forEach(e => { if (e[0] < HIT - 50) e.done = true; }); return true; } return false; };
+    const stop = () => { cancelAnimationFrame(raf); raf = 0; D = null; try { [frontT, backT, holoT, specT].forEach(x => x.dispose()); card.traverse(o => o.geometry && o.geometry.dispose()); } catch {} wrap.remove(); };
+    return {play, skip, stop, wrap, front: gF.canvas, time: () => D ? performance.now() - t0 + (D.start || 0) : 0, frameAt: t => { t0 = performance.now() - t + (D.start || 0); frame(performance.now()); cancelAnimationFrame(raf); raf = requestAnimationFrame(frame); }};
+  }
+  return {create, IV, ivChain, UP, HIT, DUR};
+})();
+
+/* sons : éclat de la fausse piste et impact de la révélation (mêmes que la vidéo de partage), montée de tension du jeu (tcRiser) */
+const hkA = () => { try { return SFX.on ? SFX.ac() : null; } catch { return null; } };
+const hkNoise = (a, d) => { const b = a.createBuffer(1, Math.max(1, a.sampleRate * d | 0), a.sampleRate), c = b.getChannelData(0); for (let i = 0; i < c.length; i++) c[i] = Math.random() * 2 - 1; const s2 = a.createBufferSource(); s2.buffer = b; return s2; };
+function hkCrack(){ const a = hkA(); if (!a) return; const t = a.currentTime, out = a.createGain(); out.gain.value = .8; out.connect(a.destination);
+  const n = hkNoise(a, .35), hp = a.createBiquadFilter(), g = a.createGain(); hp.type = "bandpass"; hp.Q.value = 3; hp.frequency.setValueAtTime(800, t); hp.frequency.exponentialRampToValueAtTime(9000, t + .3); g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.5, t + .25); g.gain.exponentialRampToValueAtTime(.0001, t + .34); n.connect(hp).connect(g).connect(out); n.start(t);
+  for (const f of [1568, 2349, 3136]){ const o = a.createOscillator(), og = a.createGain(); o.type = "square"; o.frequency.value = f; og.gain.setValueAtTime(.05, t + .24); og.gain.exponentialRampToValueAtTime(.0001, t + .7); o.connect(og).connect(out); o.start(t + .24); o.stop(t + .72); } }
+function hkBoom(){ const a = hkA(); if (!a) return; const t = a.currentTime, out = a.createGain(), cmp = a.createDynamicsCompressor(); out.gain.value = 1.65; cmp.threshold.value = -6; cmp.ratio.value = 8; cmp.attack.value = .002; out.connect(cmp).connect(a.destination);
+  const s1 = a.createOscillator(), sg1 = a.createGain(); s1.frequency.setValueAtTime(110, t); s1.frequency.exponentialRampToValueAtTime(32, t + 1.1); sg1.gain.setValueAtTime(.7, t); sg1.gain.exponentialRampToValueAtTime(.0001, t + 1.4); s1.connect(sg1).connect(out); s1.start(t); s1.stop(t + 1.45);
+  const n = hkNoise(a, 1.8), hp = a.createBiquadFilter(), ng = a.createGain(); hp.type = "highpass"; hp.frequency.value = 3500; ng.gain.setValueAtTime(.32, t); ng.gain.exponentialRampToValueAtTime(.0001, t + 1.7); n.connect(hp).connect(ng).connect(out); n.start(t);
+  [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => { const o = a.createOscillator(), og = a.createGain(); o.type = i % 2 ? "triangle" : "sine"; o.frequency.value = f; og.gain.setValueAtTime(.0001, t + .05); og.gain.exponentialRampToValueAtTime(.08, t + .12); og.gain.exponentialRampToValueAtTime(.0001, t + 2.4); o.connect(og).connect(out); o.start(t + .05); o.stop(t + 2.45); }); }
+/* palette de l'illustration (3 couleurs vives) pour les particules, rayons et ondes de la révélation */
+function hkPal(im){ const pal = []; try { const c = document.createElement("canvas"); c.width = 12; c.height = 18; const x = c.getContext("2d"); x.drawImage(im, 0, 0, 12, 18); const d = x.getImageData(0, 0, 12, 18).data, P = [];
+  for (let i = 0; i < d.length; i += 4){ const r = d[i], g2 = d[i + 1], b = d[i + 2], mx = Math.max(r, g2, b), mn = Math.min(r, g2, b); if (mx > 90 && mx - mn > 60) P.push([mx - mn + mx * .3, r, g2, b]); }
+  P.sort((a, b) => b[0] - a[0]); for (const q of P){ if (pal.every(c2 => Math.abs(c2[0] - q[1]) + Math.abs(c2[1] - q[2]) + Math.abs(c2[2] - q[3]) > 120)) pal.push([q[1], q[2], q[3]]); if (pal.length >= 3) break; } } catch {} return pal; }
+/* la cinématique en jeu ; renvoie une promesse résolue quand le joueur ferme (comme tcCine) */
+function tcInvGL(c, o, key){ return new Promise(async res => {
+  const IVr = HKInv.IV[key], col = `rgb(${IVr.rgb.join(",")})`, lab = (TC_R[tcER(c, c.f)][0] + (c.f && c.f !== "H" ? " · " + TC_FIN[c.f][1] : "")).toUpperCase();
+  const im = await new Promise(r => { const i = new Image(); let ok = 0; i.onload = () => { ok = 1; r(i); }; i.onerror = () => r(null); i.src = tcArt(c, c.f); setTimeout(() => !ok && r(i.complete && i.naturalWidth ? i : null), 1200); });
+  document.querySelectorAll(".tccine").forEach(x => x.remove());
+  document.body.insertAdjacentHTML("beforeend", `<div class="tccine hkinv" role="dialog" aria-modal="true" aria-label="${TC_R[tcER(c, c.f)][0]} : ${esc(c.n)}"><div class="hkst"></div></div>`);
+  const el = document.body.lastElementChild, st = el.querySelector(".hkst"); let inv = null, done = false, swapAt = 0;
+  const close = () => { if (done) return; done = true; try { riseOff(); inv && inv.stop(); } catch {} el.remove(); res(); };
+  let riseOff = () => {};
+  try {
+    inv = HKInv.create(st, {dpr: TC_LITE ? 1.5 : 2});
+    const cw = document.createElement("div"); cw.className = "hkc"; cw.innerHTML = tcCard(c, {isNew: c.isNew, newFin: c.newFin, f: c.f}); inv.wrap.insertBefore(cw, inv.front);
+    const chain = HKInv.ivChain(key), p = tcOddsPct(c, o.key), vib = v => { try { navigator.vibrate?.(v); } catch {} };
+    const ev = [[2000, () => { riseOff = tcRiser((HKInv.HIT - 2000 - 60) / 1000, key === "E" ? 1.05 : 1.25); }], [HKInv.HIT, () => { riseOff(); hkBoom(); vib(key === "E" || key === "L" ? [50, 30, 120] : [60, 40, 60, 40, 180]); }]];
+    HKInv.UP.slice(0, chain.length - 1).forEach(u => ev.push([u - 240, () => { hkCrack(); vib(25); }]));
+    inv.play({key, card: {img: im, name: c.n, lab, col}, pal: (im && hkPal(im)) || [IVr.rgb], odds: p, label: lab, pre: c.isNew ? "NOUVELLE CARTE · " : c.newFin ? "NOUVELLE VERSION · " : "", start: 1700,
+      onSwap: () => { swapAt = Date.now(); cw.classList.add("on"); }}, ev);
+    // la vraie carte suit le doigt (inclinaison), comme avant
+    el.onpointermove = e => { if (!swapAt) return; const t = cw.querySelector(".tc"); if (!t) return; const r = t.getBoundingClientRect(), x = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)), y = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
+      t.style.transform = `rotateY(${((x - .5) * 30).toFixed(1)}deg) rotateX(${((.5 - y) * 22).toFixed(1)}deg)`; t.classList.add("hl"); t.style.setProperty("--px", (x * 100).toFixed(1) + "%"); t.style.setProperty("--py", (y * 100).toFixed(1) + "%"); };
+    el.addEventListener("touchmove", e => e.preventDefault(), {passive: false});
+    el.onclick = () => { if (inv.skip()){ riseOff(); return; } if (swapAt && Date.now() - swapAt > 900) close(); };
+  } catch (e){ console.warn(e); close(); }
+}); }
 </script>
 
 </body>
