@@ -20950,7 +20950,8 @@ new MutationObserver(() => { const sh = document.querySelector("#nvPk .nvsh>div"
 .hkinv .hkst{position:absolute;left:50%;top:50%;width:min(100vw,calc(100dvh * 9 / 16));aspect-ratio:9/16;transform:translate(-50%,-50%);overflow:visible}
 .hkinv .hkc{position:absolute;left:50%;top:45%;width:61.1%;transform:translate(-50%,-50%);perspective:900px;opacity:0;pointer-events:none}
 .hkinv .hkc.on{opacity:1;animation:hkfl 3.8s ease-in-out infinite}
-.hkinv .hkc .tc{width:100%;margin:0;transition:transform .25s ease-out;box-shadow:0 0 0 1px var(--rc),0 0 60px color-mix(in srgb,var(--rc) 60%,transparent),0 30px 60px rgba(0,0,0,.7)}
+.hkinv .hkc .tc,.hkinv .hkc .tc.hlon:not(.no){animation:none;filter:drop-shadow(0 0 1px var(--rc))}
+.hkinv .hkc .tc{width:100%;margin:0;transition:transform .25s ease-out;box-shadow:0 0 0 1px var(--rc),0 0 6px color-mix(in srgb,var(--rc) 25%,transparent),0 30px 60px rgba(0,0,0,.7)}
 @keyframes hkfl{0%,100%{transform:translate(-50%,-50%) rotateY(-5deg)}50%{transform:translate(-50%,calc(-50% - 1.6%)) rotateY(5deg)}}
 </style>
 <script>
@@ -21036,13 +21037,13 @@ const HKInv = (() => {
         g.globalCompositeOperation = "lighter"; const cw = 5 + beam * 16; gr = g.createLinearGradient(270 - cw, 0, 270 + cw, 0); gr.addColorStop(0, "transparent"); gr.addColorStop(.5, `rgba(255,255,255,${.1 + beam * .35})`); gr.addColorStop(1, "transparent"); g.fillStyle = gr; g.fillRect(270 - cw, 0, cw * 2, 730);
         for (let i = 0; i < 7; i++){ const x = 270 + Math.sin(t / 95 + i * 7.3) * bw * .55; g.fillStyle = ivCol(kNow, t, .1 * beam, i); g.fillRect(x - 1, 0, 2, 730); } g.restore(); }
       // lueur derrière la carte (la carte elle-même est en WebGL)
-      if (t < HIT && beam > 0){ const {cy, sw, hb} = s.sil, sh = sw * 666 / 450; g.save(); g.globalAlpha = beam; g.shadowColor = ivCol(kNow, t, 1); g.shadowBlur = 40 + beam * 60 + hb * 35; rr(g, 270 - sw / 2, cy - sh / 2, sw, sh, sw * .06); g.fillStyle = "#000"; g.fill(); g.restore(); }
+      if (t < HIT && beam > 0){ const {cy, sw, hb} = s.sil, sh = sw * 666 / 450; g.save(); g.globalAlpha = beam; g.shadowColor = ivCol(kNow, t, 1); g.shadowBlur = 16 + beam * 24 + hb * 14; rr(g, 270 - sw / 2, cy - sh / 2, sw, sh, sw * .06); g.fillStyle = "#000"; g.fill(); g.restore(); }
       if (t >= HIT){ const cy = s.cy;
         { const ra = eo3(sg(t, HIT, HIT + 260)) * (1 - sg(t, HIT + 300, HIT + 2400) * .65); g.save(); g.globalCompositeOperation = "lighter"; g.translate(270, cy); g.rotate(t / 4200);
           for (let i = 0; i < 16; i++){ g.rotate(6.28 / 16); const Lr = 560, w = i % 2 ? .045 : .085, lg = g.createLinearGradient(0, 0, 0, -Lr); lg.addColorStop(0, pc(i, .32 * ra)); lg.addColorStop(1, "transparent"); g.fillStyle = lg; g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.tan(w) * Lr, -Lr); g.lineTo(-Math.tan(w) * Lr, -Lr); g.closePath(); g.fill(); } g.restore(); }
-        { const hg = g.createRadialGradient(270, cy, 30, 270, cy, 360); hg.addColorStop(0, pc(0, .5)); hg.addColorStop(.5, pc(1, .16)); hg.addColorStop(1, "transparent"); g.fillStyle = hg; g.fillRect(0, 0, 540, 960); }
+        { const hg = g.createRadialGradient(270, cy, 30, 270, cy, 360); hg.addColorStop(0, pc(0, .32)); hg.addColorStop(.5, pc(1, .1)); hg.addColorStop(1, "transparent"); g.fillStyle = hg; g.fillRect(0, 0, 540, 960); }
         { const q = sg(t, HIT, HIT + 800); if (q < 1){ g.save(); g.translate(270, 710); g.scale(1, .3); g.strokeStyle = pc(0, (1 - q) * .8); g.lineWidth = 10 * (1 - q) + 1; g.beginPath(); g.arc(0, 0, 60 + eo3(q) * 420, 0, 6.28); g.stroke(); g.restore(); } }
-        { const w = s.cw * Math.max(.05, Math.abs(Math.cos(card.rotation.y))), h = s.cw * 666 / 450; g.save(); g.shadowColor = D.card.col; g.shadowBlur = 60; rr(g, 270 - w / 2, cy - h / 2, w, h, 18); g.fillStyle = "#000"; g.fill(); g.restore(); } } }
+        if (!swapped){ const w = s.cw * Math.max(.05, Math.abs(Math.cos(card.rotation.y))), h = s.cw * 666 / 450; g.save(); g.shadowColor = D.card.col; g.shadowBlur = 20; rr(g, 270 - w / 2, cy - h / 2, w, h, 18); g.fillStyle = "#000"; g.fill(); g.restore(); } } }
 
     function drawFront(g, t, s){ const {key, kNow, crF, cu, pc} = s;
       g.setTransform(DPR, 0, 0, DPR, 0, 0); g.clearRect(0, 0, 540, 960); g.globalCompositeOperation = "source-over"; g.globalAlpha = 1;
@@ -21093,7 +21094,7 @@ const HKInv = (() => {
         mEdge.color.setStyle(D.card.col); holo.material.opacity = .14 * idle; holoT.offset.x = ((t - HIT) / 2600) % 2; spec.material.opacity = .16 * idle; specT.offset.x = -.2 - tilt * .45; }
       drawBack(gB, t, s); R.render(S, cam); drawFront(gF, t, s);
       // tremblement et coups de zoom sur l'ensemble
-      const sh = beam * 1.8 + crF * 4.5 + punch * 8, zs = 1 + punch * .07 + crF * .025 - pre * .025, k = host.clientWidth / 540;
+      const sh = (t < HIT ? beam * 1.8 : 0) + crF * 4.5 + punch * 6 * (1 - sg(t, HIT, HIT + 350)), zs = 1 + punch * .07 + crF * .025 - pre * .025, k = host.clientWidth / 540;
       wrap.style.transform = `translate(${((Math.random() - .5) * sh * k).toFixed(2)}px,${((Math.random() - .5) * sh * k).toFixed(2)}px) scale(${zs.toFixed(4)})`; }
 
     function play(data, sounds){ D = data; t0 = performance.now(); swapped = false; ev = (sounds || []).map(e => Object.assign([...e], {done: false}));
