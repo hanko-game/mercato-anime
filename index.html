@@ -20802,15 +20802,25 @@ function tlFrame(g, t, T, p, order, im, lg){ const W = 1080, H = 1920, cols = ["
   const Y0 = 330, RH = 236, GAP = 14, slot = {}, cnt = [0, 0, 0, 0, 0];
   order.forEach(n => { const k = p[n]; if (k == null) return; slot[n] = [k, cnt[k]++]; });
   TL_T.forEach((l, k) => { const y = Y0 + k * (RH + GAP), a = e3((t - 150 - k * 90) / 400); g.globalAlpha = a; g.fillStyle = "#ffffff12"; g.fillRect(60, y, 960, RH); g.fillStyle = cols[k]; g.fillRect(60, y, 130, RH); tx(l, 125, y + RH / 2 + 30, 84, "#0b0a0e"); g.globalAlpha = 1; });
-  const ST = 900, STEP = 560;
-  order.forEach((n, i) => { const t0 = ST + i * STEP; if (t < t0 || !slot[n]) return; const [k, j] = slot[n], q = e3((t - t0) / 420), w = 140, h = 196, tx0 = 206 + j * 150, ty0 = Y0 + k * (RH + GAP) + (RH - h) / 2, sx = W / 2 - 110, sy = 1650, sw = 220, sh = 308;
-    const x = sx + (tx0 - sx) * q, y = sy + (ty0 - sy) * q, ww = sw + (w - sw) * q, hh = sh + (h - sh) * q, pop = q >= 1 ? 1 + .1 * Math.max(0, 1 - (t - t0 - 420) / 160) : 1, i2 = im[n];
-    g.save(); g.translate(x + ww / 2, y + hh / 2); g.scale(pop, pop); g.shadowColor = cols[k]; g.shadowBlur = q < 1 ? 40 : 12; g.fillStyle = "#000"; g.fillRect(-ww / 2, -hh / 2, ww, hh); g.shadowBlur = 0;
-    if (i2){ g.save(); g.beginPath(); g.rect(-ww / 2, -hh / 2, ww, hh); g.clip(); const r = Math.max(ww / i2.width, hh / i2.height); g.drawImage(i2, -i2.width * r / 2, -hh / 2 - (i2.height * r - hh) * .22, i2.width * r, i2.height * r); g.restore(); }
-    g.lineWidth = 4; g.strokeStyle = cols[k]; g.strokeRect(-ww / 2, -hh / 2, ww, hh);
-    if (q < 1){ g.fillStyle = "#fff"; g.font = "900 30px Unbounded, system-ui"; g.textAlign = "center"; g.fillText(n.split(" (")[0], 0, hh / 2 + 44); }
-    g.restore(); });
-  const tEnd = ST + order.length * STEP + 200, a = e3((t - tEnd) / 500);
+  const ST = 900, STEP = 560, tEnd = ST + order.length * STEP + 700, a = e3((t - tEnd) / 500);
+  /* 2 nov. 2026 : les 8 personnages attendent en bas dans la réserve, comme quand on remplit la tier list, puis partent un par un vers leur ligne */
+  const PW = 112, PH = 156, PY = 1646, px = i => W / 2 - (8 * PW + 7 * 10) / 2 + i * (PW + 10) + (8 - T.L.length) * (PW + 10) / 2, pi = n => T.L.findIndex(c => c.n === n);
+  const tile = (x, y, ww, hh, i2, col, name, nA, glow, sc = 1) => { g.save(); g.translate(x + ww / 2, y + hh / 2); g.scale(sc, sc);
+    g.shadowColor = col; g.shadowBlur = glow; g.fillStyle = "#000"; g.fillRect(-ww / 2, -hh / 2, ww, hh); g.shadowBlur = 0;
+    g.save(); g.beginPath(); g.rect(-ww / 2, -hh / 2, ww, hh); g.clip(); if (i2){ const r = Math.max(ww / i2.width, hh / i2.height); g.drawImage(i2, -i2.width * r / 2, -hh / 2 - (i2.height * r - hh) * .22, i2.width * r, i2.height * r); }
+    if (nA > 0){ g.globalAlpha = nA; const gr = g.createLinearGradient(0, hh / 2 - 64, 0, hh / 2); gr.addColorStop(0, "rgba(0,0,0,0)"); gr.addColorStop(1, "rgba(0,0,0,.9)"); g.fillStyle = gr; g.fillRect(-ww / 2, hh / 2 - 64, ww, 64);
+      const nm = name.split(" (")[0], fit = (s2, mx) => { let fs = mx; g.font = `800 ${fs}px Unbounded, system-ui`; while (fs > 12 && g.measureText(s2).width > ww - 8){ fs--; g.font = `800 ${fs}px Unbounded, system-ui`; } return fs; };
+      g.fillStyle = "#fff"; g.textAlign = "center"; const sp = nm.lastIndexOf(" ");   /* nom trop long : sur deux lignes, lisible dans la vidéo */
+      if (fit(nm, 19) >= 15 || sp < 0) g.fillText(nm, 0, hh / 2 - 9); else { const l1 = nm.slice(0, sp), l2 = nm.slice(sp + 1), f2 = Math.min(fit(l1, 18), fit(l2, 18)); g.font = `800 ${f2}px Unbounded, system-ui`; g.fillText(l1, 0, hh / 2 - 12 - f2); g.fillText(l2, 0, hh / 2 - 9); } g.globalAlpha = 1; }
+    g.restore(); g.lineWidth = col === "#fff" ? 2 : 4; g.strokeStyle = col === "#fff" ? "rgba(255,255,255,.18)" : col; g.strokeRect(-ww / 2, -hh / 2, ww, hh); g.restore(); };
+  { const pa = e3((t - 350) / 450) * (1 - a); if (pa > 0){ g.globalAlpha = pa; g.setLineDash([14, 10]); g.lineWidth = 3; g.strokeStyle = "rgba(255,255,255,.2)"; g.beginPath(); g.roundRect ? g.roundRect(40, PY - 22, 1000, PH + 44, 28) : g.rect(40, PY - 22, 1000, PH + 44); g.stroke(); g.setLineDash([]);
+      if (t > ST + order.length * STEP) tx("Tous classés !", W / 2, PY + PH / 2 + 12, 30, "#8f889a", 800);
+      T.L.forEach((c, i) => { const n = c.n, k0 = order.indexOf(n), t0 = k0 < 0 ? Infinity : ST + k0 * STEP; if (t >= t0) return; const sel = e3((t - (t0 - 260)) / 200), ia = e3((t - 400 - i * 60) / 400);
+        g.globalAlpha = pa * ia; tile(px(i), PY - sel * 10 + (1 - ia) * 40, PW, PH, im[n], sel > 0 ? "#ff2d3a" : "#fff", n, 1, sel * 30, 1 + sel * .06); });
+      g.globalAlpha = 1; } }
+  order.forEach((n, i) => { const t0 = ST + i * STEP; if (t < t0 || !slot[n]) return; const [k, j] = slot[n], q = e3((t - t0) / 420), w = 140, h = 196, tx0 = 206 + j * 150, ty0 = Y0 + k * (RH + GAP) + (RH - h) / 2, sx = px(Math.max(0, pi(n))), sy = PY - 10;
+    const x = sx + (tx0 - sx) * q, y = sy + (ty0 - sy) * q - Math.sin(q * Math.PI) * 60, ww = PW + (w - PW) * q, hh = PH + (h - PH) * q, pop = q >= 1 ? 1 + .1 * Math.max(0, 1 - (t - t0 - 420) / 160) : 1 + Math.sin(q * Math.PI) * .12;
+    tile(x, y, ww, hh, im[n], cols[k], n, 1 - q, q < 1 ? 40 : 12, pop); });
   if (a > 0){ g.globalAlpha = a; tx("Et toi, tu classes comment ?", W / 2, 1640, 46, "#ffd9a0", 900); g.fillStyle = "rgba(255,30,45,.16)"; g.fillRect(70, 1690, 940, 170); g.strokeStyle = "rgba(255,30,45,.6)"; g.lineWidth = 3; g.strokeRect(70, 1690, 940, 170);
     tx("Joue gratuitement sur Hanko", W / 2, 1758, 40); tx(tlRef(), W / 2, 1806, 26, "#fff", 700, "center", "'JetBrains Mono', monospace"); if (tlRef().includes("#parrain=")) tx("MON LIEN PARRAIN · 3 BOOSTERS OFFERTS", W / 2, 1842, 20, "#ffb3b8", 700, "center", "'JetBrains Mono', monospace"); g.globalAlpha = 1; }
   return tEnd + 1800; }
