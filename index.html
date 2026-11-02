@@ -20176,6 +20176,21 @@ async function hkApp(){ const solo = appSolo(), ok = appPush(), ios = appIos(), 
   M.querySelector("#appIn") && (M.querySelector("#appIn").onclick = async () => { const p = APP.prompt; APP.prompt = null; p.prompt(); await p.userChoice.catch(() => {}); close(); });
   M.querySelector("#appNo") && (M.querySelector("#appNo").onclick = async e => { e.target.disabled = true; try { if (sub) await appPushOff(); else await appPushOn(); close(); frToast(sub ? "Notifications désactivées." : "Notifications activées."); } catch (x){ M.querySelector("#appErr").textContent = x.message || "Activation impossible."; e.target.disabled = false; } });
   M.querySelector("#appFree") && (M.querySelector("#appFree").onchange = async e => { const v = e.target.checked; try { localStorage.setItem("hanko-free-notif", v ? "1" : "0"); } catch {} try { await CP.sb.rpc("push_pref", {free_on: v, tz_min: new Date().getTimezoneOffset()}); } catch {} }); }
+/* 2 nov. 2026 : personne n'était abonné (le réglage était caché dans le menu). Dans l'application installée et connecté :
+   - autorisation jamais demandée → encart « Active les notifications » (sur iPhone, la demande doit venir d'un appui) ;
+   - déjà autorisée → abonnement refait en silence à chaque ouverture (un abonnement perdu côté serveur se recrée tout seul). */
+async function appPushAuto(){ try {
+  if (!appPush() || !appSolo() || !frsOn()) return;
+  const perm = Notification.permission;
+  if (perm === "granted"){ if (appPushAuto.done) return; appPushAuto.done = 1; await appPushOn(); return; }
+  if (perm !== "default" || document.querySelector("#appAsk")) return;
+  let last = 0; try { last = +localStorage.getItem("hanko-push-ask") || 0; } catch {} if (Date.now() - last < 864e5) return;
+  document.body.insertAdjacentHTML("beforeend", `<div id="appAsk" role="dialog" aria-label="Notifications" style="position:fixed;left:12px;right:12px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:9500;display:flex;gap:10px;align-items:center;padding:12px 14px;border-radius:16px;background:#16141b;border:1px solid #ff2d3a66;box-shadow:0 12px 40px #000c;color:#f3f1f5;font-size:14px"><span style="font-size:22px">🔔</span><span style="flex:1;min-width:0"><b style="display:block">Active les notifications</b><span style="color:#b9b3c2;font-size:12.5px">Boosters prêts, messages d'amis, ventes au marché.</span></span><button class="primary" id="appAskOk" style="min-height:40px;padding:0 14px">Activer</button><button class="ghost" id="appAskNo" aria-label="Plus tard" style="min-height:40px;padding:0 10px">✕</button></div>`);
+  const B = document.querySelector("#appAsk"), later = () => { try { localStorage.setItem("hanko-push-ask", String(Date.now())); } catch {} B.remove(); };
+  B.querySelector("#appAskNo").onclick = later;
+  B.querySelector("#appAskOk").onclick = async e => { e.currentTarget.disabled = true; try { await appPushOn(); B.remove(); frToast("Notifications activées."); try { const reg = await navigator.serviceWorker.ready; reg.showNotification("Hanko", {body: "C'est bon : tu seras prévenu ici, même jeu fermé.", icon: "icone-192.png", tag: "hanko-ok"}); } catch {} } catch (x){ later(); frToast(x.message || "Activation impossible."); } };
+} catch {} }
+setInterval(appPushAuto, 4000); document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") appPushAuto(); });
 // un appui sur une notification amène au bon endroit
 function appNotif(t){ try { if (!t) return; if (t === "free"){ tcShow("packs"); } else if (t === "marche"){ tcShow("market"); HV.tab = "act"; hvPaint(); } else if (t === "amis"){ FR_TAB = "req"; frShow(); } else if (t.startsWith("msg-")){ const go = () => { const f = FRS.data && FRS.data.friends.find(x => x.uid === t.slice(4)); if (f) dmOpen(f); else hkBell(); }; FRS.data ? go() : frsLoad().finally(go); } else hkBell(); } catch {} }
 navigator.serviceWorker?.addEventListener("message", e => appNotif(e.data && e.data.notif));
