@@ -20171,7 +20171,7 @@ new MutationObserver(() => { const sh = document.querySelector("#nvPk .nvsh>div"
 .dfwm{position:fixed;z-index:-1;right:-.08em;top:8vh;font:900 min(46vh,60vw)/1 "Zen Kaku Gothic New","Hiragino Sans",sans-serif;color:#ffffff07;writing-mode:vertical-rl;pointer-events:none;user-select:none}
 .dfin{width:min(100%,560px);margin:0 auto;display:grid;gap:18px}
 .dfbar0{display:flex;align-items:center;gap:10px}
-.dflogo{display:flex;align-items:center;gap:8px;font:900 14px var(--title);letter-spacing:.06em}.dflogo i{display:grid;place-items:center;width:28px;height:28px;font-style:normal;font-size:13px;background:#ff1e2d;color:#fff;clip-path:polygon(25% 3%,75% 3%,100% 50%,75% 97%,25% 97%,0 50%)}
+.dflogo{display:flex;align-items:center;gap:8px;font:900 14px var(--title);letter-spacing:.06em}.dflogo svg{width:30px;height:30px;flex:none}.dfback{all:unset;cursor:pointer;margin-left:auto;padding:8px 14px;border-radius:999px;background:#ffffff10;border:1px solid #ffffff1c;font:700 13px var(--title);color:#fff}
 .dflogo em{font-style:normal;color:#ff5a63;font-family:"Zen Kaku Gothic New",sans-serif}
 .dfdate{margin-left:auto;font:600 11.5px var(--mono);letter-spacing:.06em;color:#bdb6c6;text-transform:capitalize}
 .dfx{all:unset;cursor:pointer;display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:#ffffff10;border:1px solid #ffffff1c;color:#fff;font-size:15px;backdrop-filter:blur(8px)}
@@ -20194,7 +20194,7 @@ new MutationObserver(() => { const sh = document.querySelector("#nvPk .nvsh>div"
 .dfcta::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,#ffffff55 50%,transparent 70%);transform:translateX(-120%);animation:dfsh 3.2s ease-in-out infinite}
 .dfcta.g{background:#ffffff0b;border:1px solid #ffffff1f;box-shadow:none;font-weight:700;font-size:13.5px;min-height:44px;color:#e9e4ee}.dfcta.g::after{display:none}
 .dfcta[disabled]{opacity:.5;cursor:default}
-.dfrow{display:flex;gap:10px;flex-wrap:wrap}.dfrow>*{flex:1 1 0;min-width:140px}
+.dfrow{display:flex;gap:10px;flex-wrap:wrap}.dfrow>*{flex:1 1 0;min-width:130px;white-space:nowrap}
 .dfhero{display:grid;gap:14px}
 /* débat : écran de combat en diagonale */
 .dfdeb{display:grid;gap:12px;padding-top:6px}
@@ -20202,16 +20202,16 @@ new MutationObserver(() => { const sh = document.querySelector("#nvPk .nvsh>div"
 .dfsplit{position:relative;aspect-ratio:16/12;border-radius:22px;overflow:hidden;background:#000;box-shadow:0 0 0 1px #ffffff1a,0 26px 50px -24px #000}
 .dfside{all:unset;cursor:pointer;position:absolute;inset:0;transition:filter .5s,transform .5s}
 .dfside.a{clip-path:polygon(0 0,59% 0,41% 100%,0 100%)}.dfside.b{clip-path:polygon(59% 0,100% 0,100% 100%,41% 100%)}
-.dfside img{position:absolute;top:0;height:100%;width:62%;object-fit:cover;object-position:50% 18%;transition:transform .6s cubic-bezier(.2,.8,.2,1)}.dfside.a img{left:0}.dfside.b img{right:0}
+.dfside .fc{position:absolute;top:0;height:100%;width:62%;overflow:hidden;transition:transform .6s cubic-bezier(.2,.8,.2,1)}.dfside.a .fc{left:0}.dfside.b .fc{right:0}
 .dfside::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 45%,#07060af0)}.dfside.a::before,.dfside.b::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;mix-blend-mode:soft-light}
 .dfside.a::before{background:linear-gradient(90deg,#ff2d3a88,transparent 60%)}.dfside.b::before{background:linear-gradient(270deg,#3d8bff88,transparent 60%)}
-.dfside:hover img{transform:scale(1.04)}
+.dfside:hover .fc{transform:scale(1.03)}
 .dfnm{position:absolute;z-index:2;bottom:14px;display:grid;gap:2px;max-width:36%}.dfside.a .dfnm{left:14px}.dfside.b .dfnm{right:14px;text-align:right}
 .dfnm em{font-style:normal;font:900 18px "Zen Kaku Gothic New",sans-serif;opacity:.75}.dfnm b{font:900 clamp(15px,4.4vw,20px)/1.08 var(--title);text-shadow:0 2px 10px #000;overflow-wrap:anywhere}.dfnm small{font:600 11px var(--mono);color:#d8d2de}
 .dfpct{position:absolute;z-index:2;top:12px;font:900 clamp(28px,9vw,42px)/1 var(--title);letter-spacing:-.04em;text-shadow:0 4px 18px #000}.dfside.a .dfpct{left:14px;color:#ff6b75}.dfside.b .dfpct{right:14px;color:#7fb2ff}
 .dfsplit .seam{position:absolute;z-index:3;inset:0;pointer-events:none;background:linear-gradient(to bottom right,transparent calc(50% - 1px),#ffffffcc 50%,transparent calc(50% + 1px)) 0 0/100% 100%;clip-path:polygon(58.6% 0,59.4% 0,41.4% 100%,40.6% 100%);background:#fff;opacity:.85}
 .dfvsb{position:absolute;z-index:4;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-8deg);width:64px;height:64px;display:grid;place-items:center;border-radius:50%;font:900 22px var(--title);background:conic-gradient(from 200deg,#ff2d3a,#ffd27a,#3d8bff,#ff2d3a);box-shadow:0 0 0 4px #07060a,0 10px 30px #000a;color:#fff;text-shadow:0 2px 6px #0009}
-.dfsplit.voted .dfside{cursor:default}.dfside[disabled]{opacity:1}.dfsplit.voted .dfside.lo{filter:grayscale(.75) brightness(.55)}.dfsplit.voted .dfside.me img{transform:scale(1.06)}
+.dfsplit.voted .dfside{cursor:default}.dfside[disabled]{opacity:1}.dfsplit.voted .dfside.lo{filter:grayscale(.75) brightness(.55)}.dfsplit.voted .dfside.me .fc{transform:scale(1.04)}
 .dfsplit.voted .dfside.me .dfnm b::after{content:" ✓";color:#4fe08f}
 .dfvb{height:12px;border-radius:99px;background:#ffffff14;overflow:hidden;display:flex;box-shadow:inset 0 1px 2px #0008}.dfvb i{display:block;height:100%;background:linear-gradient(90deg,#d8101e,#ff5964);transition:width 1s cubic-bezier(.2,.8,.2,1)}.dfvb i+i{background:linear-gradient(90deg,#7fb2ff,#2f6fe0)}
 .dfnote{margin:0;font-size:13.5px;color:#bdb6c6;text-align:center}.dfnote b{color:#fff}
@@ -20266,6 +20266,11 @@ new MutationObserver(() => { const sh = document.querySelector("#nvPk .nvsh>div"
 #dfHome small{font:700 10.5px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:#ff6b75}#dfHome b{font:900 16px/1.12 var(--title);color:#fff}#dfHome span{font-size:12.5px;color:#d7d3db}
 #dfHome .sl{position:absolute;z-index:2;top:10px;right:10px;width:34px;height:34px;display:grid;place-items:center;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ff5964,#c5101d 70%);font:900 16px "Zen Kaku Gothic New",sans-serif;color:#fff;transform:rotate(-12deg);box-shadow:inset 0 0 0 2px #ffffff40}
 #dfHome .sl.ok{background:radial-gradient(circle at 35% 30%,#4fe08f,#138a47 70%)}
+/* tuile du débat : les deux personnages face à face en diagonale (2 nov. 2026) */
+#dfHome .hvs{position:absolute;inset:0 0 34% 0;font-style:normal;z-index:0}#dfHome #dfH2{padding-top:0}#dfHome #dfH2::after{background:linear-gradient(transparent 38%,#07060a 70%)}#dfHome .hvs .fc{position:absolute;top:0;height:100%;width:60%;overflow:hidden}
+#dfHome .hvs .ha{left:0;clip-path:polygon(0 0,100% 0,72% 100%,0 100%)}#dfHome .hvs .hb{right:0;clip-path:polygon(28% 0,100% 0,100% 100%,0 100%)}
+#dfHome .hvs .hl{position:absolute;inset:0;background:#fff;opacity:.8;clip-path:polygon(59.4% 0,60.2% 0,40.6% 100%,39.8% 100%)}
+#dfHome .hvs em{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%) rotate(-8deg);width:36px;height:36px;display:grid;place-items:center;border-radius:50%;font:900 13px var(--title);font-style:normal;color:#fff;background:conic-gradient(from 200deg,#ff2d3a,#ffd27a,#3d8bff,#ff2d3a);box-shadow:0 0 0 3px #07060a}
 @media (min-width:900px){#dfHome button{min-height:190px}#dfHome b{font-size:20px}}
 /* partage */
 .dfshm{position:fixed;inset:0;z-index:120;display:grid;place-items:center;background:#000d;padding:16px}.dfshm>div{width:min(100%,420px);display:grid;gap:10px}.dfshm img{width:100%;border-radius:14px}
@@ -20309,11 +20314,29 @@ function dfFocus(T){ if (DF_FOC[T.d]) return DF_FOC[T.d]; return DF_FOC[T.d] = n
     L.sort((a, b) => b[0] - a[0]); const top = L.slice(0, Math.max(8, Math.floor(L.length * .25))), r = dfRng("foc-" + T.d), c = top[Math.floor(r() * top.length)];
     res(c ? {fx: (c[1] + .5) / w * 100, fy: (c[2] + .5) / h * 100} : {fx: T.fx, fy: T.fy}); } catch { res({fx: T.fx, fy: T.fy}); } }; im.onerror = () => res({fx: T.fx, fy: T.fy}); im.src = T.a.i; }); }
 const dfApplyFocus = (T, root) => dfFocus(T).then(f => { T.fx = f.fx; T.fy = f.fy; (root || document).querySelectorAll(".dfz-" + T.d).forEach(i => i.style.transformOrigin = f.fx + "% " + f.fy + "%"); });
-const DF_Q = ["Qui gagne en duel ?", "Qui prends-tu dans ton équipe ?", "Qui gagne en duel ?", "Qui a le plus de charisme ?"];
-function dfDebate(){ const d = tcDay(), n = dfNum(d), P = dfPool(); if (P.length < 4) return null;
-  const grp = c => c.r === "M" || c.r === "L" ? 2 : c.r === "E" ? 1 : 0, perm = dfShuffle(P.map((_, k) => k), "hanko-debat"), a = P[perm[(n * 7 + 3) % P.length]];
-  const B = dfShuffle(P.filter(c => c.u !== a.u && grp(c) === grp(a)), "debat-" + d), b = B[0] || P.find(c => c.id !== a.id);
-  return {d, n, a, b, q: DF_Q[(n - 1 + DF_Q.length * 50) % DF_Q.length]}; }
+/* débats choisis (2 nov. 2026) : des affiches qui divisent vraiment. Les duels restent dans un même univers (un Dragon Ball contre MHA ne fait pas débat) ;
+   les questions d'avis (meilleur méchant, meilleur sensei…) peuvent croiser deux univers. Animé seulement, sans spoiler. Un débat par jour, dans l'ordre. */
+const DF_D = "Qui gagne en duel ?", DF_DEB = [
+  ["Son Goku", "Vegeta", DF_D], ["Naruto Uzumaki", "Sasuke Uchiwa", DF_D], ["Satoru Gojo", "Ryomen Sukuna", DF_D], ["Roronoa Zoro", "Sanji", DF_D],
+  ["Izuku Midoriya", "Katsuki Bakugo", DF_D], ["Satoru Gojo", "Kakashi Hatake", "Le meilleur sensei ?"], ["Kyojuro Rengoku", "Akaza", DF_D], ["Shanks", "Dracule Mihawk", DF_D],
+  ["Freezer", "Cell", "Le meilleur méchant ?"], ["Itachi Uchiwa", "Shisui Uchiwa", DF_D], ["Portgas D. Ace", "Sabo", "Ton frère préféré de Luffy ?"], ["All Might", "All For One", DF_D],
+  ["Muzan Kibutsuji", "Ryomen Sukuna", "Le méchant le plus terrifiant ?"], ["Madara Uchiwa", "Hashirama Senju", DF_D], ["Tanjiro Kamado", "Zenitsu Agatsuma", "Qui prends-tu dans ton équipe ?"], ["Trafalgar D. Water Law", "Eustass Kid", DF_D],
+  ["Vegeta", "Katsuki Bakugo", "Le meilleur rival ?"], ["Jiraya", "Orochimaru", DF_D], ["Toji Fushiguro", "Satoru Gojo", DF_D], ["Nami", "Nico Robin", "Ta préférée de l'équipage ?"],
+  ["Shoto Todoroki", "Katsuki Bakugo", DF_D], ["Kento Nanami", "Kyojuro Rengoku", "Le mentor le plus classe ?"], ["Kaido", "Charlotte Linlin", DF_D], ["Edward Newgate", "Gol D. Roger", DF_D],
+  ["Yuji Itadori", "Megumi Fushiguro", "Qui prends-tu dans ton équipe ?"], ["Itachi Uchiwa", "Kyojuro Rengoku", "Le plus charismatique ?"], ["Sakazuki (Akainu)", "Kuzan (Aokiji)", DF_D], ["Tomura Shigaraki", "Dabi", "Le meilleur méchant ?"],
+  ["Son Gohan", "Vegeta", DF_D], ["Giyu Tomioka", "Shinobu Kocho", "Qui prends-tu dans ton équipe ?"], ["Shoto Todoroki", "Sasuke Uchiwa", "Le rival le plus stylé ?"], ["Broly", "Majin Buu", DF_D],
+  ["Gaara", "Rock Lee", DF_D], ["Yuta Okkotsu", "Yuji Itadori", DF_D], ["Kokushibo", "Doma", DF_D], ["Marshall D. Teach", "Sakazuki (Akainu)", "Le meilleur méchant ?"]];
+/* portraits du débat cadrés sur le visage (2 nov. 2026) : FACES = centre et taille du visage dans l'image du personnage (détecteur de visages) ;
+   le visage prend la même place des deux côtés, l'image couvre toujours toute la case */
+const dfArt = c => c.i;
+const dfFc = c => { try { const f = (FACES[c.u] || {})[c.n]; return f ? f.join(",") : ""; } catch { return ""; } };
+const dfPic = (c, cls, fw) => `<span class="fc ${cls}"><img src="${c.i}" alt="" data-fc="${dfFc(c)}" data-fw="${fw}"></span>`;
+function dfCrop(root){ (root || document).querySelectorAll("img[data-fw]").forEach(im => { const go = () => { const box = im.parentElement, W = box.clientWidth, H = box.clientHeight, nw = im.naturalWidth, nh = im.naturalHeight; if (!W || !H || !nw) return;
+    const f = (im.dataset.fc || "").split(",").map(Number), ok = f.length === 3 && f[2] > 0, [cx, cy, sz] = ok ? f : [.5, .3, .5];
+    let w = Math.max(W * +im.dataset.fw / sz, W, H * nw / nh), h = w * nh / nw, x = W / 2 - cx * w, y = H * .4 - cy * h; x = Math.min(0, Math.max(W - w, x)); y = Math.min(0, Math.max(H - h, y));
+    Object.assign(im.style, {position: "absolute", width: w + "px", height: h + "px", left: x + "px", top: y + "px", maxWidth: "none", objectFit: "fill"}); }; if (im.complete && im.naturalWidth) go(); else im.onload = go; }); }
+function dfDebate(){ const d = tcDay(), n = dfNum(d), all = dfAll(), by = Object.fromEntries(all.map(c => [c.n, c])), L = DF_DEB.filter(x => by[x[0]] && by[x[1]]); if (!L.length) return null;
+  const x = L[(n - 1 + L.length * 100) % L.length]; return {d, n, a: by[x[0]], b: by[x[1]], q: x[2]}; }
 // état local (sauvegardé avec le compte) : s.df = {d, g: [id…], won, sent, st}, s.dfS = {n, last, best}, s.dfV = {d, pick, c}
 const dfState = () => { const s = tcLoad(), d = tcDay(); if (!s.df || s.df.d !== d) s.df = {d, g: [], won: null}; if (!s.dfS) s.dfS = {n: 0, last: "", best: 0}; if (!s.dfV || s.dfV.d !== d) s.dfV = {d, pick: null}; return s; };
 const dfNorm = t => String(t).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
@@ -20325,6 +20348,8 @@ const dfEl = () => document.querySelector(".dfov");
 function dfClose(){ dfEl()?.remove(); try { dfHomeDraw(); } catch {} }
 function dfOpen(view = "today"){ let O = dfEl(); if (!O){ document.body.insertAdjacentHTML("beforeend", `<div class="dfov" role="dialog" aria-modal="true" aria-label="Aujourd'hui sur Hanko"><div class="dfin"></div></div>`); O = dfEl(); }
   O.scrollTop = 0; (view === "play" ? dfPlay : dfHub)(O.querySelector(".dfin")); }
+/* le logo Hanko de l'en-tête du site, le même sur tous les écrans du défi et du débat */
+const DF_LOGO = `<div class="dflogo"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M50 3l40.7 23.5v47L50 97 9.3 73.5v-47z" fill="#ff1e2d"/><path d="M50 12l32.9 19v38L50 88 17.1 69V31z" fill="#120506"/><rect x="31" y="28" width="11" height="44" rx="2.5" fill="#ff1e2d"/><rect x="58" y="28" width="11" height="44" rx="2.5" fill="#ff1e2d"/><path d="M27 60l46-21v10L27 70z" fill="#ff1e2d"/></svg>HANKO <em>今日</em></div>`;
 const dfDate = () => new Date().toLocaleDateString("fr-FR", {weekday: "long", day: "numeric", month: "long"});
 const dfFire = s => s.dfS.n && (s.dfS.last === tcDay() || s.dfS.last === tcDay(-1)) ? s.dfS.n : 0;
 // ——— écran « Aujourd'hui » ———
@@ -20337,11 +20362,11 @@ function dfHub(box){ const T = dfToday(), D = dfDebate(), s = dfState(); if (!T 
   const st = s.df, done = st.won !== null, tries = st.g.length, fire = dfFire(s), O = dfEl(); O.style.setProperty("--dfbg", `url("${T.a.i}")`);
   if (!O.querySelector(".dfwm")) O.insertAdjacentHTML("afterbegin", `<span class="dfwm" aria-hidden="true">今日の挑戦</span>`);
   const cap = done ? `<div class="dfcap"><b>${esc(T.a.n)}</b><span>${esc(TC_PACKS[T.a.u][0])} · ${st.won ? `trouvé en ${tries}/${DF_MAX}` : "pas trouvé"}</span></div>` : `<div class="dfcap"><b>Qui se cache ici ?</b><span>Défi du jour · même personnage pour tous</span></div>`;
-  box.innerHTML = `<div class="dfbar0"><div class="dflogo"><i>H</i>HANKO <em>今日</em></div><span class="dfdate">${esc(dfDate())}</span><button class="dfx" id="dfX" aria-label="Fermer">✕</button></div>
+  box.innerHTML = `<div class="dfbar0">${DF_LOGO}<span class="dfdate">${esc(dfDate())}</span><button class="dfx" id="dfX" aria-label="Fermer">✕</button></div>
     <div><p class="dfkick">Aujourd'hui sur Hanko</p><h1 class="dfh">${done ? (st.won ? "Bien joué." : "Raté de peu.") : "Le défi mondial du jour"}</h1></div>
     <section class="dfhero">${dfFrame(T, 0, done, st.won, cap)}
       <div class="dfmeta"><span>⏱ ${done ? "Prochain défi" : "Fin du défi"} <b class="dfcd">${dfLeft()}</b></span>${fire ? `<span class="f">🔥 ${fire} jour${fire > 1 ? "s" : ""} de suite</span>` : ""}<span id="dfHubSt">3 essais</span></div>
-      ${done ? `<div class="dfrow"><button class="dfcta" id="dfShare">Partager mon résultat</button><button class="dfcta g" id="dfSee">Voir le détail</button></div>` : `<button class="dfcta" id="dfGo">${tries ? `Continuer · ${DF_MAX - tries} essai${DF_MAX - tries > 1 ? "s" : ""} restant${DF_MAX - tries > 1 ? "s" : ""}` : "Relever le défi"} <span aria-hidden="true">›</span></button>`}</section>
+      ${done ? `<div class="dfrow"><button class="dfcta" id="dfShare">↗ Partager</button><button class="dfcta g" id="dfSee">Voir le détail</button></div>` : `<button class="dfcta" id="dfGo">${tries ? `Continuer · ${DF_MAX - tries} essai${DF_MAX - tries > 1 ? "s" : ""} restant${DF_MAX - tries > 1 ? "s" : ""}` : "Relever le défi"} <span aria-hidden="true">›</span></button>`}</section>
     <section class="dfdeb" id="dfDeb"></section>
     <button class="dfcta g" id="dfX2">Accéder au jeu</button>`;
   box.querySelector("#dfX").onclick = box.querySelector("#dfX2").onclick = dfClose;
@@ -20352,7 +20377,7 @@ function dfHub(box){ const T = dfToday(), D = dfDebate(), s = dfState(); if (!T 
   dfRpc("daily_stats", {p_day: T.d}).then(x => { const el = box.querySelector("#dfHubSt"); if (!el || !x || !x.n) return; el.innerHTML = `🌍 <b>${x.n}</b> joueur${x.n > 1 ? "s" : ""} · ${Math.round(x.won / x.n * 100)} % trouvé`; }); }
 // ——— débat ———
 function dfDebDraw(el, D, s){ const v = s.dfV, c = v.c, tot = c ? c.a + c.b : 0, pa = tot ? Math.round(c.a / tot * 100) : null, me = v.pick;
-  const side = (x, k) => `<button class="dfside ${k ? "b" : "a"} ${me === k ? "me" : me != null ? "lo" : ""}" data-pick="${k}" ${me != null ? "disabled" : ""} aria-label="Voter pour ${esc(x.n)}"><img src="${x.i}" alt="">${pa != null ? `<span class="dfpct">${k ? 100 - pa : pa} %</span>` : ""}<span class="dfnm"><em>${TC_PACKS[x.u][1]}</em><b>${esc(x.n)}</b><small>${esc(TC_PACKS[x.u][0])} · ${esc(TC_R[x.r][0])}</small></span></button>`;
+  const side = (x, k) => `<button class="dfside ${k ? "b" : "a"} ${me === k ? "me" : me != null ? "lo" : ""}" data-pick="${k}" ${me != null ? "disabled" : ""} aria-label="Voter pour ${esc(x.n)}">${dfPic(x, "", .42)}${pa != null ? `<span class="dfpct">${k ? 100 - pa : pa} %</span>` : ""}<span class="dfnm"><em>${TC_PACKS[x.u][1]}</em><b>${esc(x.n)}</b><small>${esc(TC_PACKS[x.u][0])} · ${esc(TC_R[x.r][0])}</small></span></button>`;
   el.innerHTML = `<div><p class="dfkick">Débat du jour</p><h2 class="q">${esc(D.q)}</h2></div>
     <div class="dfsplit ${me != null ? "voted" : ""}">${side(D.a, 0)}${side(D.b, 1)}<i class="seam"></i><span class="dfvsb">VS</span></div>
     ${pa != null ? `<div class="dfvb"><i style="width:${pa}%"></i><i style="width:${100 - pa}%"></i></div><p class="dfnote"><b>${tot}</b> vote${tot > 1 ? "s" : ""} dans le monde · ${(me ? 100 - pa : pa) >= 50 ? "tu es avec la majorité" : "tu fais partie de la minorité"}</p>`
@@ -20361,7 +20386,7 @@ function dfDebDraw(el, D, s){ const v = s.dfV, c = v.c, tot = c ? c.a + c.b : 0,
   el.querySelectorAll("[data-pick]").forEach(b => b.onclick = async () => { const k = +b.dataset.pick, s2 = dfState(); if (s2.dfV.pick != null) return; s2.dfV.pick = k; if (!s2.dfV.paid){ s2.dfV.paid = 1; s2.gems = (s2.gems || 0) + 10; try { tcToast("Débat du jour : +10 ◆ pour ton vote"); } catch {} } tcSave(s2);   /* 2 nov. 2026 : 10 ◆ pour avoir voté, une fois par jour */ try { tcSnd("pop"); } catch {} try { navigator.vibrate?.(25); } catch {}
     dfDebDraw(el, D, s2); const r = CP.user ? await dfRpc("debate_vote", {p_day: D.d, p_pick: k}) : await dfRpc("debate_counts", {p_day: D.d});
     if (r){ const s3 = dfState(); s3.dfV.c = {a: r.a + (CP.user ? 0 : k === 0 ? 1 : 0), b: r.b + (CP.user ? 0 : k === 1 ? 1 : 0)}; tcSave(s3); if (el.isConnected) dfDebDraw(el, D, s3); } });
-  el.querySelector("#dfShareD") && (el.querySelector("#dfShareD").onclick = e => dfShare("debat", e.currentTarget));
+  dfCrop(el); el.querySelector("#dfShareD") && (el.querySelector("#dfShareD").onclick = e => dfShare("debat", e.currentTarget));
   if (me != null && CP.user) dfRpc("debate_counts", {p_day: D.d}).then(r => { if (!r || !el.isConnected) return; const s3 = dfState(); const old = s3.dfV.c; if (old && old.a === r.a && old.b === r.b) return; s3.dfV.c = {a: r.a, b: r.b}; tcSave(s3); dfDebDraw(el, D, s3); }); }
 // ——— le jeu ———
 const DF_KJ = ["一", "二", "三", "四", "五", "六"];
@@ -20371,7 +20396,7 @@ function dfPlay(box){ const T = dfToday(), s = dfState(); if (!T) return dfClose
   const draw = () => { const s = dfState(), st = s.df, G = st.g.map(id => byId[id]).filter(Boolean), done = st.won !== null, miss = G.filter(c => c.id !== A.id).length, z = done ? 1 : DF_ZOOM[Math.min(miss, DF_ZOOM.length - 1)];
     const hint = (k, lab, val) => `<div class="dfhint ${miss >= k || done ? "on" : ""}"><small>${lab}</small><b>${miss >= k || done ? esc(val) : `🔒 ${k} erreur${k > 1 ? "s" : ""}`}</b></div>`;
     const fresh = G.length > seen; seen = G.length;
-    box.innerHTML = `<div class="dfpbar"><button class="dfx" id="dfBack" aria-label="Retour">‹</button><span class="t">Défi du jour #${T.n}</span><span class="c">${done ? (st.won ? "Trouvé" : "Terminé") : `${DF_MAX - G.length}/${DF_MAX} essais`}</span></div>
+    box.innerHTML = `<div class="dfbar0">${DF_LOGO}<button class="dfback" id="dfBack">‹ Aujourd'hui</button></div><div class="dfpbar"><span class="t">Défi du jour #${T.n}</span><span class="c">${done ? (st.won ? "Trouvé" : "Terminé") : `${DF_MAX - G.length}/${DF_MAX} essais`}</span></div>
       <div class="dfplay">${dfFrame(T, 0, done, st.won)}
         <div class="dfseals">${DF_KJ.slice(0, DF_MAX).map((kj, k) => `<i class="${k < G.length ? (G[k].id === A.id ? "ok" : "x") : ""}">${k < G.length ? (G[k].id === A.id ? "✓" : "✕") : kj}</i>`).join("")}</div>
         ${done ? `<div class="dfres">${st.won ? `<b class="ok">${esc(A.n)} !</b><p class="dfnote">Trouvé en ${G.length} essai${G.length > 1 ? "s" : ""}.</p>` : `<b class="ko">C'était ${esc(A.n)}</b><p class="dfnote">Pas trouvé cette fois.</p>`}${st.gain ? `<span class="gem">+${st.gain} ◆${st.bonus ? " · booster offert" : ""}</span>` : ""}
@@ -20434,7 +20459,7 @@ async function dfPoster(kind){ const W = 1080, H = 1350, cv = document.createEle
     G.forEach((c, k) => { const r = dfRel(c, T.a), hit = c.id === T.a.id; [hit || r.u, hit || r.r === 0, hit || r.p === 0].forEach((ok, j) => { g.fillStyle = ok ? "#3ccf7a" : j === 2 && r.pc ? "#f2b13a" : "#e0452f"; const x = x00 + k * colW, y = 1000 + j * (sz + gap); g.beginPath(); g.roundRect ? g.roundRect(x, y, sz, sz, 12) : g.rect(x, y, sz, sz); g.fill(); }); });
     tx(fire > 1 ? `🔥 Série de ${fire} jours · Et toi ?` : "Et toi, tu le trouves ?", W / 2, 1268, 38, "#ffd9a0", 800); }
   else { const D = dfDebate(), v = s.dfV, c = v.c, tot = c ? c.a + c.b : 0, pa = tot ? Math.round(c.a / tot * 100) : null; tx("Débat du jour", W / 2, 260, 52, "#ff5a63"); tx(D.q, W / 2, 340, 54);
-    const [ia, ib] = await Promise.all([dfImg(D.a.i), dfImg(D.b.i)]); cover(ia, 60, 400, 450, 600); cover(ib, 570, 400, 450, 600); tx("VS", W / 2, 720, 70, "#ff2d3a");
+    const [ia, ib] = await Promise.all([dfImg(dfArt(D.a)), dfImg(dfArt(D.b))]); cover(ia, 60, 400, 450, 600); cover(ib, 570, 400, 450, 600); tx("VS", W / 2, 720, 70, "#ff2d3a");
     [[D.a, 60, 0], [D.b, 570, 1]].forEach(([x, X, k]) => { if (v.pick === k){ g.lineWidth = 12; g.strokeStyle = "#ff2d3a"; g.strokeRect(X, 400, 450, 600); } tx(x.n.length > 18 ? x.n.slice(0, 17) + "…" : x.n, X + 225, 1070, 38); if (pa != null) tx((k ? 100 - pa : pa) + " %", X + 225, 1140, 60, k ? "#4da3ff" : "#ff6b75"); });
     tx(v.pick != null ? `J'ai choisi ${[D.a, D.b][v.pick].n}. Et toi ?` : "Et toi, tu choisis qui ?", W / 2, 1250, 38, "#ffd9a0", 800); }
   tx("hanko-game.github.io/mercato-anime", W / 2, 1316, 26, "#8f889a", 600, "center", "'JetBrains Mono', monospace"); return cv; }
@@ -20447,8 +20472,9 @@ async function dfShare(kind, btn){ const t = btn ? btn.textContent : ""; if (btn
 // ——— bloc de l'accueil : toujours visible en haut ———
 function dfHomeDraw(){ const el = document.querySelector("#dfHome"); if (!el) return; const T = dfToday(), D = dfDebate(); if (!T || !D) return; const s = dfState(), st = s.df, done = st.won !== null, fire = dfFire(s);
   el.innerHTML = `<button id="dfH1"><span class="sl ${done && st.won ? "ok" : ""}">${done ? (st.won ? "解" : "終") : "謎"}</span>${done ? `<img src="${T.a.i}" alt="">` : `<img class="dfpx" data-lv="0" src="${DF_PXC[T.d + ":0"] || ""}" alt="" style="image-rendering:pixelated">`}<small>Défi du jour #${T.n}</small><b>${done ? (st.won ? `Trouvé en ${st.g.length}/3` : "Raté aujourd'hui") : "Qui se cache ici ?"}</b><span>${done ? (fire ? `🔥 ${fire} jour${fire > 1 ? "s" : ""} de suite` : "Prochain défi à 10 h") : "Même défi pour tous · 3 essais"}</span></button>
-    <button id="dfH2"><img src="${(s.dfV.pick === 1 ? D.b : D.a).i}" alt="" style="object-position:50% 20%"><small>Débat du jour</small><b>${esc(D.a.n)} ou ${esc(D.b.n)} ?</b><span>${s.dfV.pick != null ? "Voir les résultats" : esc(D.q)}</span></button>`;
-  dfPaint(T, el); el.querySelector("#dfH1").onclick = () => dfOpen(done ? "today" : "play"); el.querySelector("#dfH2").onclick = () => { dfOpen("today"); setTimeout(() => document.querySelector("#dfDeb")?.scrollIntoView({behavior: "smooth", block: "center"}), 80); }; }
+    <button id="dfH2"><i class="hvs">${dfPic(D.a, "ha", .5)}${dfPic(D.b, "hb", .5)}<i class="hl"></i><em>VS</em></i><small>Débat du jour</small><b>${esc(D.a.n)} ou ${esc(D.b.n)} ?</b><span>${s.dfV.pick != null ? "Voir les résultats" : esc(D.q)}</span></button>`;
+  dfPaint(T, el); dfCrop(el); el.querySelector("#dfH1").onclick = () => dfOpen(done ? "today" : "play"); el.querySelector("#dfH2").onclick = () => { dfOpen("today"); setTimeout(() => document.querySelector("#dfDeb")?.scrollIntoView({behavior: "smooth", block: "center"}), 80); }; }
+addEventListener("tcalt", () => { try { dfHomeDraw(); const d = document.querySelector(".dfov #dfDeb"), D = dfDebate(); if (d && D) dfDebDraw(d, D, dfState()); } catch {} });   /* illustrations des cartes arrivées : le débat les prend */
 // ——— à l'arrivée : une fois par jour, avant le reste, dès que plus rien d'autre n'est affiché (connexion, bienvenue, tutoriel…) ———
 (() => { let n = 0; const tick = () => { if (++n > 120) return; try { const s = tcLoad(), d = tcDay();
       if (s.dfSeen === d) return; const busy = (typeof hkBusy === "function" && hkBusy()) || document.querySelector(".dfov,.tccine,.tccele,.crpov,#arena,.tcsharebox,.cofm") || !tcCards().length;
