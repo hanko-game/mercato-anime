@@ -14656,45 +14656,50 @@ document.addEventListener("contextmenu", e => { if (e.target.closest && !e.targe
   const load = src => new Promise(r => { const i = new Image(); i.onload = () => r(i); i.onerror = () => r(null); i.src = src; });
   const rr = (g, x, y, w, h, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
   const fit = (g, t, max, size, weight, fam) => { let s = size; do { g.font = `${weight} ${s}px ${fam}`; s -= 1; } while (g.measureText(t).width > max && s > 10); return t; };
+  /* 2 nov. 2026 : image de partage refaite sur le modèle de la vidéo « Invocation » : la carte la plus rare en grand avec le halo de sa rareté,
+     le kanji et un reflet holographique ; les autres cartes en petit, chacune avec son halo ; « 1 chance sur X dans ce booster » ; lien de parrainage */
+  const refLink = () => { let r = "hanko-game.github.io/mercato-anime"; try { const me = typeof frMe === "function" ? frMe() : null; if (me && me.id) r += "/#parrain=" + me.id; } catch {} return r; };
+  const refUrl = () => "https://" + refLink().replace(/#parrain=(.*)$/, (m, h) => "#parrain=" + encodeURIComponent(h));
   async function render(){
     const all = tcCards(), els = [...document.querySelectorAll(".tcopen .tcrow > .tc, .tcopen .tcrow > * > .tc")].filter((e, i, a) => a.indexOf(e) === i);
     let L = els.map(e => { const no = +((e.textContent.match(/#(\d{3})/) || [])[1] || 0), c = all.find(x => x.id === e.dataset.tc) || all.find(x => x.no === no), im = e.querySelector("img:not(.g)"); return c ? {c, src: im && im.getAttribute("src"), fin: ([...e.classList].find(k => /^f-/.test(k)) || "").slice(2), ar: e.classList.contains("arp")} : null; }).filter(Boolean);
+    const O0 = document.querySelector(".tcopen.res"); if (O0 && Array.isArray(O0.__got) && O0.__got.length) L = O0.__got.map(c => ({c, src: tcArt(c, c.f || undefined) || tcBase(c), fin: c.f || "", ar: "ABC".includes(c.f || "-")}));
     if (!L.length) return null;
-    L.sort((a, b) => RANK.indexOf(b.c.r) - RANK.indexOf(a.c.r)); const more = Math.max(0, L.length - 10); L = L.slice(0, 10);
-    const W = 1080, H = 1350, cv = document.createElement("canvas"); cv.width = W; cv.height = H; const g = cv.getContext("2d");
-    const top = L[0].c, acc = (TC_BKC[top.r] || ["#ff1e2d"])[0];
-    const bg = g.createLinearGradient(0, 0, W, H); bg.addColorStop(0, "#0b0a10"); bg.addColorStop(1, "#050507"); g.fillStyle = bg; g.fillRect(0, 0, W, H);
-    const glow = g.createRadialGradient(W / 2, 420, 40, W / 2, 420, 700); glow.addColorStop(0, acc + "55"); glow.addColorStop(1, "transparent"); g.fillStyle = glow; g.fillRect(0, 0, W, H);
-    g.textAlign = "center"; g.fillStyle = "#fff"; g.font = "900 64px Unbounded, Inter, system-ui, sans-serif"; g.fillText("Mon tirage Hanko", W / 2, 118);
+    const sc = x => RANK.indexOf(x.c.r) * 10 + (x.fin && x.fin !== "H" ? 5 : x.fin ? 1 : 0); L.sort((a, b) => sc(b) - sc(a));
+    const best = L[0], rest = L.slice(1), shown = rest.slice(0, 6), more = rest.length - shown.length;
+    const W = 1080, H = 1350, cv = document.createElement("canvas"); cv.width = W; cv.height = H; const g = cv.getContext("2d"); try { await document.fonts.load("900 60px Unbounded"); await document.fonts.load('900 60px "Zen Kaku Gothic New"'); } catch {}
+    const key = ivKey({r: best.c.r}), K = IV[key], rgb = K.rgb, colA = a => `rgba(${rgb.join(",")},${a})`, colOfIt = x => colOf(x.c.r, x.fin);
+    // fond : nuit + lueur de la rareté + socle de sceaux derrière la carte
+    g.fillStyle = "#06040b"; g.fillRect(0, 0, W, H);
+    const gl = g.createRadialGradient(W / 2, 560, 40, W / 2, 560, 760); gl.addColorStop(0, colA(.42)); gl.addColorStop(.55, colA(.1)); gl.addColorStop(1, "transparent"); g.fillStyle = gl; g.fillRect(0, 0, W, H);
+    g.save(); g.translate(W / 2, 560); for (let j = 0; j < 3; j++){ g.strokeStyle = colA(.35 - j * .08); g.lineWidth = 3 - j * .6; g.beginPath(); g.arc(0, 0, 420 - j * 60, 0, 6.28); g.stroke(); g.font = '900 30px "Zen Kaku Gothic New", sans-serif'; g.fillStyle = colA(.28); const kj = K.kj + "召喚" + K.kj + "封印"; for (let i = 0; i < 12; i++){ g.save(); g.rotate(i / 12 * 6.28 + j * .2); g.textAlign = "center"; g.fillText(kj[i % kj.length], 0, -(420 - j * 60) + 36); g.restore(); } } g.restore();
+    // en-tête : logo Hanko, titre, booster ouvert
     const title = (document.querySelector(".tcopen.res h2, .tcopen.res .otop b")?.textContent || "Booster").replace(/[^\p{Script=Latin}\d\s'’·-]/gu, "").replace(/\s+/g, " ").trim() || "Booster";
-    g.fillStyle = acc; g.font = "700 30px 'JetBrains Mono', Inter, monospace"; g.fillText(fit(g, (title + " · meilleure carte : " + top.n).toUpperCase(), W - 120, 30, 700, "'JetBrains Mono', Inter, monospace"), W / 2, 170);
-    // badge du % de drop de la meilleure carte : on « sent » la rareté (1er nov. 2026)
-    const Ov = document.querySelector(".tcopen.res"), op = Ov && Ov.dataset.oddsp ? parseFloat(Ov.dataset.oddsp) : null, olab = (Ov && Ov.dataset.oddslab) || (TC_R[top.r] && TC_R[top.r][0]) || "";
-    if (op != null && op > 0){ const pt = op >= 10 ? op.toFixed(0) : op >= 1 ? op.toFixed(1).replace(".", ",") : op.toFixed(2).replace(".", ","); const lbl = `${olab.toUpperCase()} · ${pt} % DE CHANCE${op < 5 ? " · 1 BOOSTER SUR " + Math.max(2, Math.round(100 / op)) : ""}`;
-      g.font = "800 29px Inter, system-ui, sans-serif"; const tw = g.measureText(lbl).width, pw = Math.min(W - 80, tw + 56), px = (W - pw) / 2, py = 196, ph = 54;
-      g.save(); rr(g, px, py, pw, ph, 27); g.fillStyle = "rgba(255,255,255,.07)"; g.fill(); g.lineWidth = 2.5; g.strokeStyle = acc; g.stroke();
-      g.fillStyle = "#fff"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(fit(g, lbl, pw - 36, 29, 800, "Inter, system-ui, sans-serif"), W / 2, py + ph / 2 + 1); g.restore(); g.textBaseline = "alphabetic"; g.textAlign = "center"; }
-    const TOP = op != null && op > 0 ? 278 : 230;
-    const n = L.length, cols = n <= 3 ? n : n <= 6 ? 3 : 5, rows = Math.ceil(n / cols), gap = cols === 5 ? 18 : 28;
-    const cw = Math.min(n <= 3 ? 300 : 300, (W - 120 - gap * (cols - 1)) / cols), ch = cw * 666 / 450, areaH = H - TOP - 150, scale = Math.min(1, (areaH - gap * (rows - 1)) / (rows * ch));
-    const w = cw * scale, h = ch * scale, y0 = TOP + (areaH - (rows * h + gap * (rows - 1))) / 2;
-    for (let i = 0; i < n; i++){ const {c, src, fin, ar} = L[i], row = Math.floor(i / cols), inRow = Math.min(cols, n - row * cols), x0 = (W - (inRow * w + gap * (inRow - 1))) / 2, x = x0 + (i - row * cols) * (w + gap), y = y0 + row * (h + gap);
-      const col = (TC_BKC[c.r] || ["#888"])[0];
-      g.save(); g.shadowColor = col; g.shadowBlur = RANK.indexOf(c.r) >= 3 ? 34 : 12; rr(g, x, y, w, h, 18); g.fillStyle = "#111"; g.fill(); g.restore();
-      g.save(); rr(g, x, y, w, h, 18); g.clip(); const im = src ? await load(src) : null;
-      if (im){ const s = Math.max(w / im.naturalWidth, h / im.naturalHeight), iw = im.naturalWidth * s, ih = im.naturalHeight * s; g.drawImage(im, x + (w - iw) / 2, y + (h - ih) * .12, iw, ih); }
-      const sh = g.createLinearGradient(0, y + h * .55, 0, y + h); sh.addColorStop(0, "transparent"); sh.addColorStop(1, "rgba(0,0,0,.88)"); g.fillStyle = sh; g.fillRect(x, y, w, h);
-      g.textAlign = "left"; g.fillStyle = "#fff"; fit(g, c.n, w - 28, Math.round(w * .11), 900, "Unbounded, Inter, sans-serif"); g.fillText(c.n, x + 14, y + h - 44 * (w / 300));
-      g.fillStyle = col; g.font = `700 ${Math.round(w * .068)}px 'JetBrains Mono', Inter, monospace`; g.fillText((TC_R[c.r][0] + (ar ? " · AR" : fin && TC_FIN[fin] ? " · " + TC_FIN[fin][0] : "")).toUpperCase(), x + 14, y + h - 18 * (w / 300)); g.restore();
-      g.save(); rr(g, x + 1.5, y + 1.5, w - 3, h - 3, 17); g.lineWidth = 3; g.strokeStyle = col; g.stroke(); g.restore(); }
-    g.textAlign = "center"; g.fillStyle = "#9a96a0"; g.font = "600 28px Inter, system-ui, sans-serif";
-    g.fillText((more ? `+ ${more} autre${more > 1 ? "s" : ""} carte${more > 1 ? "s" : ""} · ` : "") + "Viens ouvrir tes boosters sur Hanko", W / 2, H - 92);
-    g.fillStyle = "#fff"; g.font = "700 30px 'JetBrains Mono', monospace"; g.fillText("hanko-game.github.io/mercato-anime", W / 2, H - 46);
+    g.textAlign = "center"; g.font = `900 46px ${TTL}`; const tw = g.measureText("Mon tirage Hanko").width; if (ivLogo.complete) g.drawImage(ivLogo, W / 2 - tw / 2 - 66, 46, 54, 54); g.fillStyle = "#fff"; g.textAlign = "left"; g.fillText("Mon tirage Hanko", W / 2 - tw / 2 + 2, 92);
+    g.textAlign = "center"; g.fillStyle = "#cfcbd6"; g.font = `700 24px ${MONO}`; g.fillText(fit(g, title.toUpperCase(), W - 140, 24, 700, MONO), W / 2, 138);
+    // la carte la plus rare, en grand, avec le kanji de sa rareté
+    const bw = 400, bh = bw * 666 / 450, bx = W / 2, by = 570, bit = {img: await load(best.src || tcArt(best.c, best.fin) || tcBase(best.c)), col: colOfIt(best), frm: frameOf(best.c.r, best.fin), name: best.c.n, lab: best.ar ? "AR" : best.fin && TC_FIN[best.fin] ? TC_FIN[best.fin][0] : TC_R[best.c.r][0]};
+    g.save(); g.globalAlpha = .9; g.font = '900 120px "Zen Kaku Gothic New", sans-serif'; g.fillStyle = "#fff"; g.shadowColor = colA(1); g.shadowBlur = 40; g.fillText(K.kj, W / 2, 262); g.restore();
+    for (const [b, a] of [[90, .55], [45, .8]]){ g.save(); g.shadowColor = colA(a); g.shadowBlur = b; rr(g, bx - bw / 2, by - bh / 2, bw, bh, 22); g.fillStyle = colA(1); g.fill(); g.restore(); }
+    drawMini(g, bx, by, bw, bit, {glow: 40});
+    { g.save(); rr(g, bx - bw / 2, by - bh / 2, bw, bh, 18); g.clip(); g.globalCompositeOperation = "overlay"; const x = bx - bw * .9, hg = g.createLinearGradient(x, by - bh / 2, x + bw * 1.2, by + bh / 2); ["#ff004000", "#ff004066", "#ffe60066", "#00ff8866", "#00b3ff66", "#b400ff66", "#b400ff00"].forEach((c, i, A) => hg.addColorStop(i / (A.length - 1), c)); g.fillStyle = hg; g.fillRect(bx - bw / 2, by - bh / 2, bw, bh); g.restore(); }
+    // rareté et chance : pourcentage, puis « 1 chance sur X dans ce booster »
+    const Ov = document.querySelector(".tcopen.res"), op = Ov && Ov.dataset.oddsp ? parseFloat(Ov.dataset.oddsp) : null, olab = ((Ov && Ov.dataset.oddslab) || TC_R[best.c.r][0] || "").toUpperCase();
+    let yy = by + bh / 2 + 62; g.fillStyle = colA(1); g.font = `900 40px ${TTL}`; g.fillText(olab, W / 2, yy);
+    if (op != null && op > 0){ const pt = op >= 10 ? op.toFixed(0) : op >= 1 ? op.toFixed(1).replace(".", ",") : op.toFixed(2).replace(".", ","); g.fillStyle = "#fff"; g.font = `800 28px ${MONO}`; g.fillText(`${pt} % DE CHANCE · 1 CHANCE SUR ${Math.max(2, Math.round(100 / op)).toLocaleString("fr-FR")} DANS CE BOOSTER`, W / 2, yy + 44); yy += 44; }
+    // les autres cartes, en petit, chacune avec le halo de sa rareté
+    if (shown.length){ const sw = 118, gap = 18, n = shown.length + (more > 0 ? 1 : 0), x0 = W / 2 - ((n - 1) * (sw + gap)) / 2, sy = yy + 120, imgs = await Promise.all(shown.map(x => load(x.src || tcArt(x.c, x.fin) || tcBase(x.c))));
+      shown.forEach((x, k) => { const it = {img: imgs[k], col: colOfIt(x), frm: frameOf(x.c.r, x.fin), name: x.c.n, lab: x.ar ? "AR" : x.fin && TC_FIN[x.fin] ? TC_FIN[x.fin][0] : TC_R[x.c.r][0]}, hb = RANK.indexOf(x.c.r) >= 3 ? 34 : 14; drawMini(g, x0 + k * (sw + gap), sy, sw, it, {glow: hb}); });
+      if (more > 0){ g.fillStyle = "#cfcbd6"; g.font = `800 26px ${MONO}`; g.fillText("+" + more, x0 + shown.length * (sw + gap), sy + 10); } }
+    // appel à jouer et lien de parrainage
+    { const y = H - 150; rr(g, 70, y, W - 140, 118, 26); g.fillStyle = "rgba(255,30,45,.14)"; g.fill(); g.strokeStyle = "rgba(255,30,45,.6)"; g.lineWidth = 2.5; g.stroke();
+      g.textAlign = "left"; if (ivLogo.complete) g.drawImage(ivLogo, 102, y + 22, 46, 46); g.fillStyle = "#fff"; g.font = `900 30px ${TTL}`; g.fillText("Joue gratuitement sur Hanko", 166, y + 56);
+      const ref = refLink(); g.textAlign = "center"; g.fillStyle = "#fff"; g.font = `700 22px ${MONO}`; g.fillText(fit(g, ref, W - 200, 22, 700, MONO), W / 2, y + 92); if (ref.includes("#parrain=")){ g.fillStyle = "#ffb3b8"; g.font = `700 15px ${MONO}`; g.fillText("MON LIEN PARRAIN · 3 BOOSTERS OFFERTS", W / 2, y + 112); } }
     return cv; }
   async function share(btn){
     const t = btn.innerHTML; btn.disabled = true; btn.textContent = "Image…";
     try { const cv = await render(); if (!cv) return;
-      const blob = await new Promise(r => cv.toBlob(r, "image/png")), file = new File([blob], "hanko-tirage.png", {type: "image/png"}), text = "Regarde mon tirage sur Hanko !";
+      const blob = await new Promise(r => cv.toBlob(r, "image/png")), file = new File([blob], "hanko-tirage.png", {type: "image/png"}), text = "Regarde mon tirage sur Hanko ! Joue avec moi : " + refUrl();
       if (navigator.canShare && navigator.canShare({files: [file]})){ try { await navigator.share({files: [file], title: "Mon tirage Hanko", text}); return; } catch (e) { if (e && e.name === "AbortError") return; } }
       // pas de partage natif (ordinateur, ou page intégrée) : l'image s'affiche, à enregistrer ou copier
       const url = URL.createObjectURL(blob), M = document.createElement("div"); M.className = "tcview tcsharebox"; M.style.cssText = "display:grid;place-items:center;align-content:center;overflow:auto;background:rgba(5,5,7,.92)";
@@ -14850,7 +14855,7 @@ document.addEventListener("contextmenu", e => { if (e.target.closest && !e.targe
         if (ivLogo.complete) g.drawImage(ivLogo, 76, 812, 46, 46); g.textAlign = "left"; g.fillStyle = "#fff"; g.font = `900 26px ${TTL}`; g.fillText("Joue gratuitement", 134, 834); g.fillStyle = "#ffb3b8"; g.font = `800 17px ${TTL}`; g.fillText(fit(g, "sur Hanko · " + D.title, 340, 17, 800, TTL), 134, 860);
         g.textAlign = "center"; g.fillStyle = "#fff"; g.font = `700 15px ${MONO}`; g.fillText(fit(g, D.ref, 420, 15, 700, MONO), 270, 898); if (D.ref.includes("#parrain=")){ g.fillStyle = "#ffb3b8"; g.font = `700 12px ${MONO}`; g.fillText("MON LIEN PARRAIN · 3 BOOSTERS OFFERTS", 270, 912); } g.restore(); } }
     g.restore(); }
-  window.__ivTest = {draw: (g, D, t, W, H) => drawVideo(g, D, t, W, H), data: collectReplay};   /* contrôle image par image (tests) */
+  window.__ivTest = {draw: (g, D, t, W, H) => drawVideo(g, D, t, W, H), data: collectReplay, render};   /* contrôle image par image (tests) */
   async function record(btn){
     const t0 = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<i aria-hidden="true">🎬</i>Vidéo…';
     try {
