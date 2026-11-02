@@ -21138,9 +21138,9 @@ function tcInvGL(c, o, key){ return new Promise(async res => {
     inv = HKInv.create(st, {dpr: TC_LITE ? 1.5 : 2});
     const cw = document.createElement("div"); cw.className = "hkc"; cw.innerHTML = tcCard(c, {isNew: c.isNew, newFin: c.newFin, f: c.f}); inv.wrap.insertBefore(cw, inv.front);
     const chain = HKInv.ivChain(key), p = tcOddsPct(c, o.key), vib = v => { try { navigator.vibrate?.(v); } catch {} };
-    const ev = [[1000, () => { riseOff = hkRiser((HKInv.HIT - 1000 - 110) / 1000); }], [HKInv.HIT, () => { riseOff(); hkBoom(); vib(key === "E" || key === "L" ? [50, 30, 120] : [60, 40, 60, 40, 180]); }]];
+    const ev = [[400, () => { riseOff = hkRiser((HKInv.HIT - 400 - 110) / 1000); }], [HKInv.HIT, () => { riseOff(); hkBoom(); vib(key === "E" || key === "L" ? [50, 30, 120] : [60, 40, 60, 40, 180]); }]];
     HKInv.UP.slice(0, chain.length - 1).forEach(u => ev.push([u - 240, () => { hkCrack(); vib(25); }]));
-    inv.play({key, card: {img: im, name: c.n, lab, col}, pal: (im && hkPal(im)) || [IVr.rgb], odds: p, label: lab, pre: c.isNew ? "NOUVELLE CARTE · " : c.newFin ? "NOUVELLE VERSION · " : "", start: 900, b0: 1300,
+    inv.play({key, card: {img: im, name: c.n, lab, col}, pal: (im && hkPal(im)) || [IVr.rgb], odds: p, label: lab, pre: c.isNew ? "NOUVELLE CARTE · " : c.newFin ? "NOUVELLE VERSION · " : "", start: 300, b0: 700,
       onSwap: () => { swapAt = Date.now(); cw.classList.add("on"); }}, ev);
     // la vraie carte suit le doigt (inclinaison), comme avant
     el.onpointermove = e => { if (!swapAt) return; const t = cw.querySelector(".tc"); if (!t) return; const r = t.getBoundingClientRect(), x = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)), y = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
