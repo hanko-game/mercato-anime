@@ -20455,7 +20455,7 @@ function dfDebDraw(el, D, s){ const v = s.dfV, c = v.c, tot = c ? c.a + c.b : 0,
   el.querySelectorAll("[data-pick]").forEach(b => b.onclick = async () => { const k = +b.dataset.pick, s2 = dfState(); if (s2.dfV.pick != null) return; s2.dfV.pick = k; if (!s2.dfV.paid){ s2.dfV.paid = 1; s2.gems = (s2.gems || 0) + 10; try { tcToast("Débat du jour : +10 ◆ pour ton vote"); } catch {} } tcSave(s2);   /* 2 nov. 2026 : 10 ◆ pour avoir voté, une fois par jour */ try { tcSnd("pop"); } catch {} try { navigator.vibrate?.(25); } catch {}
     dfDebDraw(el, D, s2); const r = CP.user ? await dfRpc("debate_vote", {p_day: D.d, p_pick: k}) : await dfRpc("debate_counts", {p_day: D.d});
     if (r){ const s3 = dfState(); s3.dfV.c = {a: r.a + (CP.user ? 0 : k === 0 ? 1 : 0), b: r.b + (CP.user ? 0 : k === 1 ? 1 : 0)}; if (CP.user) s3.dfV.sent = 1; tcSave(s3); if (el.isConnected) dfDebDraw(el, D, s3); } });
-  dfCrop(el); el.querySelector("#dfShareD") && (el.querySelector("#dfShareD").onclick = e => dfShare("debat", e.currentTarget));
+  dfCrop(el); try { dfBet(el, D); } catch {} el.querySelector("#dfShareD") && (el.querySelector("#dfShareD").onclick = e => dfShare("debat", e.currentTarget));
   if (me != null){ dfFriendVotes(el, D);
     /* pourcentages en direct : relus toutes les 8 s tant que le débat est affiché */
     clearInterval(el.__live); el.__live = setInterval(async () => { if (!el.isConnected) return clearInterval(el.__live); const r = await dfRpc("debate_counts", {p_day: D.d}); if (!r || !el.isConnected) return; const s3 = dfState(), old = s3.dfV.c || {}, a = r.a + (CP.user ? 0 : me === 0 ? 1 : 0), b = r.b + (CP.user ? 0 : me === 1 ? 1 : 0); if (old.a === a && old.b === b) return; s3.dfV.c = {a, b}; tcSave(s3); dfLive(el, a, b, me); }, 8000); } }
@@ -20674,6 +20674,54 @@ async function tlShare(T, btn){ const t0 = btn.textContent; btn.disabled = true;
   } catch (e) { console.warn("partage", e); } finally { btn.disabled = false; btn.textContent = t0; } }
 // rattrapage : une tier list validée hors connexion (ou avant le SQL) est envoyée dès que possible
 setInterval(async () => { try { if (!CP.user) return; const s = tlState(); if (!s.tl.done || s.tl.sent) return; const r = await dfRpc("tier_submit", {p_day: s.tl.d, p_picks: s.tl.p}); if (r){ const s2 = tlState(); s2.tl.sent = 1; s2.tl.st = r; tcSave(s2); } } catch {} }, 60000);
+</script>
+
+<style>
+/* ==== Paris sur le débat du jour (2 nov. 2026) : on parie sur le camp qui aura la majorité à la clôture, avant de voter ==== */
+.bet{display:grid;gap:10px;padding:14px;border-radius:18px;background:linear-gradient(160deg,#1d1610,#141018);border:1px solid #ffb34740}
+.bet h4{margin:0;display:flex;align-items:center;gap:8px;font:900 15px var(--title)}.bet h4 i{font-style:normal;display:grid;place-items:center;width:28px;height:28px;border-radius:9px;background:#ffb347;color:#1a1208;font:900 14px "Zen Kaku Gothic New",sans-serif}
+.bet p{margin:0;font-size:12.5px;color:#bdb6c6;line-height:1.4}
+.betsides{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.betsides button{all:unset;box-sizing:border-box;cursor:pointer;display:grid;gap:2px;padding:10px;border-radius:14px;background:#ffffff0a;border:1.5px solid #ffffff1c;text-align:center}
+.betsides button b{font:800 13px/1.15 var(--title);color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.betsides button span{font:900 20px var(--title);color:#ffc46b;font-variant-numeric:tabular-nums}
+.betsides button.on{border-color:#ffb347;background:#ffb3471f}
+.betstk{display:flex;gap:6px}.betstk button{all:unset;cursor:pointer;flex:1;text-align:center;padding:8px 0;border-radius:10px;background:#ffffff0a;border:1px solid #ffffff1c;font:800 13px var(--mono);color:#ddd}.betstk button.on{background:#ffb347;border-color:#ffb347;color:#1a1208}.betstk button[disabled]{opacity:.35;cursor:default}
+.betgo{all:unset;box-sizing:border-box;cursor:pointer;text-align:center;min-height:46px;border-radius:13px;background:linear-gradient(180deg,#ffc46b,#e08a12);color:#1a1208;font:900 14px var(--title);display:grid;place-items:center}.betgo[disabled]{opacity:.45;cursor:default}
+.betst{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:16px;background:#ffb34714;border:1px solid #ffb34740;font-size:13px;color:#f1e6d6}.betst i{font-style:normal;font-size:20px}.betst b{color:#ffc46b}
+.betst.win{background:#22a35d1f;border-color:#22a35d66}.betst.win b{color:#7ff0b0}.betst.lose{background:#e0452f14;border-color:#e0452f55}.betst.lose b{color:#ff9aa1}
+</style>
+<script>
+/* Paris (2 nov. 2026, façon pari sportif) : avant de voter, on mise des ◆ sur le camp qui aura la majorité quand le débat se termine (le lendemain à 10 h).
+   La cote vient de la popularité, de la rareté et du niveau des deux personnages, avec une petite marge (comme un bookmaker).
+   Gagné : mise × cote. Égalité ou moins de 5 votes : mise rendue. Les paris d'avant sont réglés à l'ouverture suivante (debate_counts). */
+const BET_STK = [10, 25, 50, 100], BET_MIN_VOTES = 5;
+let BET_PICK = null, BET_AMT = 25;
+const betScore = c => ({S: 3, A: 1.8}[c.pop] || .8) + Math.max(0, TC_ORDER.indexOf(c.r)) * .35 + (c.p || 50) / 100 * 1.5;
+function betOdds(D){ const pa = Math.min(.88, Math.max(.12, 1 / (1 + Math.exp(-(betScore(D.a) - betScore(D.b)) * 1.1)))), o = p => Math.max(1.1, Math.round(.9 / p * 100) / 100); return [o(pa), o(1 - pa)]; }
+const betFmt = x => x.toFixed(2).replace(".", ",");
+const betAll = () => { const s = tcLoad(); return s.dfB || {}; };
+function dfBet(el, D){ const s = dfState(), B = (s.dfB || {})[D.d], voted = s.dfV.pick != null, [oa, ob] = betOdds(D), box = document.createElement("div");
+  if (B){ box.innerHTML = `<div class="betst"><i>🎟</i><span>Ton pari : <b>${B.stake} ◆ sur ${esc([D.a, D.b][B.k].n)}</b> (×${betFmt(B.odds)}) · gain possible <b>${Math.round(B.stake * B.odds)} ◆</b>. Résultat demain à ${TC_RESET} h.</span></div>`; }
+  else if (voted) return;   /* déjà voté : les pourcentages sont visibles, le pari est fermé */
+  else { const can = k => (s.gems || 0) >= k;
+    box.innerHTML = `<div class="bet"><h4><i>賭</i>Pari du jour</h4><p>Qui aura <b>la majorité</b> demain à ${TC_RESET} h ? Parie avant de voter : tu ne verras les pourcentages qu'après.</p>
+      <div class="betsides">${[[D.a, oa, 0], [D.b, ob, 1]].map(([c, o, k]) => `<button data-k="${k}" class="${BET_PICK === k ? "on" : ""}"><b>${esc(c.n)}</b><span>×${betFmt(o)}</span></button>`).join("")}</div>
+      <div class="betstk">${BET_STK.map(v => `<button data-v="${v}" class="${BET_AMT === v ? "on" : ""}" ${can(v) ? "" : "disabled"}>${v} ◆</button>`).join("")}</div>
+      <button class="betgo" ${BET_PICK == null || !can(BET_AMT) ? "disabled" : ""}>${BET_PICK == null ? "Choisis un camp" : `Parier ${BET_AMT} ◆ · gain possible ${Math.round(BET_AMT * (BET_PICK ? ob : oa))} ◆`}</button></div>`;
+    box.querySelectorAll(".betsides [data-k]").forEach(b => b.onclick = () => { BET_PICK = +b.dataset.k; dfDebDraw(el, D, dfState()); });
+    box.querySelectorAll(".betstk [data-v]").forEach(b => b.onclick = () => { BET_AMT = +b.dataset.v; dfDebDraw(el, D, dfState()); });
+    box.querySelector(".betgo").onclick = () => { const s2 = dfState(); if (BET_PICK == null || (s2.dfB || {})[D.d] || s2.dfV.pick != null || (s2.gems || 0) < BET_AMT) return;
+      s2.gems -= BET_AMT; s2.dfB = s2.dfB || {}; s2.dfB[D.d] = {k: BET_PICK, stake: BET_AMT, odds: BET_PICK ? ob : oa, a: D.a.n, b: D.b.n}; tcSave(s2); BET_PICK = null;
+      try { tcSnd("pop"); tcToast(`Pari enregistré : ${s2.dfB[D.d].stake} ◆ sur ${[D.a, D.b][s2.dfB[D.d].k].n}`); } catch {} dfDebDraw(el, D, dfState()); }; }
+  el.querySelector(".dfsplit")?.insertAdjacentElement(voted ? "afterend" : "beforebegin", box); }
+// règlement des paris des jours passés : majorité à la clôture, sinon mise rendue
+async function betSettle(){ try { const s = tcLoad(), B = s.dfB || {}, today = tcDay(), open = Object.keys(B).filter(d => d < today && B[d].res == null); if (!open.length) return;
+    for (const d of open){ const r = await dfRpc("debate_counts", {p_day: d}); if (!r) continue; const s2 = tcLoad(), b = (s2.dfB || {})[d]; if (!b || b.res != null) continue; const t = r.a + r.b;
+      if (t < BET_MIN_VOTES || r.a === r.b){ b.res = "rendu"; b.gain = b.stake; } else { const win = (r.a > r.b ? 0 : 1) === b.k; b.res = win ? "gagné" : "perdu"; b.gain = win ? Math.round(b.stake * b.odds) : 0; }
+      b.pct = t ? Math.round((b.k ? r.b : r.a) / t * 100) : 0; s2.gems = (s2.gems || 0) + b.gain; tcSave(s2);
+      try { tcToast(b.res === "gagné" ? `Pari gagné : +${b.gain} ◆ (${b.k ? b.b : b.a}, ${b.pct} %)` : b.res === "rendu" ? `Pari remboursé : ${b.gain} ◆` : `Pari perdu : ${b.k ? b.b : b.a} n'a eu que ${b.pct} %`); } catch {} }
+    const keep = Object.keys((tcLoad().dfB || {})).sort().slice(-10), s3 = tcLoad(); s3.dfB = Object.fromEntries(keep.map(k => [k, s3.dfB[k]])); tcSave(s3); } catch {} }
+setTimeout(betSettle, 8000); setInterval(betSettle, 10 * 60 * 1000);
 </script>
 
 <style>
