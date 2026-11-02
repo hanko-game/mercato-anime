@@ -10610,7 +10610,7 @@ const TC_OBJ = [
   ["Kubikirib-ch-", "na", "Kubikiribôchô", "R", "Épée", "Zabuza Momochi", "Le « hachoir » de Zabuza, l'une des sept épées de Kiri. Elle se répare avec le fer du sang."],
   ["Scroll-of-Seals", "na", "Rouleau des techniques interdites", "R", "Rouleau", "Village de Konoha", "Le rouleau scellé par le Premier Hokage. Naruto y apprend le Multi-clonage."],
   ["Forehead-Protector", "na", "Bandeau frontal", "C", "Objet", "", "Le bandeau gravé du symbole du village, porté par les ninjas."]];
-const TC_XRATE = [2.2, 3.2, 5.9, 11.7];   // chance en % que la carte garantie soit un Éveil, selon le niveau du booster
+const TC_XRATE = [.3, .45, .9, 2];   // chance en % que la carte garantie soit un Éveil, selon le niveau du booster (2 nov. 2026 : avant 2,2 / 3,2 / 5,9 / 11,7 — un Éveil sortait 9 fois plus souvent qu'une Mythique)
 const TC_ORDER = ["C", "P", "R", "E", "L", "M", "X"];
 // part de chaque rareté dans un univers (du plus rare au plus commun) : le reste est Commune
 const TC_QUOTA = [["M", .05], ["L", .10], ["E", .17], ["R", .24], ["P", .22]];
@@ -10626,7 +10626,7 @@ const TC_WIN = [80, 17, 2.7, .3];   // niveau du booster gagné sur une victoire
 const TC_GAIN = {win: 30, streak: 5, streakMax: 30, record: 20, cap: 10, drop: .25, dropStreak: .05, dropMax: .5};
 const TC_XP = {C: 5, P: 8, R: 15, E: 40, L: 120, M: 400, X: 300};   // expérience pour une nouvelle carte (1 pour un doublon)
 const TC_ALLMAX = 50;   // « Tout ouvrir » : nombre maximal de boosters ouverts en un clic
-const TC_PITY = {M: 120, L: 25};   // Mythique sûre au 120e booster sans Mythique ; Légendaire ou mieux au 25e sans
+const TC_PITY = {M: 200, L: 40};   // Mythique sûre au 200e booster sans Mythique ; Légendaire ou mieux au 40e sans (2 nov. 2026 : avant 120 et 25, quand le booster gratuit venait toutes les 45 min)
 const TC_PACKS = {mix: ["Mélange", "混", "#f5c518", 100, "Tous les univers"], op: ["One Piece", "海", "#ff5a36", 120, "Pirates et Marine"], db: ["Dragon Ball", "龍", "#ff9f1c", 120, "Guerriers et dieux"], na: ["Naruto", "忍", "#5aa9ff", 120, "Shinobi"], jjk: ["Jujutsu Kaisen", "呪", "#a98bff", 120, "Exorcistes et fléaux"], ds: ["Demon Slayer", "鬼", "#3fc9a0", 120, "Pourfendeurs et démons"], mha: ["My Hero Academia", "英", "#ffd84a", 120, "Héros et vilains"]};
 const TC_UNIS = ["op", "db", "na", "jjk", "ds", "mha"];   // jjk, ds, mha : ajoutés le 14 oct. 2026, numérotés après toutes les cartes existantes
 const TC_FREE = {max: 10, every: 9e5, weekend: 6e5}   /* 10 en réserve, un toutes les 45 min (14 oct. 2026) : même en se connectant jour et nuit (32 par jour au plus), la collection demande environ trois mois */, TC_WINCAP = 3;
@@ -10739,7 +10739,7 @@ const tcStock = s => Object.values(s.packs).reduce((a, b) => a + b, 0) + s.free.
 function tcRoll(rate){ let r = Math.random() * Object.values(rate).reduce((a, b) => a + b, 0); for (const k in rate){ r -= rate[k]; if (r <= 0) return k; } return Object.keys(rate)[0]; }
 // boosters secrets : un booster Classique peut se révéler en être un à l'ouverture (validés par l'utilisateur le 12 octobre 2026).
 // [clé, nom, kanji, une chance sur…, couleur, ce qu'il garantit]
-const TC_SECRET = [["divin", "Divin caché", "神", 500, "#c9a2ff", "Légendaire garantie, taux du booster Divin"], ["tresor", "Trésor", "宝", 200, "#2fd38f", "un objet Légendaire ou Mythique garanti"], ["eveil", "Éveil", "覚", 150, "#8fe9ff", "une transformation garantie"],
+const TC_SECRET = [["divin", "Divin caché", "神", 500, "#c9a2ff", "Légendaire garantie, taux du booster Divin"], ["tresor", "Trésor", "宝", 200, "#2fd38f", "un objet Légendaire ou Mythique garanti"], ["eveil", "Éveil", "覚", 600, "#8fe9ff", "une transformation garantie"],
   ["rouge", "Sceau rouge", "判", 100, "#ff5a36", "une version rare garantie (AR, Wanted ou Red Blood)"], ["dore", "Doré", "金", 40, "#f7c64a", "Épique garantie, taux du booster Or"]];
 const TC_DPITY = 60;   /* booster Doré garanti au 60e Classique ouvert sans Doré (13 oct. 2026) ; le compteur s.pity.D ne redescend qu'avec un Doré */
 const tcSecretRoll = s => { let r = ""; for (const sx of TC_SECRET) if (Math.random() < 1 / sx[3]){ r = sx[0]; break; }
@@ -10747,7 +10747,7 @@ const tcSecretRoll = s => { let r = ""; for (const sx of TC_SECRET) if (Math.ran
   return r; };
 // Versions rares : avant, la version était tirée pour chaque carte puis annulée si la carte n'y avait pas droit, ce qui rendait une UR précise quasi impossible (1 booster Or sur 150 000).
 // Désormais un tirage par booster : en % de chance (booster Classique, multiplié par TC_FINMUL selon le niveau) que la 4e carte soit une version rare, dont la carte est choisie parmi celles qui existent dans cette version.
-const TC_VHIT = {A: 4.8, W: 1.9, K: 1.6, G: .41, Z: .2}, TC_VW = {C: 10, P: 10, R: 10, E: 10, L: 3, M: 1, X: 1}, TC_VPITY = 100, TC_UPITY = 200;   // TC_UPITY : UR ou Légende garantie après tant de boosters sans   // TC_VW : poids par rareté dans ce choix ; TC_VPITY : Red Blood ou mieux garantie après tant de boosters sans
+const TC_VHIT = {A: 4.8, W: 1.9, K: 1.6, G: .41, Z: .2}, TC_VW = {C: 10, P: 10, R: 10, E: 10, L: 3, M: 1, X: 1}, TC_VPITY = 150, TC_UPITY = 400;   /* 2 nov. 2026 : avant 100 et 200 (booster gratuit toutes les 45 min) */   // TC_UPITY : UR ou Légende garantie après tant de boosters sans   // TC_VW : poids par rareté dans ce choix ; TC_VPITY : Red Blood ou mieux garantie après tant de boosters sans
 const tcVList = (pool, k) => pool.flatMap(c => (k === "A" ? ["A", "B", "C"] : [k]).filter(v => tcVersOf(c).includes(v)).map(v => [c, v]));
 // tirage au hasard, doublons compris (choix de l'utilisateur : les doublons font partie du jeu, ils se recyclent en éclats)
 const tcVPick = l => { let x = Math.random() * l.reduce((a, [c]) => a + TC_VW[c.r], 0); for (const e of l){ x -= TC_VW[e[0].r]; if (x <= 0) return e; } return l[l.length - 1]; };
