@@ -20601,27 +20601,33 @@ setTimeout(dfSync, 6000); setInterval(dfSync, 120000);
    Validée : +15 ◆, puis comparaison avec la tier list moyenne du monde (tier-supabase.sql) et celles des amis. Partage en image. */
 const TL_T = ["S", "A", "B", "C", "D"], TL_U = ["op", "na", "db", "jjk", "ds", "mha"], TL_CRIT = ["Les plus forts", "Tes préférés", "Les plus charismatiques", "Les plus forts", "Le plus de style"];
 let TL_SEL = null, TL_TAB = 0;
-function tlToday(){ const d = tcDay(), n = dfNum(d), u = TL_U[(n + 2) % TL_U.length], all = dfAll().filter(c => c.u === u && dfPort(c));
-  if (all.length < 8) return null; const L = dfShuffle(all.sort((a, b) => a.id < b.id ? -1 : 1), "tier-" + d).slice(0, 8); return {d, n, u, L, crit: TL_CRIT[n % TL_CRIT.length]}; }
+/* 2 nov. 2026 : un jour sur deux, un thème qui mélange les univers (méchants, mentors, sabreurs…) ; l'autre jour, un univers et un critère */
+const TL_THEMES = {"Les méchants les plus terrifiants": ["Freezer", "Cell", "Majin Buu", "Madara Uchiwa", "Orochimaru", "Nagato (Pain)", "Muzan Kibutsuji", "Akaza", "Doma", "Kokushibo", "Ryomen Sukuna", "Mahito", "Jogo", "All For One", "Tomura Shigaraki", "Dabi", "Donquixote Doflamingo", "Kaido", "Sakazuki (Akainu)", "Marshall D. Teach", "Crocodile", "Rob Lucci"], "Les meilleurs mentors": ["Kakashi Hatake", "Jiraya", "Minato Namikaze", "Satoru Gojo", "Kento Nanami", "All Might", "Shota Aizawa", "Kyojuro Rengoku", "Piccolo", "Silvers Rayleigh", "Shanks", "Tsunade", "Monkey D. Garp", "Giyu Tomioka"], "Les meilleurs héros principaux": ["Monkey D. Luffy", "Naruto Uzumaki", "Son Goku", "Yuji Itadori", "Tanjiro Kamado", "Izuku Midoriya", "Yuta Okkotsu", "Son Gohan"], "Les meilleurs rivaux": ["Vegeta", "Sasuke Uchiwa", "Katsuki Bakugo", "Shoto Todoroki", "Megumi Fushiguro", "Gaara", "Inosuke Hashibira", "Roronoa Zoro", "Sanji", "Eustass Kid", "Trafalgar D. Water Law", "Rock Lee"], "Les meilleurs sabreurs": ["Roronoa Zoro", "Dracule Mihawk", "Shanks", "Kyojuro Rengoku", "Giyu Tomioka", "Tanjiro Kamado", "Zabuza Momochi", "Maki Zenin", "Kokushibo", "Kisame Hoshigaki", "Tengen Uzui", "Muichiro Tokito", "Sanemi Shinazugawa", "Yuta Okkotsu"], "Les meilleures héroïnes": ["Nami", "Nico Robin", "Boa Hancock", "Sakura Haruno", "Tsunade", "Ino Yamanaka", "Konan", "Nobara Kugisaki", "Maki Zenin", "Shinobu Kocho", "Mitsuri Kanroji", "Nezuko Kamado", "Ochaco Uraraka", "Tsuyu Asui", "Momo Yaoyorozu", "Himiko Toga", "C-18", "Bulma"], "Les plus drôles": ["Usopp", "Brook", "Buggy", "Franky", "Tony Tony Chopper", "Zenitsu Agatsuma", "Inosuke Hashibira", "Jiraya", "Aoi Todo", "Panda", "Majin Buu", "Yamcha", "Krilin", "Killer B", "Mirio Togata", "Kakashi Hatake"], "Les combattants les plus redoutables": ["Son Goku", "Vegeta", "Madara Uchiwa", "Hashirama Senju", "Satoru Gojo", "Ryomen Sukuna", "Kokushibo", "Muzan Kibutsuji", "All Might", "All For One", "Kaido", "Edward Newgate", "Shanks", "Jiren", "Beerus", "Toji Fushiguro"]};
+const tlUni = T => T.u === "mix" ? "Tous univers" : TC_PACKS[T.u][0];
+function tlToday(){ const d = tcDay(), n = dfNum(d), by = Object.fromEntries(dfAll().map(c => [c.n, c]));
+  if (n % 2 === 0){ const keys = Object.keys(TL_THEMES), t = keys[(n / 2) % keys.length], all = TL_THEMES[t].map(x => by[x]).filter(c => c && dfPort(c));
+    if (all.length >= 8) return {d, n, u: "mix", L: dfShuffle(all, "tier-" + d).slice(0, 8), crit: t}; }
+  const u = TL_U[Math.floor(n / 2) % TL_U.length], all = dfAll().filter(c => c.u === u && dfPort(c));
+  if (all.length < 8) return null; const L = dfShuffle(all.sort((a, b) => a.id < b.id ? -1 : 1), "tier-" + d).slice(0, 8); return {d, n, u, L, crit: TL_CRIT[Math.floor(n / 2) % TL_CRIT.length]}; }
 const tlState = () => { const s = tcLoad(), d = tcDay(); if (!s.tl || s.tl.d !== d) s.tl = {d, p: {}, done: false}; return s; };
 const tlTile = (c, extra = "") => `<button class="tlt" data-n="${esc(c.n)}"><img src="${dfPort(c)}" alt="">${extra}<span>${esc(c.n.split(" (")[0])}</span></button>`;
 const tlWorld = st => { const r = {}; for (const k in (st && st.avg) || {}) r[k] = Math.max(0, Math.min(4, Math.round(+st.avg[k]))); return r; };
 // ——— dans « Aujourd'hui » ———
 function tlHub(el){ const T = tlToday(); if (!el || !T) return; const s = tlState(), done = s.tl.done;
-  el.innerHTML = `<div><p class="dfkick">Tier list du jour</p><h2 class="q">${esc(T.crit)} · ${esc(TC_PACKS[T.u][0])}</h2></div>
+  el.innerHTML = `<div><p class="dfkick">Tier list du jour</p><h2 class="q">${esc(T.crit)} · ${esc(tlUni(T))}</h2></div>
     <div class="tlteas">${T.L.map(c => `<img src="${dfPort(c)}" alt="">`).join("")}</div>
     <p class="dfnote">${done ? "Ta tier list est faite. Compare-la avec le monde entier et tes amis." : "Classe ces 8 personnages de S à D, puis compare avec le monde entier : <b>+15 ◆</b>."}</p>
     <button class="dfcta ${done ? "g" : ""}" id="tlGo">${done ? "Voir les résultats" : "Faire ma tier list"}</button>`;
   el.querySelector("#tlGo").onclick = () => dfOpen("tier"); }
 function tlHome(el){ const T = tlToday(); if (!T || el.querySelector("#dfH3")) return; const done = tlState().tl.done;
-  el.insertAdjacentHTML("beforeend", `<button id="dfH3"><span class="tlstrip">${T.L.slice(0, 6).map(c => `<img src="${dfPort(c)}" alt="">`).join("")}</span><span class="tx"><small>Tier list du jour</small><b>${esc(T.crit)} · ${esc(TC_PACKS[T.u][0])}</b><span>${done ? "Compare avec le monde" : "Classe 8 personnages de S à D"}</span></span></button>`);
+  el.insertAdjacentHTML("beforeend", `<button id="dfH3"><span class="tlstrip">${T.L.slice(0, 6).map(c => `<img src="${dfPort(c)}" alt="">`).join("")}</span><span class="tx"><small>Tier list du jour</small><b>${esc(T.crit)} · ${esc(tlUni(T))}</b><span>${done ? "Compare avec le monde" : "Classe 8 personnages de S à D"}</span></span></button>`);
   el.querySelector("#dfH3").onclick = () => dfOpen("tier"); }
 // ——— le jeu ———
 function tlPlay(box){ const T = tlToday(); if (!T) return dfOpen("today"); const by = Object.fromEntries(T.L.map(c => [c.n, c])); dfEl().style.setProperty("--dfbg", `url("${dfPort(T.L[0])}")`);
   const draw = () => { const s = tlState(), p = s.tl.p, done = s.tl.done, left = T.L.filter(c => p[c.n] == null);
     if (done) return tlResults(box, T);
     box.innerHTML = `<div class="dfbar0">${DF_LOGO}<button class="dfback" id="dfBack">‹ Aujourd'hui</button></div>
-      <div><p class="dfkick">Tier list du jour · ${esc(TC_PACKS[T.u][0])}</p><h1 class="dfh" style="font-size:clamp(24px,7vw,36px)">${esc(T.crit)}</h1></div>
+      <div><p class="dfkick">Tier list du jour · ${esc(tlUni(T))}</p><h1 class="dfh" style="font-size:clamp(24px,7vw,36px)">${esc(T.crit)}</h1></div>
       <p class="tlhint">${TL_SEL ? `Touche une ligne pour y placer <b>${esc(TL_SEL)}</b>` : left.length ? "Touche un personnage, puis une ligne" : "Tout est classé : valide ta tier list"}</p>
       <div class="tlrows">${TL_T.map((t, k) => `<div class="tlrow tl${k} ${TL_SEL ? "tgt" : ""}" data-t="${k}"><b>${t}</b><div>${T.L.filter(c => p[c.n] === k).map(c => tlTile(c)).join("")}</div></div>`).join("")}</div>
       <div class="tlpool">${left.map(c => tlTile(c)).join("")}</div>
@@ -20640,7 +20646,7 @@ function tlPlay(box){ const T = tlToday(); if (!T) return dfOpen("today"); const
 async function tlResults(box, T){ const s = tlState(), me = s.tl.p; let st = s.tl.st; if (!st || !st.n) st = await dfRpc("tier_stats", {p_day: T.d}) || st;
   const W = tlWorld(st), agree = T.L.filter(c => W[c.n] === me[c.n]).length, rows = (P, mark) => `<div class="tlrows">${TL_T.map((t, k) => `<div class="tlrow tl${k}"><b>${t}</b><div>${T.L.filter(c => P[c.n] === k).map(c => tlTile(c, mark && W[c.n] != null && W[c.n] !== me[c.n] ? `<i class="dv">${TL_T[W[c.n]]}</i>` : "")).join("")}</div></div>`).join("")}</div>`;
   const render = fr => { box.innerHTML = `<div class="dfbar0">${DF_LOGO}<button class="dfback" id="dfBack">‹ Aujourd'hui</button></div>
-      <div><p class="dfkick">Tier list du jour · ${esc(TC_PACKS[T.u][0])}</p><h1 class="dfh" style="font-size:clamp(24px,7vw,36px)">${esc(T.crit)}</h1></div>
+      <div><p class="dfkick">Tier list du jour · ${esc(tlUni(T))}</p><h1 class="dfh" style="font-size:clamp(24px,7vw,36px)">${esc(T.crit)}</h1></div>
       ${st && st.n ? `<p class="tlagree">D'accord avec le monde sur ${agree}/8<small>${st.n} tier list${st.n > 1 ? "s" : ""} aujourd'hui · la lettre en coin = le rang du monde</small></p>` : `<p class="tlagree">Tier list validée<small>La moyenne du monde s'affiche dès les premières tier lists.</small></p>`}
       <div class="tltabs">${["Toi", "Le monde", "Tes amis"].map((x, i) => `<button data-k="${i}" class="${i === TL_TAB ? "on" : ""}">${x}</button>`).join("")}</div>
       ${TL_TAB === 0 ? rows(me, true) : TL_TAB === 1 ? (st && st.n ? rows(W) : `<p class="dfnote">Pas encore assez de tier lists aujourd'hui.</p>`)
@@ -20656,12 +20662,12 @@ async function tlShare(T, btn){ const t0 = btn.textContent; btn.disabled = true;
     const tx = (t, x, y, sz, c = "#fff", w = 900, a = "center") => { g.font = `${w} ${sz}px Unbounded, system-ui`; g.fillStyle = c; g.textAlign = a; g.fillText(t, x, y); };
     const lg = await dfImg("data:image/svg+xml;charset=utf-8," + encodeURIComponent(DF_LOGO.replace(/^<div class="dflogo">/, "").replace(/HANKO <em>.*$/, "").replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" ')));
     g.font = "900 56px Unbounded, system-ui"; const tw = g.measureText("HANKO").width, x0 = W / 2 - (tw + 80) / 2; if (lg) g.drawImage(lg, x0, 50, 66, 66); tx("HANKO", x0 + 80, 104, 56, "#fff", 900, "left");
-    tx("Ma tier list du jour", W / 2, 190, 50); tx(T.crit + " · " + TC_PACKS[T.u][0], W / 2, 245, 32, "#ffb3b8", 700);
+    tx("Ma tier list du jour", W / 2, 190, 50); tx(T.crit + " · " + tlUni(T), W / 2, 245, 32, "#ffb3b8", 700);
     const cols = ["#ff5964", "#ff9f43", "#ffd23f", "#5fd98a", "#5aa9ff"], ims = await Promise.all(T.L.map(c => dfImg(dfPort(c)))), im = Object.fromEntries(T.L.map((c, k) => [c.n, ims[k]]));
     TL_T.forEach((t, k) => { const y = 290 + k * 196, h = 182; g.fillStyle = "#ffffff12"; g.fillRect(60, y, 960, h); g.fillStyle = cols[k]; g.fillRect(60, y, 120, h); tx(t, 120, y + h / 2 + 26, 76, "#0b0a0e");
       T.L.filter(c => p[c.n] === k).forEach((c, j) => { const x = 196 + j * 138, w = 126, hh = 166; const i = im[c.n]; if (i){ g.save(); g.beginPath(); g.rect(x, y + 8, w, hh); g.clip(); const r = Math.max(w / i.width, hh / i.height); g.drawImage(i, x - (i.width * r - w) / 2, y + 8 - (i.height * r - hh) * .22, i.width * r, i.height * r); g.restore(); } }); });
     tx("Et toi, tu classes comment ?", W / 2, 1290, 36, "#ffd9a0", 800); g.font = "600 24px 'JetBrains Mono', monospace"; g.fillStyle = "#8f889a"; g.fillText("hanko-game.github.io/mercato-anime", W / 2, 1330);
-    const blob = await new Promise(r => cv.toBlob(r, "image/png")), file = new File([blob], "hanko-tier-list.png", {type: "image/png"}), text = `Ma tier list du jour sur Hanko : ${T.crit} (${TC_PACKS[T.u][0]}). Et toi ? https://hanko-game.github.io/mercato-anime/`;
+    const blob = await new Promise(r => cv.toBlob(r, "image/png")), file = new File([blob], "hanko-tier-list.png", {type: "image/png"}), text = `Ma tier list du jour sur Hanko : ${T.crit} (${tlUni(T)}). Et toi ? https://hanko-game.github.io/mercato-anime/`;
     if (navigator.canShare && navigator.canShare({files: [file]})){ try { await navigator.share({files: [file], text}); return; } catch (e) { if (e && e.name === "AbortError") return; } }
     const url = URL.createObjectURL(blob); document.body.insertAdjacentHTML("beforeend", `<div class="dfshm"><div><img src="${url}" alt="Ma tier list Hanko"><a class="dfbtn" href="${url}" download="hanko-tier-list.png">Télécharger l'image</a><button class="dfbtn g" id="dfShX">Fermer</button></div></div>`);
     const M = document.body.lastElementChild; M.querySelector("#dfShX").onclick = () => { M.remove(); URL.revokeObjectURL(url); }; M.onclick = e => { if (e.target === M){ M.remove(); URL.revokeObjectURL(url); } };
