@@ -20219,6 +20219,8 @@ const DF_PORT = {"Son Goku": "debat-db-son-goku.webp", "Vegeta": "debat-db-veget
 .dfsplit.voted .dfside{cursor:default}.dfside[disabled]{opacity:1}.dfsplit.voted .dfside.lo{filter:grayscale(.75) brightness(.55)}.dfsplit.voted .dfside.me .fc{transform:scale(1.04)}
 .dfsplit.voted .dfside.me .dfnm b::after{content:" ✓";color:#4fe08f}
 .dfvb{height:12px;border-radius:99px;background:#ffffff14;overflow:hidden;display:flex;box-shadow:inset 0 1px 2px #0008}.dfvb i{display:block;height:100%;background:linear-gradient(90deg,#d8101e,#ff5964);transition:width 1s cubic-bezier(.2,.8,.2,1)}.dfvb i+i{background:linear-gradient(90deg,#7fb2ff,#2f6fe0)}
+.dflive{font-style:normal;margin-left:6px;font:700 10px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:#4fe08f}.dflive::before{content:"● ";animation:dfblink 1.4s infinite}@keyframes dfblink{50%{opacity:.25}}
+.dffv{display:grid;gap:8px}.dffvh{margin:0;font:800 13px var(--title);color:#fff}.dffvc{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dffvc>div{display:flex;flex-wrap:wrap;gap:5px;align-content:flex-start;padding:10px;border-radius:12px;background:#ffffff08}.dffvc small{width:100%;font:700 10.5px var(--mono);letter-spacing:.06em;text-transform:uppercase}.dffvc .a small{color:#ff8a92}.dffvc .b small{color:#9cc3ff}.dffvc span{font:700 12px var(--body,system-ui);padding:4px 9px;border-radius:999px;background:#ffffff12}.dffvc .a span{background:#ff2d3a26}.dffvc .b span{background:#3d8bff26}.dffvc em{font-size:12px;color:#8f889a}
 .dfnote{margin:0;font-size:13.5px;color:#bdb6c6;text-align:center}.dfnote b{color:#fff}
 /* jeu */
 .dfpbar{display:flex;align-items:center;gap:10px}.dfpbar .t{font:900 15px var(--title)}.dfpbar .c{margin-left:auto;font:800 13px var(--mono);color:#ffc46b}
@@ -20390,12 +20392,23 @@ function dfDebDraw(el, D, s){ const v = s.dfV, c = v.c, tot = c ? c.a + c.b : 0,
     <div class="dfsplit ${me != null ? "voted" : ""}">${side(D.a, 0)}${side(D.b, 1)}<i class="seam"></i><span class="dfvsb">VS</span></div>
     ${pa != null ? `<div class="dfvb"><i style="width:${pa}%"></i><i style="width:${100 - pa}%"></i></div><p class="dfnote"><b>${tot}</b> vote${tot > 1 ? "s" : ""} dans le monde · ${(me ? 100 - pa : pa) >= 50 ? "tu es avec la majorité" : "tu fais partie de la minorité"}</p>`
       : me != null ? `<p class="dfnote">${CP.user ? "Ton vote est enregistré. Les résultats mondiaux s'affichent dès qu'ils sont disponibles." : "Connecte-toi pour que ton vote compte dans les résultats mondiaux."}</p>` : `<p class="dfnote">Touche ton camp : <b>+10 ◆</b> pour ton vote. Les résultats du monde entier s'affichent ensuite.</p>`}
-    ${me != null ? `<button class="dfcta g" id="dfShareD">Partager le débat</button>` : ""}`;
+    ${me != null ? `<div class="dffv" id="dfFv"></div><button class="dfcta g" id="dfShareD">↗ Partager le débat</button>` : ""}`;
   el.querySelectorAll("[data-pick]").forEach(b => b.onclick = async () => { const k = +b.dataset.pick, s2 = dfState(); if (s2.dfV.pick != null) return; s2.dfV.pick = k; if (!s2.dfV.paid){ s2.dfV.paid = 1; s2.gems = (s2.gems || 0) + 10; try { tcToast("Débat du jour : +10 ◆ pour ton vote"); } catch {} } tcSave(s2);   /* 2 nov. 2026 : 10 ◆ pour avoir voté, une fois par jour */ try { tcSnd("pop"); } catch {} try { navigator.vibrate?.(25); } catch {}
     dfDebDraw(el, D, s2); const r = CP.user ? await dfRpc("debate_vote", {p_day: D.d, p_pick: k}) : await dfRpc("debate_counts", {p_day: D.d});
     if (r){ const s3 = dfState(); s3.dfV.c = {a: r.a + (CP.user ? 0 : k === 0 ? 1 : 0), b: r.b + (CP.user ? 0 : k === 1 ? 1 : 0)}; tcSave(s3); if (el.isConnected) dfDebDraw(el, D, s3); } });
   dfCrop(el); el.querySelector("#dfShareD") && (el.querySelector("#dfShareD").onclick = e => dfShare("debat", e.currentTarget));
-  if (me != null && CP.user) dfRpc("debate_counts", {p_day: D.d}).then(r => { if (!r || !el.isConnected) return; const s3 = dfState(); const old = s3.dfV.c; if (old && old.a === r.a && old.b === r.b) return; s3.dfV.c = {a: r.a, b: r.b}; tcSave(s3); dfDebDraw(el, D, s3); }); }
+  if (me != null){ dfFriendVotes(el, D);
+    /* pourcentages en direct : relus toutes les 8 s tant que le débat est affiché */
+    clearInterval(el.__live); el.__live = setInterval(async () => { if (!el.isConnected) return clearInterval(el.__live); const r = await dfRpc("debate_counts", {p_day: D.d}); if (!r || !el.isConnected) return; const s3 = dfState(), old = s3.dfV.c || {}, a = r.a + (CP.user ? 0 : me === 0 ? 1 : 0), b = r.b + (CP.user ? 0 : me === 1 ? 1 : 0); if (old.a === a && old.b === b) return; s3.dfV.c = {a, b}; tcSave(s3); dfLive(el, a, b, me); }, 8000); } }
+// mise à jour des pourcentages sans tout redessiner (le pourcentage glisse vers sa nouvelle valeur)
+function dfLive(el, a, b, me){ const t = a + b; if (!t) return; const pa = Math.round(a / t * 100), P = el.querySelectorAll(".dfpct"), B = el.querySelectorAll(".dfvb i"), N = el.querySelector(".dfnote");
+  if (P.length < 2 || B.length < 2) return dfDebDraw(el, dfDebate(), dfState()); P[0].textContent = pa + " %"; P[1].textContent = 100 - pa + " %"; B[0].style.width = pa + "%"; B[1].style.width = 100 - pa + "%";
+  if (N) N.innerHTML = `<b>${t}</b> vote${t > 1 ? "s" : ""} dans le monde · ${(me ? 100 - pa : pa) >= 50 ? "tu es avec la majorité" : "tu fais partie de la minorité"} <i class="dflive">en direct</i>`; }
+// votes des amis au débat : chacun sous son camp
+async function dfFriendVotes(el, D){ const box = el.querySelector("#dfFv"); if (!box) return; if (!CP.user){ box.innerHTML = `<p class="dfnote">Connecte-toi pour voir les votes de tes amis.</p>`; return; }
+  const L = await dfRpc("daily_friends", {p_day: D.d}); if (!box.isConnected || !L) return; const V = L.filter(f => f.pick != null); if (!L.length) return;
+  const col = k => V.filter(f => f.pick === k).map(f => `<span>${esc(f.name)}</span>`).join("") || `<em>personne</em>`;
+  box.innerHTML = `<p class="dffvh">Tes amis${V.length ? "" : " n'ont pas encore voté"}</p>${V.length ? `<div class="dffvc"><div class="a"><small>${esc(D.a.n)}</small>${col(0)}</div><div class="b"><small>${esc(D.b.n)}</small>${col(1)}</div></div>` : ""}`; }
 // ——— le jeu ———
 const DF_KJ = ["一", "二", "三", "四", "五", "六"];
 function dfPlay(box){ const T = dfToday(), s = dfState(); if (!T) return dfClose(); const A = T.a, all = dfAll(), byId = Object.fromEntries(all.map(c => [c.id, c])); let seen = s.df.g.length;
@@ -20446,9 +20459,8 @@ async function dfFriends(el, T){ if (!el) return; if (!CP.user){ el.textContent 
   if (!L.length){ el.textContent = "Ajoute des amis pour comparer vos résultats chaque jour."; return; } const D = dfDebate();
   el.outerHTML = `<div class="dffr">${L.map(f => `<div><b>${esc(f.name)}</b>${f.pick != null && D ? `<small>${esc([D.a, D.b][f.pick].n)} au débat</small>` : ""}<span class="${f.tries == null ? "" : f.won ? "ok" : "ko"}">${f.tries == null ? "Pas encore joué" : f.won ? `Trouvé en ${f.tries}/${DF_MAX}` : "Raté"}</span></div>`).join("")}</div>`; }
 // texte à partager (aucune réponse dévoilée) : une ligne par proposition, univers / rareté / niveau
-function dfText(){ const T = dfToday(), s = dfState(), st = s.df, all = dfAll(), byId = Object.fromEntries(all.map(c => [c.id, c])), G = st.g.map(id => byId[id]).filter(Boolean), fire = dfFire(s);
-  const sq = (ok, mid) => ok ? "🟩" : mid ? "🟨" : "🟥";
-  return `Hanko · Défi du jour #${T.n} ${st.won ? G.length : "X"}/${DF_MAX}${fire > 1 ? " 🔥" + fire : ""}\n${G.map(g => { const r = dfRel(g, T.a); return g.id === T.a.id ? "🟩🟩🟩 ✅" : sq(r.u) + sq(r.r === 0) + sq(r.p === 0, r.pc); }).join("\n")}\nEt toi ? https://hanko-game.github.io/mercato-anime/`; }
+function dfText(){ const T = dfToday(), s = dfState(), st = s.df, fire = dfFire(s);
+  return `Hanko · Défi du jour #${T.n} : ${st.won ? `trouvé en ${st.g.length}/${DF_MAX}` : "pas trouvé"}${fire > 1 ? ` · 🔥 ${fire} jours de suite` : ""}\nEt toi, tu le trouves ? https://hanko-game.github.io/mercato-anime/`; }
 // image à partager (1080 × 1350) : défi (zoom de départ, grille, série) ou débat (les deux personnages, ton choix, le pourcentage)
 const dfImg = src => new Promise(r => { const i = new Image(); i.onload = () => r(i); i.onerror = () => r(null); i.src = src; });
 async function dfPoster(kind){ const W = 1080, H = 1350, cv = document.createElement("canvas"); cv.width = W; cv.height = H; const g = cv.getContext("2d");
@@ -20456,15 +20468,15 @@ async function dfPoster(kind){ const W = 1080, H = 1350, cv = document.createEle
   const bg = g.createRadialGradient(W / 2, 0, 50, W / 2, 200, H); bg.addColorStop(0, "#4a1018"); bg.addColorStop(1, "#0b0a0e"); g.fillStyle = bg; g.fillRect(0, 0, W, H);
   const T = dfToday(), s = dfState(), tx = (t, x, y, sz, c = "#fff", w = 900, a = "center", f = "Unbounded, system-ui") => { g.font = `${w} ${sz}px ${f}`; g.fillStyle = c; g.textAlign = a; g.fillText(t, x, y); };
   const cover = (im, x, y, w, h, ox = .5, oy = .2, sc = 1, fx = .5, fy = .5) => { if (!im) return; g.save(); g.beginPath(); g.roundRect ? g.roundRect(x, y, w, h, 36) : g.rect(x, y, w, h); g.clip(); const r = Math.max(w / im.width, h / im.height) * sc, iw = im.width * r, ih = im.height * r; g.drawImage(im, x - (iw - w) * (sc > 1 ? fx : ox), y - (ih - h) * (sc > 1 ? fy : oy), iw, ih); g.restore(); };
-  tx("HANKO", W / 2, 120, 64, "#ff2d3a"); tx(new Date().toLocaleDateString("fr-FR", {day: "numeric", month: "long", year: "numeric"}), W / 2, 176, 28, "#c9c3d1", 600, "center", "'JetBrains Mono', monospace");
+  { const lg = await dfImg("data:image/svg+xml;charset=utf-8," + encodeURIComponent(DF_LOGO.replace(/^<div class="dflogo">/, "").replace(/HANKO <em>.*$/, "").replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" '))); g.font = "900 60px Unbounded, system-ui"; const tw = g.measureText("HANKO").width, x0 = W / 2 - (tw + 84) / 2; if (lg) g.drawImage(lg, x0, 64, 70, 70); tx("HANKO", x0 + 84, 122, 60, "#fff", 900, "left"); }   /* logo Hanko d'origine */ tx(new Date().toLocaleDateString("fr-FR", {day: "numeric", month: "long", year: "numeric"}), W / 2, 176, 28, "#c9c3d1", 600, "center", "'JetBrains Mono', monospace");
   if (kind === "defi"){ const st = s.df, fire = dfFire(s), all = dfAll(), byId = Object.fromEntries(all.map(c => [c.id, c])), G = st.g.map(id => byId[id]).filter(Boolean); tx(`Défi du jour #${T.n}`, W / 2, 270, 62);
     /* l'image du départ, la plus pixélisée : rien n'est dévoilé à ceux qui n'ont pas encore joué */
     const im = await dfImg(await dfPixURL(T, 0)), bx = 340, by = 320, bw = 400, bh = 420; g.save(); g.beginPath(); g.roundRect ? g.roundRect(bx, by, bw, bh, 32) : g.rect(bx, by, bw, bh); g.clip(); g.imageSmoothingEnabled = false; if (im) g.drawImage(im, bx, by, bw, bh); g.restore();
     g.lineWidth = 6; g.strokeStyle = "#ff2d3a"; g.beginPath(); g.roundRect ? g.roundRect(bx, by, bw, bh, 32) : g.rect(bx, by, bw, bh); g.stroke(); tx("?", W / 2, by + bh / 2 + 70, 200, "#ffffffd8");
     tx(st.won ? `Trouvé en ${G.length}/${DF_MAX}` : `Pas trouvé (${DF_MAX}/${DF_MAX})`, W / 2, 940, 64, st.won ? "#3ccf7a" : "#ff6b75");
-    /* grille : une colonne par proposition, trois cases (univers, rareté, niveau) */
-    const sz = 58, gap = 14, colW = sz + 26, x00 = W / 2 - (G.length * colW - 26) / 2;
-    G.forEach((c, k) => { const r = dfRel(c, T.a), hit = c.id === T.a.id; [hit || r.u, hit || r.r === 0, hit || r.p === 0].forEach((ok, j) => { g.fillStyle = ok ? "#3ccf7a" : j === 2 && r.pc ? "#f2b13a" : "#e0452f"; const x = x00 + k * colW, y = 1000 + j * (sz + gap); g.beginPath(); g.roundRect ? g.roundRect(x, y, sz, sz, 12) : g.rect(x, y, sz, sz); g.fill(); }); });
+    /* plus de grille de cases (incomprise) : le top % du jour s'il est connu, sinon la série */
+    { const r = st.st, me = st.won ? G.length : 0; if (r && r.n && me){ const better = r.dist.slice(0, me - 1).reduce((a, b) => a + b, 0), top = Math.max(1, Math.ceil((better + 1) / r.n * 100)); tx(`Top ${top} % des joueurs du jour`, W / 2, 1040, 46, "#ffd77a", 900); tx(`${r.n.toLocaleString("fr-FR")} joueurs · ${Math.round(r.won / r.n * 100)} % ont trouvé`, W / 2, 1100, 30, "#c9c3d1", 600); }
+      else tx(st.won ? "Du premier coup ou presque ?" : "Le défi était coriace aujourd'hui", W / 2, 1060, 38, "#c9c3d1", 700); }
     tx(fire > 1 ? `🔥 Série de ${fire} jours · Et toi ?` : "Et toi, tu le trouves ?", W / 2, 1268, 38, "#ffd9a0", 800); }
   else { const D = dfDebate(), v = s.dfV, c = v.c, tot = c ? c.a + c.b : 0, pa = tot ? Math.round(c.a / tot * 100) : null; tx("Débat du jour", W / 2, 260, 52, "#ff5a63"); tx(D.q, W / 2, 340, 54);
     const [ia, ib] = await Promise.all([dfImg(dfPort(D.a) || D.a.i), dfImg(dfPort(D.b) || D.b.i)]); cover(ia, 60, 400, 450, 600); cover(ib, 570, 400, 450, 600); tx("VS", W / 2, 720, 70, "#ff2d3a");
