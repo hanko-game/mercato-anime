@@ -20250,7 +20250,9 @@ new MutationObserver(() => { const sh = document.querySelector("#nvPk .nvsh>div"
 .dfres .gem{justify-self:center;font:800 13px var(--mono);padding:7px 14px;border-radius:999px;background:#4da3ff1f;border:1px solid #4da3ff55;color:#bfe0ff}
 .dfpanel{border-radius:18px;padding:14px;background:#ffffff08;border:1px solid #ffffff14;display:grid;gap:10px}.dfpanel h4{margin:0;font:900 15px var(--title)}
 .dfstat{display:flex;gap:6px;flex-wrap:wrap;font:500 13px/1.4 var(--body,system-ui);color:#bdb6c6}.dfstat b{color:#fff}
-.dfdist{display:grid;gap:5px}.dfdist div{display:grid;grid-template-columns:16px 1fr;gap:8px;align-items:center;font:800 12px var(--mono)}.dfdist i{display:block;height:18px;border-radius:6px;background:#ffffff1c;min-width:4px}.dfdist i.me{background:linear-gradient(90deg,#22a35d,#4fe08f)}
+.dftiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.dft{border-radius:14px;padding:12px;background:#ffffff0a;border:1px solid #ffffff14;display:grid;gap:2px;text-align:left}.dft b{font:900 22px/1.05 var(--title);font-variant-numeric:tabular-nums}.dft span{font-size:12px;color:#a7a0b1}
+.dft.gold{background:linear-gradient(180deg,#ffc84a26,#ffc84a0a);border-color:#ffc84a66}.dft.gold b{color:#ffd77a}.dft.red{background:linear-gradient(180deg,#ff2d3a26,#ff2d3a0a);border-color:#ff2d3a66}.dft.red b{color:#ff8a92}
+.dfdist div em{font:700 11px var(--mono);font-style:normal;color:#8f889a}.dfdist{display:grid;gap:5px}.dfdist div{display:grid;grid-template-columns:16px 1fr auto;gap:8px;align-items:center;font:800 12px var(--mono)}.dfdist i{display:block;height:18px;border-radius:6px;background:#ffffff1c;min-width:4px}.dfdist i.me{background:linear-gradient(90deg,#22a35d,#4fe08f)}
 .dfstreak{color:#ffc46b;font-weight:800}
 /* accueil */
 #dfHome{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:4px 0 14px}
@@ -20270,14 +20272,14 @@ new MutationObserver(() => { const sh = document.querySelector("#nvPk .nvsh>div"
 </style>
 <script>
 /* Défi du jour mondial (2 nov. 2026, façon Wordle/Loldle) : le même personnage à deviner pour tous les joueurs, chaque jour à 10 h.
-   L'image est très zoomée et se dévoile à chaque erreur ; chaque proposition compare l'univers, la rareté et le niveau (plus haut / plus bas).
-   Six essais. Résultat à partager en emojis (sans révéler la réponse), statistiques mondiales et série de jours.
+   L'image est pixélisée et se précise à chaque erreur ; chaque proposition compare l'univers, la rareté et le niveau (plus haut / plus bas).
+   Trois essais. Résultat à partager en emojis (sans révéler la réponse), statistiques mondiales et série de jours.
    Débat du jour : deux personnages, « qui gagne ? », un vote par compte ; les pourcentages mondiaux s'affichent après le vote.
    Les deux sont présentés à l'arrivée sur le site, une fois par jour, avant le reste. Données : defi-debat-supabase.sql. */
-const DF0 = "2026-11-01", DF_MAX = 6, DF_ZOOM = [6.5, 5.2, 4.1, 3.2, 2.4, 1.7];
+const DF0 = "2026-11-01", DF_MAX = 3, DF_ZOOM = [6.5, 5.2, 4.1, 3.2, 2.4, 1.7];
 /* 2 nov. 2026 : le défi est pixélisé (choix de l'utilisateur, plutôt que le zoom) : l'image entière, en gros pixels qui s'affinent à chaque erreur.
    DF_PIX = nombre de pixels en largeur à chaque étape ; une seule image calculée par étape, identique pour tous */
-const DF_PIX = [7, 10, 14, 20, 29, 44], DF_PXC = {};
+const DF_PIX = [8, 15, 28], DF_PXC = {};   /* 3 essais (choix de l'utilisateur, 2 nov. 2026) : très pixélisé, moyen, presque net */
 function dfPixURL(T, lv){ const k = T.d + ":" + lv; if (DF_PXC[k]) return Promise.resolve(DF_PXC[k]); return new Promise(res => { const im = new Image(); im.onload = () => { try {
     const W = 400, H = 420, cw = DF_PIX[lv], ch = Math.round(cw * H / W), r = Math.max(W / im.width, H / im.height), sw = W / r, sh = H / r, sx = (im.width - sw) / 2, sy = (im.height - sh) * .2;
     const a = document.createElement("canvas"); a.width = cw; a.height = ch; const ga = a.getContext("2d"); ga.imageSmoothingQuality = "high"; ga.drawImage(im, sx, sy, sw, sh, 0, 0, cw, ch);
@@ -20336,7 +20338,7 @@ function dfHub(box){ const T = dfToday(), D = dfDebate(), s = dfState(); if (!T 
   box.innerHTML = `<div class="dfbar0"><div class="dflogo"><i>H</i>HANKO <em>今日</em></div><span class="dfdate">${esc(dfDate())}</span><button class="dfx" id="dfX" aria-label="Fermer">✕</button></div>
     <div><p class="dfkick">Aujourd'hui sur Hanko</p><h1 class="dfh">${done ? (st.won ? "Bien joué." : "Raté de peu.") : "Le défi mondial du jour"}</h1></div>
     <section class="dfhero">${dfFrame(T, 0, done, st.won, cap)}
-      <div class="dfmeta"><span>⏱ ${done ? "Prochain défi" : "Fin du défi"} <b class="dfcd">${dfLeft()}</b></span>${fire ? `<span class="f">🔥 ${fire} jour${fire > 1 ? "s" : ""} de suite</span>` : ""}<span id="dfHubSt">6 essais</span></div>
+      <div class="dfmeta"><span>⏱ ${done ? "Prochain défi" : "Fin du défi"} <b class="dfcd">${dfLeft()}</b></span>${fire ? `<span class="f">🔥 ${fire} jour${fire > 1 ? "s" : ""} de suite</span>` : ""}<span id="dfHubSt">3 essais</span></div>
       ${done ? `<div class="dfrow"><button class="dfcta" id="dfShare">Partager mon résultat</button><button class="dfcta g" id="dfSee">Voir le détail</button></div>` : `<button class="dfcta" id="dfGo">${tries ? `Continuer · ${DF_MAX - tries} essai${DF_MAX - tries > 1 ? "s" : ""} restant${DF_MAX - tries > 1 ? "s" : ""}` : "Relever le défi"} <span aria-hidden="true">›</span></button>`}</section>
     <section class="dfdeb" id="dfDeb"></section>
     <button class="dfcta g" id="dfX2">Accéder au jeu</button>`;
@@ -20369,11 +20371,11 @@ function dfPlay(box){ const T = dfToday(), s = dfState(); if (!T) return dfClose
     const fresh = G.length > seen; seen = G.length;
     box.innerHTML = `<div class="dfpbar"><button class="dfx" id="dfBack" aria-label="Retour">‹</button><span class="t">Défi du jour #${T.n}</span><span class="c">${done ? (st.won ? "Trouvé" : "Terminé") : `${DF_MAX - G.length}/${DF_MAX} essais`}</span></div>
       <div class="dfplay">${dfFrame(T, Math.min(miss, DF_PIX.length - 1), done, st.won)}
-        <div class="dfseals">${DF_KJ.map((kj, k) => `<i class="${k < G.length ? (G[k].id === A.id ? "ok" : "x") : ""}">${k < G.length ? (G[k].id === A.id ? "✓" : "✕") : kj}</i>`).join("")}</div>
+        <div class="dfseals">${DF_KJ.slice(0, DF_MAX).map((kj, k) => `<i class="${k < G.length ? (G[k].id === A.id ? "ok" : "x") : ""}">${k < G.length ? (G[k].id === A.id ? "✓" : "✕") : kj}</i>`).join("")}</div>
         ${done ? `<div class="dfres">${st.won ? `<b class="ok">${esc(A.n)} !</b><p class="dfnote">Trouvé en ${G.length} essai${G.length > 1 ? "s" : ""}. Reviens demain pour le prochain.</p>` : `<b class="ko">C'était ${esc(A.n)}</b><p class="dfnote">Retente ta chance demain, nouveau défi à 10 h.</p>`}${st.gain ? `<span class="gem">+${st.gain} ◆${st.bonus ? " · booster offert" : ""}</span>` : ""}
           <div class="dfrow"><button class="dfcta" id="dfShare">Partager</button><button class="dfcta g" id="dfCopy">Copier le texte</button></div></div>
           <div class="dfpanel"><h4>Dans le monde</h4><div id="dfSt" class="dfstat">Chargement…</div></div>`
-        : `<div class="dfhints">${hint(2, "Univers", TC_PACKS[A.u][0])}${hint(3, "Rareté", TC_R[A.r][0])}${hint(4, "Initiale", A.n[0] + "…")}</div>
+        : `<div class="dfhints">${hint(1, "Univers", TC_PACKS[A.u][0])}${hint(2, "Rareté", TC_R[A.r][0])}${hint(2, "Initiale", A.n[0] + "…")}</div>
           <div class="dfsearch"><input id="dfQ" placeholder="Tape le nom d'un personnage…" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go"><div class="dfsug" id="dfSug" hidden></div></div>
           <p class="dfleft">L'image se précise à chaque erreur</p>`}
         ${G.length ? `<div class="dfgt"><b>Tes propositions</b><span>Vert : pareil que le mystère · Rouge : différent · ↑ ↓ : le mystère est plus haut ou plus bas</span></div>` : ""}
@@ -20390,15 +20392,18 @@ function dfPlay(box){ const T = dfToday(), s = dfState(); if (!T) return dfClose
     q.oninput = show; q.onkeydown = e => { if (e.key === "ArrowDown" || e.key === "ArrowUp"){ e.preventDefault(); if (!L.length) return; on = (on + (e.key === "ArrowDown" ? 1 : L.length - 1)) % L.length; sug.querySelectorAll("button").forEach((b, k) => b.classList.toggle("on", k === on)); } else if (e.key === "Enter" && L[on]){ e.preventDefault(); pick(L[on]); } };
     setTimeout(() => { try { if (matchMedia("(hover:hover)").matches) q.focus(); } catch {} }, 60); };
   draw(); }
-function dfFinish(s, won){ const st = s.df, d = st.d; st.won = won; const n = st.g.length; st.gain = won ? 30 + 10 * (DF_MAX - n) : 10; s.gems = (s.gems || 0) + st.gain;
+function dfFinish(s, won){ const st = s.df, d = st.d; st.won = won; const n = st.g.length; st.gain = won ? 30 + 15 * (DF_MAX - n) : 10; s.gems = (s.gems || 0) + st.gain;
   const S = s.dfS; if (won){ S.n = S.last === tcDay(-1) ? S.n + 1 : S.last === d ? S.n : 1; S.last = d; S.best = Math.max(S.best || 0, S.n); if (S.n % 7 === 0){ tcGive(s, "mix:0"); st.bonus = 1; } } else { S.n = 0; S.last = ""; }
   tcSave(s); try { tcSnd(won ? "cele" : "flip0"); } catch {} try { if (won && typeof tcBoom === "function") tcBoom(2, document.querySelector(".dfov .dfframe")); } catch {}
   try { tcToast(won ? `Défi du jour réussi : +${st.gain} ◆${st.bonus ? " et un booster offert (7 jours de suite)" : ""}` : `Défi du jour : +${st.gain} ◆ pour avoir essayé`); } catch {}
   if (CP.user) dfRpc("daily_submit", {p_day: d, p_tries: n, p_won: won}).then(r => { if (!r) return; const s2 = dfState(); s2.df.sent = 1; s2.df.st = r; tcSave(s2); const el = document.querySelector("#dfSt"); if (el) dfStats(el, dfToday(), s2.df); }); }
 async function dfStats(el, T, st){ const r = st.st && st.sent ? st.st : await dfRpc("daily_stats", {p_day: T.d}); if (!el.isConnected) return;
-  if (!r){ el.textContent = "Les statistiques mondiales arrivent bientôt."; return; } const mx = Math.max(1, ...r.dist), me = st.won ? st.g.length : 0;
-  el.outerHTML = `<div style="display:grid;gap:10px"><div class="dfstat"><span><b>${r.n}</b> joueur${r.n > 1 ? "s" : ""}</span><span>·</span><span><b>${r.n ? Math.round(r.won / r.n * 100) : 0} %</b> ont trouvé</span>${r.rank ? `<span>·</span><span>tu es le <b>${r.rank}${r.rank === 1 ? "er" : "e"}</b> à trouver</span>` : ""}</div>
-    <div class="dfdist">${r.dist.map((v, k) => `<div><span>${k + 1}</span><i class="${me === k + 1 ? "me" : ""}" style="width:${Math.max(2, v / mx * 100)}%"></i></div>`).join("")}</div>${CP.user ? "" : `<p class="dfstat">Connecte-toi pour que ton résultat compte dans le classement du jour.</p>`}</div>`; }
+  if (!r){ el.textContent = "Les statistiques mondiales arrivent bientôt."; return; } const n = r.n || 0, me = st.won ? st.g.length : 0, D = r.dist.slice(0, DF_MAX), mx = Math.max(1, ...D);
+  /* top % : la part des joueurs du jour qui ont fait aussi bien ou mieux (moins d'essais) */
+  const better = me ? D.slice(0, me - 1).reduce((a, b) => a + b, 0) : 0, top = me && n ? Math.max(1, Math.ceil((better + 1) / n * 100)) : null;
+  const tile = (v, l, c = "") => `<div class="dft ${c}"><b>${v}</b><span>${l}</span></div>`;
+  el.outerHTML = `<div style="display:grid;gap:12px"><div class="dftiles">${tile(n.toLocaleString("fr-FR"), "joueur" + (n > 1 ? "s" : "") + " aujourd'hui")}${tile((n ? Math.round(r.won / n * 100) : 0) + " %", "ont trouvé")}${top ? tile("Top " + top + " %", "des joueurs du jour", "gold") : ""}${r.rank ? tile(r.rank.toLocaleString("fr-FR") + (r.rank === 1 ? "er" : "e"), "à trouver", "red") : ""}</div>
+    <div class="dfdist">${D.map((v, k) => `<div><span>${k + 1}</span><i class="${me === k + 1 ? "me" : ""}" style="width:${Math.max(3, v / mx * 100)}%"></i><em>${v}</em></div>`).join("")}</div>${CP.user ? "" : `<p class="dfstat">Connecte-toi pour que ton résultat compte dans le classement du jour.</p>`}</div>`; }
 // texte à partager (aucune réponse dévoilée) : une ligne par proposition, univers / rareté / niveau
 function dfText(){ const T = dfToday(), s = dfState(), st = s.df, all = dfAll(), byId = Object.fromEntries(all.map(c => [c.id, c])), G = st.g.map(id => byId[id]).filter(Boolean), fire = dfFire(s);
   const sq = (ok, mid) => ok ? "🟩" : mid ? "🟨" : "🟥";
@@ -20434,7 +20439,7 @@ async function dfShare(kind, btn){ const t = btn ? btn.textContent : ""; if (btn
   } catch (e) { console.warn("partage", e); } finally { if (btn){ btn.disabled = false; btn.textContent = t; } } }
 // ——— bloc de l'accueil : toujours visible en haut ———
 function dfHomeDraw(){ const el = document.querySelector("#dfHome"); if (!el) return; const T = dfToday(), D = dfDebate(); if (!T || !D) return; const s = dfState(), st = s.df, done = st.won !== null, fire = dfFire(s);
-  el.innerHTML = `<button id="dfH1"><span class="sl ${done && st.won ? "ok" : ""}">${done ? (st.won ? "解" : "終") : "謎"}</span>${done ? `<img src="${T.a.i}" alt="">` : `<img class="dfpx" data-lv="1" src="${DF_PXC[T.d + ":1"] || ""}" alt="" style="image-rendering:pixelated">`}<small>Défi du jour #${T.n}</small><b>${done ? (st.won ? `Trouvé en ${st.g.length}/6` : "Raté aujourd'hui") : "Qui se cache ici ?"}</b><span>${done ? (fire ? `🔥 ${fire} jour${fire > 1 ? "s" : ""} de suite` : "Prochain défi à 10 h") : "Même défi pour tous · 6 essais"}</span></button>
+  el.innerHTML = `<button id="dfH1"><span class="sl ${done && st.won ? "ok" : ""}">${done ? (st.won ? "解" : "終") : "謎"}</span>${done ? `<img src="${T.a.i}" alt="">` : `<img class="dfpx" data-lv="1" src="${DF_PXC[T.d + ":1"] || ""}" alt="" style="image-rendering:pixelated">`}<small>Défi du jour #${T.n}</small><b>${done ? (st.won ? `Trouvé en ${st.g.length}/3` : "Raté aujourd'hui") : "Qui se cache ici ?"}</b><span>${done ? (fire ? `🔥 ${fire} jour${fire > 1 ? "s" : ""} de suite` : "Prochain défi à 10 h") : "Même défi pour tous · 3 essais"}</span></button>
     <button id="dfH2"><img src="${(s.dfV.pick === 1 ? D.b : D.a).i}" alt="" style="object-position:50% 20%"><small>Débat du jour</small><b>${esc(D.a.n)} ou ${esc(D.b.n)} ?</b><span>${s.dfV.pick != null ? "Voir les résultats" : esc(D.q)}</span></button>`;
   dfPaint(T, el); el.querySelector("#dfH1").onclick = () => dfOpen(done ? "today" : "play"); el.querySelector("#dfH2").onclick = () => { dfOpen("today"); setTimeout(() => document.querySelector("#dfDeb")?.scrollIntoView({behavior: "smooth", block: "center"}), 80); }; }
 // ——— à l'arrivée : une fois par jour, avant le reste, dès que plus rien d'autre n'est affiché (connexion, bienvenue, tutoriel…) ———
