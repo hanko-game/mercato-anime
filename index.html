@@ -21976,6 +21976,15 @@ setInterval(() => { try { hkPlayInfo(); } catch {} }, 700);
   document.addEventListener("focusin", e => { if (typing(e)) document.body.classList.add("hkkb"); });
   document.addEventListener("focusout", e => { if (!typing(e)) return; setTimeout(() => { const a = document.activeElement; if (a && typing({target: a})) return; document.body.classList.remove("hkkb"); window.scrollTo(window.scrollX, window.scrollY); }, 80); });
   document.documentElement.style.removeProperty("--hkvv"); }
+
+/* 3 nov. 2026 : une annonce (toast) ne s'affiche jamais par-dessus une fenêtre plein écran (défi du jour, connexion, ouverture de booster…) :
+   elle couvrait la croix de fermeture. Elle attend que la fenêtre se ferme (au plus 90 s, sinon elle est abandonnée). */
+{ const full = () => [...document.body.children].some(e => { if (e.classList.contains("tctoast")) return false; const c = getComputedStyle(e);
+    return c.position === "fixed" && c.display !== "none" && c.visibility !== "hidden" && c.pointerEvents !== "none" && +c.opacity > .05 && e.offsetWidth >= innerWidth * .9 && e.offsetHeight >= innerHeight * .75; });
+  const put = window.toastPut;
+  if (typeof put === "function") window.toastPut = toastPut = function(html, life, click, sfx, _t0){ const t0 = _t0 || Date.now();
+    if (full()){ if (Date.now() - t0 < 90000) setTimeout(() => toastPut(html, life, click, sfx, t0), 800); return; }
+    return put(html, life, click, sfx); }; }
 </script>
 
 <style>
