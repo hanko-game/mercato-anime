@@ -10986,7 +10986,8 @@ const TC_TUTO = [
   {k: "tfriend", t: "Ajoute un ami avec son identifiant", g: 1, v: () => { try { return frList().length; } catch { return 0; } }, rw: {g: 100}},
   {k: "tacc", t: "Crée ton compte pour sauvegarder ta progression", g: 1, v: () => { try { return CP.user ? 1 : 0; } catch { return 0; } }, rw: {g: 100}, only: () => { try { return cpReady() && cpOnSite() && !window.__INVITE; } catch { return false; } }}];
 const tcTuto = s => { s.tuto = s.tuto || {claimed: []}; s.tuto.claimed = s.tuto.claimed || []; return TC_TUTO.filter(m => !m.only || m.only()).map(m => ({...m, cur: Math.min(m.g, m.v(s))})); };
-// où aller pour accomplir une mission
+// où aller pour accomplir une mission (les missions de connexion n'ont nulle part où aller)
+const tcCanGo = k => !(/days/.test(k) || k === "tlogin");
 function tcGo(k){ if (/days/.test(k) || k === "tlogin") return;
   if (k === "tcareer"){ try { crOpen(); } catch {} return; }
   if (k === "tview"){ TC_TAB = "album"; tcRender(); window.scrollTo(0, 0); return; }
@@ -11348,7 +11349,7 @@ function tcRender(){
   } else {
     const all3 = mis.every(m => s.day.claimed.includes(m.k)), lr = tcLoginRw(s.login.n), nx = [1, 2, 3, 4, 5, 6, 7].map(k => s.login.n - ((s.login.n - 1) % 7) + k - 1);
     const RC = ["#c9a36a", "#dfe5ee", "#f2c230", "#c9a2ff"], rwt = rw => rw.g ? `<span class="rwt" style="--rc:var(--accent)">◆<small>${rw.g}</small></span>` : `<span class="rwt" style="--rc:${RC[tcParse(rw.p).t]}">${TC_T[tcParse(rw.p).t].k || "札"}<small>${TC_T[tcParse(rw.p).t].n}</small></span>`;
-    const row = (m, cl, attr) => { const ok = m.cur >= m.g; return `<div class="tcm tcm2 ${ok ? "done" : ""} ${cl ? "claimed" : ""} ${ok || cl ? "" : "go"}" ${ok || cl ? "" : `data-tcgo="${m.k}" role="button" tabindex="0"`}>${rwt(m.rw)}<div><b>${esc(m.t)}</b><i><u style="width:${m.cur / m.g * 100}%"></u></i><small><span>${m.cur}/${m.g}</span><span>${ok || cl ? tcRw(m.rw) : "y aller →"}</span></small></div><button class="${ok && !cl ? "primary" : ""}" ${attr}="${m.k}" ${ok && !cl ? "" : "disabled"}>${cl ? "✔ Réclamée" : ok ? "Réclamer" : "En cours"}</button></div>`; };
+    const row = (m, cl, attr) => { const ok = m.cur >= m.g; return `<div class="tcm tcm2 ${ok ? "done" : ""} ${cl ? "claimed" : ""}">${rwt(m.rw)}<div><b>${esc(m.t)}</b><i><u style="width:${m.cur / m.g * 100}%"></u></i><small><span>${m.cur}/${m.g}</span><span>${tcRw(m.rw)}</span></small></div>${!ok && !cl && tcCanGo(m.k) ? `<button class="hkgo" data-tcgo="${m.k}">Y aller ›</button>` : `<button class="${ok && !cl ? "primary" : ""}" ${attr}="${m.k}" ${ok && !cl ? "" : "disabled"}>${cl ? "✔ Réclamée" : ok ? "Réclamer" : "En cours"}</button>`}</div>`; };   /* 3 nov. 2026 : vrai bouton « Y aller » (avant : lien discret sur toute la ligne) */
     const left = l => l.filter(m => m.cur >= m.g).length, dn = (l, c) => l.filter(m => c.includes(m.k)).length;
     const bonusRow = (title, pk, done, tot, got, id) => { const all = done >= tot; return `<div class="tcm tcm2 ${all ? "done" : ""} ${got ? "claimed" : ""}">${rwt({p: pk})}<div><b>${title}</b><i><u style="width:${done / tot * 100}%"></u></i><small><span>${done}/${tot}</span><span>1 booster ${tcName(pk)}</span></small></div><button class="${all && !got ? "primary" : ""}" id="${id}" ${all && !got ? "" : "disabled"}>${got ? "✔ Réclamé" : all ? "Réclamer" : "En cours"}</button></div>`; };
     const now = new Date(), inT = d => { const h = Math.max(0, (d - now) / 36e5); return h >= 48 ? "encore " + Math.ceil(h / 24) + " jours" : h >= 1 ? "encore " + Math.floor(h) + " h" : "encore " + Math.ceil(h * 60) + " min"; };
@@ -15234,7 +15235,7 @@ if (matchMedia("(hover: none) and (pointer: coarse)").matches) document.addEvent
   const rfHash = () => { try { const m = location.hash.match(/^#parrain=(.+)$/), pd = m && frParse(decodeURIComponent(m[1]));
     if (pd){ history.replaceState(null, "", location.pathname + location.search);
       const opened = (() => { try { return tcLoad().opened || 0; } catch { return 0; } })();
-      if (!opened && !(window.CP && CP.user)){ localStorage.setItem(PK, pd.id); lsSet(FR_PEND, pd.id);
+      if (!opened && !(typeof CP !== "undefined" && CP.user)){ localStorage.setItem(PK, pd.id); lsSet(FR_PEND, pd.id);
         setTimeout(() => frToast(`${pd.id} t'invite sur Hanko : crée ton compte, ouvre 10 boosters et vous recevez chacun 3 boosters.`), 1200); } } } catch {} };
   rfHash(); addEventListener("hashchange", rfHash);
   const link = () => { const me = frMe(); return me ? FR_SITE + "#parrain=" + encodeURIComponent(me.id) : FR_SITE; };
@@ -15331,7 +15332,7 @@ if (matchMedia("(hover: none) and (pointer: coarse)").matches) document.addEvent
 (() => {
   // ---- Envies (liste de souhaits du marché) ----
   const WI = {set: null, t: 0, busy: false};
-  async function wishes(force){ if (!(window.CP && CP.user && CP.sb)) return null; if (!force && WI.set && Date.now() - WI.t < 6e4) return WI.set; if (WI.busy) return WI.set; WI.busy = true;
+  async function wishes(force){ if (!(typeof CP !== "undefined" && CP.user && CP.sb)) return null; if (!force && WI.set && Date.now() - WI.t < 6e4) return WI.set; if (WI.busy) return WI.set; WI.busy = true;
     try { const {data, error} = await CP.sb.from("market_wishes").select("card_id,ver"); if (!error){ WI.set = new Set(data.map(w => w.card_id + "|" + (w.ver || ""))); WI.t = Date.now(); } } catch {} finally { WI.busy = false; } return WI.set; }
   window.hkWishes = wishes;
   // une envie tirée : la carte s'entoure de rose, un message la célèbre, et elle sort de la liste
@@ -21559,6 +21560,45 @@ function hkDiag(k, e){ try { const d = JSON.parse(localStorage.getItem("mercato-
 .pfav.fr-fire{--ring:conic-gradient(from 200deg,#ffe08a,#ff5a36,#b3122a,#ff5a36,#ffe08a)}.pfav.fr-duo{--ring:linear-gradient(135deg,#c9a2ff,#ff5a8a 50%,#ffd34d)}
 @property --bpa{syntax:"<angle>";inherits:false;initial-value:0deg}
 @keyframes bprot{to{--bpa:360deg}}
+/* classement mondial du pass, en direct (3 nov. 2026) */
+.bp-rk{position:relative;margin:14px 0 4px;padding:16px;border-radius:20px;background:linear-gradient(180deg,#1c0d12,#0e0a0d);box-shadow:0 18px 40px #0008,inset 0 1px 0 #ffffff12}
+.bp-rk::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;background:linear-gradient(120deg,#f7c64a99,#ff2d3a55 40%,#ffffff14 60%,#f7c64a66);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+.bp-rkh{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.bp-rkh h3{margin:0;font:900 16px var(--title);color:#fff6d6;white-space:nowrap}.bp-rkh small{display:block;font:600 12px Inter,system-ui,sans-serif;color:#b9b0a8}
+.bp-live{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:99px;background:#ff2d3a22;border:1px solid #ff2d3a66;font:800 10px var(--mono,monospace);letter-spacing:.14em;color:#ff8a93;white-space:nowrap}
+.bp-live i{width:7px;height:7px;border-radius:50%;background:#ff2d3a;box-shadow:0 0 0 0 #ff2d3a88;animation:bplive 1.6s ease-out infinite}
+@keyframes bplive{70%{box-shadow:0 0 0 7px #ff2d3a00}100%{box-shadow:0 0 0 0 #ff2d3a00}}
+.bp-rkl{display:grid;gap:6px;max-height:360px;overflow:auto;padding-right:2px}
+.bp-rr{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 10px;border-radius:14px;background:#ffffff07;border:1px solid #ffffff0d}
+.bp-rr.me{background:linear-gradient(90deg,#ff2d3a2a,#f7c64a14);border-color:#f7c64a88;box-shadow:0 0 18px #ff2d3a33}
+.bp-rr .rk{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font:900 12px var(--title);color:#e8dcd0;background:#ffffff0d;border:1px solid #ffffff1a}
+.bp-rr .rk.g1{color:#2a1503;background:radial-gradient(circle at 35% 30%,#fff6c9,#f7c64a 55%,#a86d08);border-color:#fff3c4}
+.bp-rr .rk.g2{color:#1d2026;background:radial-gradient(circle at 35% 30%,#fff,#cfd6df 55%,#7d8794);border-color:#fff}
+.bp-rr .rk.g3{color:#2a1206;background:radial-gradient(circle at 35% 30%,#ffd6b0,#d98a4a 55%,#7a3f14);border-color:#ffd6b0}
+.bp-rr .nm{min-width:0}.bp-rr .nm b{display:block;font:800 13.5px var(--title);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#f3f1f5}
+.bp-rr .pg{display:flex;align-items:center;gap:8px;margin-top:4px}.bp-rr .pg span{font:700 10.5px var(--mono,monospace);color:#f7c64a;white-space:nowrap}
+.bp-rr .pg i{position:relative;flex:1;height:5px;border-radius:99px;background:#ffffff14;overflow:hidden}.bp-rr .pg i::after{content:"";position:absolute;inset:0;width:var(--rkp);border-radius:inherit;background:linear-gradient(90deg,#ff2d3a,#f7c64a)}
+.bp-rr .xp{font:800 12px var(--mono,monospace);color:#d9f2ff;text-align:right;white-space:nowrap}.bp-rr .xp small{display:block;font:600 10px Inter,sans-serif;color:#9a918a}
+.bp-rkd{margin:4px 0;text-align:center;font:800 12px var(--mono,monospace);color:#6f6862;letter-spacing:.3em}
+.bp-rk0{margin:0;font-size:13px;color:#b9b0a8}
+@media (prefers-reduced-motion:reduce){.bp-live i{animation:none}}
+.bp-rkb{all:unset;box-sizing:border-box;cursor:pointer;position:relative;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;width:100%;margin:12px 0 2px;padding:11px 14px;border-radius:16px;background:linear-gradient(100deg,#2a0f12,#1a0c10 60%,#2a1d0a);box-shadow:0 10px 26px #0008,inset 0 1px 0 #ffffff14}
+.bp-rkb::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;background:linear-gradient(110deg,#f7c64a,#ff2d3a66 45%,#f7c64a);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+.bp-rkb .cup{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font:900 18px "Zen Kaku Gothic New",sans-serif;color:#2a1503;background:radial-gradient(circle at 35% 30%,#fff6c9,#f7c64a 55%,#a86d08);box-shadow:0 4px 12px #f7c64a44}
+.bp-rkb b{display:block;font:900 14px var(--title);color:#fff6d6}.bp-rkb small{display:block;font:600 12px Inter,system-ui,sans-serif;color:#cfc3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bp-rks{position:fixed;inset:0;z-index:125;display:grid;align-items:end;justify-items:center;background:#0009;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);animation:bprksin .25s ease}
+.bp-rks .sh{width:min(560px,100%);max-height:86dvh;overflow:auto;padding:12px 12px calc(16px + env(safe-area-inset-bottom,0px));border-radius:22px 22px 0 0;background:#0e0a0d;animation:bprksup .35s cubic-bezier(.2,.9,.3,1)}
+.bp-rks .sh .bp-rk{margin:0}.bp-rks .x{all:unset;cursor:pointer;display:block;margin:0 auto 8px;width:44px;height:5px;border-radius:99px;background:#ffffff40}
+.bp-rks .cl{all:unset;cursor:pointer;display:block;width:100%;box-sizing:border-box;margin-top:10px;padding:12px;border-radius:14px;text-align:center;font:800 14px var(--title);background:#ffffff10;color:#f3f1f5}
+.bp-rkb{grid-template-columns:auto minmax(0,1fr) auto}.bp-rkb small{white-space:normal}.bp-rkb .bp-live{position:absolute;top:-10px;right:14px;padding:3px 9px;font-size:9px;background:#2a0b10;border-color:#ff2d3a99}.bp-rkb .go{font:900 20px var(--title);color:#f7c64a}
+@media (min-width:700px){.bp-rks{align-items:center}.bp-rks .sh{border-radius:22px}}
+@keyframes bprksin{from{opacity:0}}@keyframes bprksup{from{transform:translateY(40px);opacity:0}}
+.bp-rkl{max-height:none}
+.hkgo{all:unset;box-sizing:border-box;cursor:pointer;flex:none;padding:9px 14px;border-radius:12px;font:800 13px var(--title);white-space:nowrap;color:#fff;background:linear-gradient(180deg,#ff4a55,#d1101e);box-shadow:0 6px 16px #ff2d3a55,inset 0 1px 0 #ffffff55;transition:transform .15s}
+.hkgo:active{transform:scale(.95)}
+/* 3 nov. 2026 : icônes des monnaies (éclats ◆, flocons ❄) dessinées, posées à la place des symboles texte sur tout le site */
+.hkgem,.hkflk{display:inline-block;width:1.05em;height:1.05em;vertical-align:-.17em;background:center/contain no-repeat;filter:drop-shadow(0 1px 1.5px #0007)}
+.hkgem{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='a' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='#f2fdff'/%3E%3Cstop offset='.45' stop-color='#7fdcff'/%3E%3Cstop offset='1' stop-color='#2a6fe0'/%3E%3C/linearGradient%3E%3ClinearGradient id='b' x1='1' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='#c9f2ff'/%3E%3Cstop offset='1' stop-color='#1f4fc0'/%3E%3C/linearGradient%3E%3ClinearGradient id='c' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='#5fc4ff'/%3E%3Cstop offset='1' stop-color='#123a9a'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M14 8h36l12 16-30 36L2 24z' fill='url%28#c%29'/%3E%3Cpath d='M14 8h36l12 16H2z' fill='url%28#a%29'/%3E%3Cpath d='M2 24h60L32 60z' fill='url%28#b%29'/%3E%3Cpath d='M14 8l8 16L32 8l10 16 8-16' fill='none' stroke='#fff' stroke-opacity='.55' stroke-width='1.6'/%3E%3Cpath d='M22 24l10 36 10-36' fill='none' stroke='#0b2f80' stroke-opacity='.35' stroke-width='1.4'/%3E%3Cpath d='M18 11h10l-4 9z' fill='#fff' fill-opacity='.85'/%3E%3Cpath d='M14 8h36l12 16-30 36L2 24z' fill='none' stroke='#0a2a70' stroke-opacity='.55' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E")}.hkflk{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='f' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='#ffffff'/%3E%3Cstop offset='.5' stop-color='#bfe9ff'/%3E%3Cstop offset='1' stop-color='#4aa8ff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cg fill='none' stroke='#0d3a7a' stroke-opacity='.35' stroke-width='7' stroke-linecap='round'%3E%3Cg transform='rotate%280 32 32%29'%3E%3Cpath d='M32 32V5M32 15l-6-6M32 15l6-6M32 23l-8-6M32 23l8-6'/%3E%3C/g%3E%3Cg transform='rotate%2860 32 32%29'%3E%3Cpath d='M32 32V5M32 15l-6-6M32 15l6-6M32 23l-8-6M32 23l8-6'/%3E%3C/g%3E%3Cg transform='rotate%28120 32 32%29'%3E%3Cpath d='M32 32V5M32 15l-6-6M32 15l6-6M32 23l-8-6M32 23l8-6'/%3E%3C/g%3E%3Cg transform='rotate%28180 32 32%29'%3E%3Cpath d='M32 32V5M32 15l-6-6M32 15l6-6M32 23l-8-6M32 23l8-6'/%3E%3C/g%3E%3Cg transform='rotate%28240 32 32%29'%3E%3Cpath d='M32 32V5M32 15l-6-6M32 15l6-6M32 23l-8-6M32 23l8-6'/%3E%3C/g%3E%3Cg transform='rotate%28300 32 32%29'%3E%3Cpath d='M32 32V5M32 15l-6-6M32 15l6-6M32 23l-8-6M32 23l8-6'/%3E%3C/g%3E%3C/g%3E%3Cg fill='none' stroke='url%28#f%29' stroke-width='4' stroke-linecap='round'%3E%3Cg transform='rotate%280 32 32%29'%3E%3Cpath d='M32 32V5M32 15l-6-6M32 15l6-6M32 23l-8-6M32 23l8-6'/%3E%3C/g%3E%3Cg transform='rotate%2860 32 32%29'%3E%3Cpath d='M32 32V5M32 15l-6-6M32 15l6-6M32 23l-8-6M32 23l8-6'/%3E%3C/g%3E%3Cg transform='rotate%28120 32 32%29'%3E%3Cpath d='M32 32V5M32 15l-6-6M32 15l6-6M32 23l-8-6M32 23l8-6'/%3E%3C/g%3E%3Cg transform='rotate%28180 32 32%29'%3E%3Cpath d='M32 32V5M32 15l-6-6M32 15l6-6M32 23l-8-6M32 23l8-6'/%3E%3C/g%3E%3Cg transform='rotate%28240 32 32%29'%3E%3Cpath d='M32 32V5M32 15l-6-6M32 15l6-6M32 23l-8-6M32 23l8-6'/%3E%3C/g%3E%3Cg transform='rotate%28300 32 32%29'%3E%3Cpath d='M32 32V5M32 15l-6-6M32 15l6-6M32 23l-8-6M32 23l8-6'/%3E%3C/g%3E%3C/g%3E%3Cpath d='M32 25l6 3.5v7L32 39l-6-3.5v-7z' fill='#f2fbff' stroke='#7fc8ff' stroke-width='1.5'/%3E%3C/svg%3E")}
 </style>
 <script>
 /* ===================================================================================
@@ -21711,7 +21751,7 @@ function bpPendDo(i, u){ const s = tcLoad(), P = (s.bpPend || [])[i]; if (!P) re
   if (P.sec){ const g = tcOpenPack(s, "mix:0", P.sec); g.xp = 0; g.ups = g.ups || []; g.secs = [P.sec]; g.pb = [0]; g.packs = 1; tcSave(s); document.querySelector(".bpv")?.remove(); try { tcOpening("mix:0", g); } catch {} } }
 /* ---- séries duo (serveur : duo_mark / duo_list) ---- */
 const DUO = {L: null, at: 0};
-async function duoLoad(force){ if (!(window.CP && CP.user && CP.sb)) return null; if (!force && DUO.L && Date.now() - DUO.at < 6e4) return DUO.L;
+async function duoLoad(force){ if (!(typeof CP !== "undefined" && CP.user && CP.sb)) return null; if (!force && DUO.L && Date.now() - DUO.at < 6e4) return DUO.L;
   try { const {data, error} = await CP.sb.rpc("duo_list"); if (error) return DUO.L; DUO.L = data || []; DUO.at = Date.now(); duoReward(); return DUO.L; } catch { return DUO.L; } }
 function duoName(uid){ try { const f = FRS.data && FRS.data.friends.find(x => x.uid === uid); return f ? f.name : "Ami"; } catch { return "Ami"; } }
 function duoReward(){ if (!DUO.L) return; const s = tcLoad(); s.duo = s.duo || {cl: {}, c: []}; let ch = false, up = null;
@@ -21721,7 +21761,7 @@ function duoReward(){ if (!DUO.L) return; const s = tcLoad(); s.duo = s.duo || {
 /* fin de partie en ligne : marque la partie avec chaque ami présent (mission « joue avec un ami », série duo) */
 { const base = tcOnGame; tcOnGame = function(mode, players, o){ base(mode, players, o); try { if (!o || !o.online) return; const me = profGet()?.name, F = (FRS.data && FRS.data.friends) || [], got = F.filter(f => f.uid && players.includes(f.name) && f.name !== me); if (!got.length) return;
   const s = tcLoad(); s.day.duo = 1; s.week.duo = (s.week.duo || 0) + 1; tcSave(s);
-  if (window.CP && CP.user && CP.sb) Promise.all(got.map(f => CP.sb.rpc("duo_mark", {p_mate: f.uid}))).then(() => duoLoad(true)).catch(() => {}); } catch {} }; }
+  if (typeof CP !== "undefined" && CP.user && CP.sb) Promise.all(got.map(f => CP.sb.rpc("duo_mark", {p_mate: f.uid}))).then(() => duoLoad(true)).catch(() => {}); } catch {} }; }
 /* partages (défi, tier list, booster) : mission « partage un résultat » */
 function bpShared(){ try { const s = tcLoad(); if (s.day.sh) return; s.day.sh = 1; tcSave(s); } catch {} }
 { const a = dfShare; dfShare = function(){ bpShared(); return a.apply(this, arguments); }; const b = tlShare; tlShare = function(){ bpShared(); return b.apply(this, arguments); }; const c = tlVideo; tlVideo = function(){ bpShared(); return c.apply(this, arguments); }; }
@@ -21752,7 +21792,7 @@ function bpExBig(x){ const {M, close} = hvModal(`<div class="bp-big">${bpExCard(
 function hkExList(){ const s = tcLoad(), L = [];
   try { (typeof KZ !== "undefined" && KZ.st ? kzItems(KZ.st) : []).filter(x => x.d).forEach(x => L.push({h: kzCard(x.d, x.tier, x.sub), go: () => kzShow(x.d, x.tier, x.sub, x.partner)})); } catch {}
   (s.bpEx || []).filter(x => typeof x === "object").forEach(x => L.push({h: bpExCard(x.k, x.o, {nm: x.nm}), go: () => bpExBig(x)}));
-  if (window.CP && CP.user && typeof KZ !== "undefined" && !KZ.st && !KZ.__exAsk){ KZ.__exAsk = 1; try { kzLoad().then(() => { if (TC_TAB === "album") tcRender(); }); } catch {} }
+  if (typeof CP !== "undefined" && CP.user && typeof KZ !== "undefined" && !KZ.st && !KZ.__exAsk){ KZ.__exAsk = 1; try { kzLoad().then(() => { if (TC_TAB === "album") tcRender(); }); } catch {} }
   return L; }
 function hkExRow(){ const L = hkExList();
   return `<div class="hkex"><div class="hkexh"><b>Mes cartes exclusives</b><small>${L.length ? L.length + " · hors des 640" : "parrainage et pass de saison"}</small></div><div class="hkexr">${L.length ? L.map((x, i) => `<button data-exo="${i}" aria-label="Voir la carte exclusive">${x.h}</button>`).join("") : `<button class="hkex0" data-exgo><i>絆</i><span>Gagne ta première carte exclusive : invite un ami ou monte dans le pass de saison</span></button>`}</div></div>`; }
@@ -21787,13 +21827,10 @@ function bpPaint(){ const V = document.querySelector(".bpv"); try { bpHomeDraw()
     ${pend ? `<div class="bp-sec bp-pend"><h3>À choisir</h3>${pend}</div>` : ""}
     <div class="bp-sec"><h3>Récompenses</h3><div class="bp-trk" id="bpTrk">${tiles}</div></div>
     ${(s.bpEx || []).some(x => typeof x === "object") ? `<div class="bp-sec"><h3>Mes cartes exclusives</h3><div class="bp-exo">${s.bpEx.filter(x => typeof x === "object").map((x, j) => `<button class="bp-exb" data-bpv="${j}">${bpExCard(x.k, x.o, {nm: x.nm})}</button>`).join("")}</div></div>` : ""}
-    <div class="bp-sec"><h3>Ta série de jours</h3><div class="bp-card"><div class="bp-fl"><span class="bp-fi">${hkFire(fire >= 100)}</span><div><b>${fire} jour${fire > 1 ? "s" : ""}</b><br><span>Record : ${F.best || 0} · gels de série : ${F.gel || 0}/2 ${F.gel ? "(un jour manqué est couvert)" : "(1 gel gagné tous les 7 jours)"}</span></div></div>
-      <p class="bp-note">Un jour compte dès que tu ouvres un booster, joues une partie, fais le défi, la tier list ou votes au débat.</p><div class="bp-pal">${FIRE_P.map(([n, rw]) => `<span class="${(F.cl || []).includes(n) ? "on" : ""}">${n} j · ${esc(bpLabel(rw))}</span>`).join("")}</div></div></div>
-    <div class="bp-sec"><h3>Séries duo</h3><div class="bp-card"><p class="bp-note">Joue au moins une partie en ligne avec un ami chaque jour : votre flamme commune monte, et vous gagnez tous les deux les mêmes récompenses.</p>
-      ${!(window.CP && CP.user) ? `<p class="bp-note">Connecte-toi pour avoir des séries duo.</p>` : duos == null ? `<p class="bp-note">Chargement…</p>` : duos.length ? duos.map(x => `<div class="bp-duo"><span class="bp-f">${hkFire()}</span><div><b>${esc(duoName(x.uid))}</b><small>${x.n} jour${x.n > 1 ? "s" : ""} ensemble</small></div><em class="${x.today ? "" : "bp-w"}">${x.today ? "fait aujourd'hui" : x.me ? "à jouer ensemble" : "à jouer aujourd'hui"}</em></div>`).join("") : `<p class="bp-note">Aucune série duo pour l'instant : lance une partie en ligne avec un ami.</p>`}
-      <div class="bp-pal">${DUO_P.map(([n, rw]) => `<span>${n} j · ${esc(bpLabel(rw))}</span>`).join("")}</div></div></div>
-    <div class="bp-sec"><h3>Gagner de l'XP</h3><div class="bp-card"><table>${BP_XP.map(r => `<tr><td>${esc(r[0])}</td><td>${r[1]} XP</td></tr>`).join("")}</table><p class="bp-note">Les 10 premières parties du jour comptent en entier, jusqu'à 25 à moitié, puis au quart. Les 20 premiers boosters du jour comptent en entier, puis à moitié.</p><button class="bp-act" id="bpMis">Voir mes missions</button></div></div>`;
+    <div class="bp-sec"><button class="bp-rkb" id="bpFl" style="margin:0"><span class="cup" style="background:radial-gradient(circle at 35% 30%,#ffd2a8,#ff7a3a 55%,#a8300e)">${hkFire(fire >= 100)}</span><span><b>Mes flammes</b><small>${fire ? `Série de ${fire} jour${fire > 1 ? "s" : ""}` : "Série solo et flammes duo"} · page dédiée</small></span><span class="go">›</span></button></div>
+    <div class="bp-sec"><h3>Gagner de l'XP</h3><div class="bp-card"><table>${BP_XP.map((r, i) => { const g = [null, "df", "dvote", "dtier", "play", "open", null, null, null][i]; return `<tr><td>${esc(r[0])}</td><td>${r[1]} XP</td><td>${g ? `<button class="hkgo" data-bpgo="${g}">Y aller ›</button>` : ""}</td></tr>`; }).join("")}</table><p class="bp-note">Les 10 premières parties du jour comptent en entier, jusqu'à 25 à moitié, puis au quart. Les 20 premiers boosters du jour comptent en entier, puis à moitié.</p><button class="bp-act" id="bpMis">Voir mes missions</button></div></div>`;
   if (s.bpOld && !s.bpOld.seen){ s.bpOld.seen = 1; tcSave(s); }
+  V.querySelector("#bpFl") && (V.querySelector("#bpFl").onclick = () => { try { flOpen(); } catch {} });
   V.querySelector("#bpX").onclick = () => V.remove(); V.querySelector("#bpAll") && (V.querySelector("#bpAll").onclick = bpClaimAll);
   V.querySelector("#bpMis").onclick = () => { V.remove(); tcShow("missions"); };
   V.querySelectorAll("[data-bpc]").forEach(e => e.onclick = () => bpClaim(+e.dataset.bpc));
@@ -21805,6 +21842,664 @@ function bpPaint(){ const V = document.querySelector(".bpv"); try { bpHomeDraw()
 /* la connexion du jour compte aussi sans rien faire d'autre */
 setTimeout(() => { try { const s = tcLoad(); tcSave(s); bpHomeDraw(); } catch {} duoLoad(); }, 2500);
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") try { const s = tcLoad(); tcSave(s); bpHomeDraw(); } catch {} });
+/* ---- classement mondial du pass, en direct (3 nov. 2026 · pass-classement-supabase.sql) ---- */
+const BPR = {d: null, at: 0, sent: -1, sentAt: 0, busy: 0};
+const bpOnline = () => !!(typeof CP !== "undefined" && CP.user && CP.sb) && !window.__INVITE;
+/* niveau et avancée vers le suivant (au-delà de 50 : niveaux bonus) */
+const bpLvP = xp => { const lv = bpLvOf(xp); if (lv >= BP_MAX){ const k = Math.floor((xp - BP_MAX * BP_LV) / BP_BONUS); return {t: k ? `Niv. ${BP_MAX} +${k}` : `Niv. ${BP_MAX}`, p: (xp - BP_MAX * BP_LV) % BP_BONUS / BP_BONUS}; } return {t: `Niv. ${lv}`, p: xp % BP_LV / BP_LV}; };
+async function bpRankSend(force){ if (!bpOnline()) return; const s = tcLoad(), b = bpState(s); if (b.xp === BPR.sent || (!force && Date.now() - BPR.sentAt < 2e4)) return;
+  BPR.sentAt = Date.now(); try { await CP.sb.rpc("pass_report", {p_sn: bpSeason().n, p_xp: Math.round(b.xp)}); BPR.sent = b.xp; } catch {} }
+async function bpRankLoad(){ if (!bpOnline() || BPR.busy) return; BPR.busy = 1; try { await bpRankSend(true); const {data, error} = await CP.sb.rpc("pass_board", {p_sn: bpSeason().n}); if (!error && data){ BPR.d = data; BPR.at = Date.now(); } } catch {} BPR.busy = 0; bpRankDraw(); bpRankBtn(); }
+function bpRankRow(x){ const L = bpLvP(x.xp); return `<div class="bp-rr ${x.me ? "me" : ""}"><span class="rk ${x.r <= 3 ? "g" + x.r : ""}">${x.r}</span><span class="nm"><b>${esc(x.nm || "Toi")}${x.me && x.nm ? " · toi" : ""}</b><span class="pg"><span>${L.t}</span><i style="--rkp:${Math.round(L.p * 100)}%"></i></span></span><span class="xp">${(+x.xp).toLocaleString("fr-FR")}<small>XP</small></span></div>`; }
+function bpRankDraw(){ const box = document.querySelector(".bp-rks #bpRank"); if (!box) return; const S = bpSeason();
+  if (!bpOnline()){ box.innerHTML = `<div class="bp-rkh"><div><h3>Classement mondial</h3><small>Saison ${S.no} · ${esc(S.name)}</small></div></div><p class="bp-rk0">Connecte-toi à ton compte pour entrer au classement et voir ta place en direct.</p>`; return; }
+  const d = BPR.d, top = d ? d.top || [] : [], me = d && d.me, my = profGet()?.name || "";
+  const rows = top.slice(0, 10).map(bpRankRow).join(""), mine = me && me.r > 10 ? `<p class="bp-rkd">· · ·</p>` + bpRankRow({r: me.r, nm: my, xp: me.xp, me: true}) : "";
+  box.innerHTML = `<div class="bp-rkh"><div><h3>Classement mondial</h3><small>Saison ${S.no} · ${d ? (+d.n).toLocaleString("fr-FR") + " joueur" + (d.n > 1 ? "s" : "") + " classé" + (d.n > 1 ? "s" : "") : "chargement…"}${me ? ` · ta place : ${me.r}${me.r === 1 ? "re" : "e"}` : ""}</small></div><span class="bp-live"><i></i>EN DIRECT</span></div>
+    ${d ? (top.length ? `<div class="bp-rkl">${rows}</div>${mine}` : `<p class="bp-rk0">Personne n'est encore classé cette saison : gagne de l'XP de pass pour prendre la première place.</p>`) : `<p class="bp-rk0">Chargement du classement…</p>`}`; }
+/* 3 nov. 2026 : le classement n'occupe plus la page du pass ; un bouton mis en avant (ta place, EN DIRECT) l'ouvre dans un panneau */
+function bpRankBtn(){ const B = document.querySelector(".bpv #bpRankBtn"); if (!B) return; const d = BPR.d, me = d && d.me, S = bpSeason();
+  B.innerHTML = `<span class="cup">冠</span><span><b>Classement mondial</b><small>${!bpOnline() ? "Connecte-toi pour y entrer" : me ? `Ta place : ${me.r}${me.r === 1 ? "re" : "e"} sur ${(+d.n).toLocaleString("fr-FR")} · saison ${S.no}` : d ? `${(+d.n).toLocaleString("fr-FR")} joueurs classés · saison ${S.no}` : "Chargement…"}</small></span><span class="go">›</span><span class="bp-live"><i></i>EN DIRECT</span>`; }
+function bpRankOpen(){ document.querySelector(".bp-rks")?.remove(); document.body.insertAdjacentHTML("beforeend", `<div class="bp-rks" role="dialog" aria-modal="true" aria-label="Classement mondial"><div class="sh"><button class="x" aria-label="Fermer"></button><div class="bp-rk" id="bpRank"></div><button class="cl">Fermer</button></div></div>`);
+  const W = document.querySelector(".bp-rks"), close = () => W.remove(); W.onclick = e => { if (e.target === W) close(); }; W.querySelector(".x").onclick = close; W.querySelector(".cl").onclick = close; bpRankDraw(); bpRankLoad(); }
+{ const base = bpPaint; bpPaint = function(){ const r = base.apply(this, arguments); try { const V = document.querySelector(".bpv"), bar = V && V.querySelector(".bp-bar"); if (bar && !V.querySelector("#bpRankBtn")){ bar.insertAdjacentHTML("afterend", `<button class="bp-rkb" id="bpRankBtn"></button>`); V.querySelector("#bpRankBtn").onclick = bpRankOpen; } bpRankBtn(); if (V && Date.now() - BPR.at > 15e3) bpRankLoad(); } catch {} return r; }; }
+/* en direct : le classement se relit toutes les 15 s tant que le pass est ouvert ; l'XP part au serveur quand elle change (au plus toutes les 20 s) */
+setInterval(() => { try { if ((document.querySelector(".bp-rks") || document.querySelector(".bpv")) && !document.hidden) bpRankLoad(); else bpRankSend(); } catch {} }, 15e3);
+document.addEventListener("click", e => { const b = e.target.closest && e.target.closest("[data-bpgo],[data-nlgo]"); if (b) tcGo(b.dataset.bpgo || b.dataset.nlgo); });
+/* ---- « Y aller » : chaque mission (quotidienne, hebdo, mensuelle, pass, Noël) mène directement à l'endroit où la faire (3 nov. 2026) ---- */
+const hkClose = () => document.querySelectorAll(".bpv,.nlv,.bp-rks,.hvm,.tccele").forEach(x => x.remove());
+{ const base = tcGo; tcGo = function(k){ k = String(k || "");
+  const df = v => { hkClose(); try { dfOpen(v); } catch {} };
+  if (/^(dfind|dfq|wdf5|mdf20|mdfs10|mdf1|df)$/.test(k)) return df("play");
+  if (/^(dvote|mdv15|wmaj3)$/.test(k)) return df("today");
+  if (/^(dtier|wtl4|wtla|mtl15)$/.test(k)) return df("tier");
+  if (/^(dshare)$/.test(k)) return df("today");
+  if (/^(wduo|wd|duo)$/.test(k)){ hkClose(); try { frShow(); } catch {} return; }
+  if (k === "nlbo"){ try { nlOpenScreen(); setTimeout(() => { const b = document.querySelector("#nlOpen"); b && b.scrollIntoView({behavior: "smooth", block: "center"}); }, 120); } catch {} return; }
+  hkClose(); if (/^(open|new|wopen|wnew|mopen|mnew)/.test(k)){ try { tcShow("packs"); } catch {} return; }
+  if (/^(p3|play|win|modes|uni|wplay|wwin|mplay|mwin|tmodes)/.test(k)){ try { show("home"); setTimeout(() => document.querySelector("#cat1")?.scrollIntoView({behavior: "smooth", block: "start"}), 60); } catch {} return; }
+  return base.apply(this, arguments); }; }
+/* ---- icônes des monnaies : chaque « ◆ » et « ❄ » écrit dans la page devient une icône dessinée (3 nov. 2026) ---- */
+{ const RX = /[◆❄]/, SKIP = /^(SCRIPT|STYLE|TEXTAREA|OPTION|INPUT|SVG|TITLE|CANVAS)$/;
+  const fix = root => { if (!root || root.nodeType !== 1 && root.nodeType !== 3) return; const L = [];
+    if (root.nodeType === 3){ if (RX.test(root.data)) L.push(root); }
+    else { if (SKIP.test(root.nodeName.toUpperCase()) || root.closest && root.closest("svg,textarea,select,[contenteditable]")) return; const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); let n; while ((n = w.nextNode())) if (RX.test(n.data) && !SKIP.test(n.parentNode.nodeName.toUpperCase()) && !n.parentNode.closest("svg,textarea,select,[contenteditable]")) L.push(n); }
+    for (const t of L){ const f = document.createDocumentFragment(); t.data.split(/([◆❄])/).forEach(x => { if (x === "◆" || x === "❄"){ const i = document.createElement("i"); i.className = x === "◆" ? "hkgem" : "hkflk"; i.setAttribute("role", "img"); i.setAttribute("aria-label", x === "◆" ? "éclats" : "flocons"); f.appendChild(i); } else if (x) f.appendChild(document.createTextNode(x)); }); t.parentNode && t.parentNode.replaceChild(f, t); } };
+  const go = () => { fix(document.body); new MutationObserver(M => { for (const m of M){ if (m.type === "characterData") fix(m.target); else m.addedNodes.forEach(fix); } }).observe(document.body, {childList: true, subtree: true, characterData: true}); };
+  document.readyState === "loading" ? addEventListener("DOMContentLoaded", go) : go(); }
+</script>
+
+<style>
+/* ==== Événement Noël 2026 (3 nov. 2026, maquette validée : data/coffrets/noel.html) ==== */
+@keyframes nlsnow{to{background-position:30px 130px,-20px 90px,10px 44px}}@keyframes nlfoil{to{background-position:-250% 0}}@keyframes nltw{50%{opacity:.35}}
+@property --nla{syntax:"<angle>";inherits:false;initial-value:0deg}@keyframes nlrot{to{--nla:360deg}}
+/* accueil */
+.nlhome{all:unset;box-sizing:border-box;cursor:pointer;position:relative;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;width:100%;margin:0 0 14px;padding:16px 14px 12px;border-radius:18px;overflow:hidden;color:#f3f1f5;background:radial-gradient(ellipse 90% 90% at 50% 0%,#7a1020,#3a0812 45%,#10130f 85%);box-shadow:0 10px 30px #0006}
+.nlhome::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1.5px;background:linear-gradient(120deg,#e8283c,#f7c64a,#1f8a4c,#f7c64a,#e8283c);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+.nlhome::after{content:"";position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(circle,#fff 0 1.3px,transparent 2px),radial-gradient(circle,#ffffffaa 0 .9px,transparent 1.5px),radial-gradient(circle,#ffffff66 0 .7px,transparent 1.2px);background-size:90px 110px,60px 70px,36px 44px;opacity:.45;animation:nlsnow 12s linear infinite}
+.nlhome > *{position:relative;z-index:1}.nlhome .nllights{position:absolute;left:0;right:0;top:0;height:18px}
+.nlhome .nllgw .lg{width:40px;height:40px;display:block}.nlhome .nllgw .cap{left:3px;right:3px;top:-6px;height:12px}.nlhome small{display:block;font:800 10px var(--mono,monospace);letter-spacing:.14em;color:#ffe7a5;text-transform:uppercase}
+.nlhome b{display:block;font:900 17px/1.15 var(--title);background:linear-gradient(100deg,#fff6d6,#f7c64a 30%,#fff 50%,#f7c64a 70%,#fff6d6);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:nlfoil 5s linear infinite}
+.nlhome .tx > span{display:block;font-size:12.5px;color:#e8dcd0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.nlhome .go{font:800 12px var(--title);padding:8px 12px;border-radius:12px;background:linear-gradient(180deg,#2fbf6a,#1f8a4c);border:1px solid #f7c64a88;white-space:nowrap}
+.nlhome .dot{position:absolute;top:-3px;right:-3px;width:11px;height:11px;border-radius:50%;background:#ff2d3a;box-shadow:0 0 0 2px #1a0a0e}
+/* écran */
+.nlv{position:fixed;inset:0;z-index:118;overflow:auto;color:#f3f1f5;padding:calc(14px + env(safe-area-inset-top,0px)) 16px calc(40px + env(safe-area-inset-bottom,0px));overscroll-behavior:contain;background:radial-gradient(ellipse 90% 50% at 50% 0%,#5a0d18,#1a0b10 45%,#07100c 85%) fixed,#07100c}
+.nlv::before{content:"";position:fixed;inset:0;pointer-events:none;background-image:radial-gradient(circle,#fff 0 1.4px,transparent 2px),radial-gradient(circle,#ffffffaa 0 1px,transparent 1.6px),radial-gradient(circle,#ffffff66 0 .8px,transparent 1.3px);background-size:110px 130px,70px 90px,40px 48px;opacity:.35;animation:nlsnow 14s linear infinite}
+.nlin{position:relative;max-width:1000px;margin:0 auto;display:grid;gap:16px}
+.nlev{position:relative;border-radius:26px;padding:34px 18px 20px;display:grid;gap:16px;overflow:hidden;background:radial-gradient(ellipse 90% 60% at 50% 0%,#7a1020 0%,#3a0812 38%,#10130f 75%),#0b0f0c;box-shadow:0 30px 80px #000a}
+.nlev::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1.5px;background:linear-gradient(120deg,#e8283c,#f7c64a,#1f8a4c,#f7c64a,#e8283c);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+.nlev::after{content:"";position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(circle,#fff 0 1.5px,transparent 2.2px),radial-gradient(circle,#ffffffaa 0 1px,transparent 1.6px),radial-gradient(circle,#ffffff66 0 .8px,transparent 1.3px);background-size:90px 110px,60px 70px,36px 44px;opacity:.5;animation:nlsnow 12s linear infinite}
+.nlev > *{position:relative;z-index:1}
+.nllights{position:absolute!important;left:0;right:0;top:6px;height:30px;z-index:2!important;pointer-events:none}.nllights svg{width:100%;height:100%;overflow:visible}
+.nllights svg{display:none}.nllights{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 20'%3E%3Cpath d='M0 4 Q12 14 24 6 T48 6 T72 6 T96 4' fill='none' stroke='%232a3a2c' stroke-width='1'/%3E%3Ccircle cx='10' cy='11' r='3' fill='%23ff4a5a'/%3E%3Ccircle cx='34' cy='9.5' r='3' fill='%23f7c64a'/%3E%3Ccircle cx='58' cy='9.5' r='3' fill='%233fbf6f'/%3E%3Ccircle cx='82' cy='9.5' r='3' fill='%237fd3ff'/%3E%3C/svg%3E") 0 0/96px 20px repeat-x;filter:drop-shadow(0 0 3px #ffd27a);animation:nltw 2.4s ease-in-out infinite}.nlhome .nllights{height:20px}.nllights circle:nth-child(3n){animation-delay:.5s}.nllights circle:nth-child(3n+1){animation-delay:1s}
+.nlhd{display:flex;gap:14px;align-items:center}.nlhd > div{flex:1;min-width:0}
+.nlx{all:unset;cursor:pointer;flex:none;align-self:flex-start;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:#0006;border:1px solid #ffffff2a;font-size:16px}
+.nllgw{position:relative;flex:none}.nllgw .cap{position:absolute;left:4px;right:4px;top:-9px;height:18px}
+.nlev .lg{width:66px;height:66px;filter:drop-shadow(0 1px 0 #a3000f) drop-shadow(0 3px 0 #520008) drop-shadow(0 10px 18px #ff1e2d77)}
+.nleb{margin:0;font:800 11px var(--mono,monospace);letter-spacing:.16em;text-transform:uppercase;color:#ffe7a5}
+.nlttl{margin:2px 0 0;font:900 clamp(26px,7vw,40px)/1.05 var(--title);background:linear-gradient(100deg,#fff6d6 0%,#f7c64a 25%,#fff 45%,#f7c64a 65%,#fff6d6 90%);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:nlfoil 5s linear infinite;filter:drop-shadow(0 2px 0 #7a0010)}
+.nlrib{display:inline-flex;align-items:center;gap:8px;margin-top:6px;padding:5px 12px;border-radius:99px;background:linear-gradient(90deg,#1f8a4c,#0f5a30);border:1px solid #f7c64a;font:800 11px var(--mono,monospace);letter-spacing:.12em;color:#fff6d6}
+.nlcd{display:flex;align-items:stretch;padding:12px 4px 10px;border-top:1px solid #f7c64a80;border-bottom:1px solid #f7c64a80;background:linear-gradient(90deg,transparent,#00000040 20%,#00000040 80%,transparent);position:relative}
+.nlcd::before,.nlcd::after{content:"";position:absolute;left:50%;width:9px;height:9px;transform:translate(-50%,-50%) rotate(45deg);background:#f7c64a;box-shadow:0 0 10px #f7c64a}.nlcd::before{top:0}.nlcd::after{top:100%}
+.nlcd > div{position:relative;flex:1;min-width:0;padding:0 4px;text-align:center}
+.nlcd > div + div::before{content:"";position:absolute;left:-2px;top:30%;width:4px;height:4px;border-radius:50%;background:#f7c64a;box-shadow:0 12px 0 #f7c64a;opacity:.8}
+.nlcd b{display:block;font:900 32px/1.1 var(--title);font-variant-numeric:tabular-nums;background:linear-gradient(100deg,#b9821a 0%,#f7c64a 22%,#fff8dc 40%,#f7c64a 58%,#b9821a 80%,#f7c64a 100%);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:nlfoil 6s linear infinite}
+.nlcd small{display:block;margin-top:5px;font:700 8.5px var(--mono,monospace);letter-spacing:.28em;color:#f3e6c0b3}
+.nlg2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}@media (max-width:720px){.nlg2{grid-template-columns:minmax(0,1fr)}}
+.nlbox{border-radius:20px;padding:16px;display:grid;gap:10px;align-content:start;background:linear-gradient(180deg,#ffffff12,#ffffff05);border:1px solid #f7c64a33;box-shadow:inset 0 1px 0 #ffffff1a,0 14px 30px #0007}
+.nlbox h3{margin:0;font:800 16px var(--title);color:#fff6d6}.nlbox h3 small{font:600 12px Inter,system-ui,sans-serif;color:#cfc3b8}
+.nlnote{margin:0;font-size:12.5px;line-height:1.45;color:#cfc3b8}
+.nlpk{position:relative;width:170px;aspect-ratio:5/7.4;margin:4px auto;border-radius:10px;overflow:hidden;background:radial-gradient(ellipse at 50% 28%,#ff6b78,#c8172b 50%,#5c0010);box-shadow:0 26px 50px #000b,0 0 40px #e8283c55,inset 0 0 0 2px #f7c64a;transform:rotate(-3deg)}
+.nlpk::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(135deg,transparent 0 14px,#ffffff10 14px 16px)}
+.nlpk::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 35%,#ffffff55 48%,transparent 60%);background-size:300% 100%;animation:nlfoil 3.5s ease-in-out infinite}
+.nlpk .bd{position:absolute;left:0;right:0;height:16%;background:linear-gradient(180deg,#1f8a4c,#0f5a30);border-block:2px solid #f7c64a}.nlpk .bd.t{top:0}.nlpk .bd.b{bottom:0}
+.nlpk .t2{position:absolute;left:0;right:0;top:34%;text-align:center;font:900 26px/1 var(--title);color:#fff;text-shadow:0 3px 0 #7a0010,0 0 18px #ffd27a}
+.nlpk .k{position:absolute;left:50%;top:18%;transform:translateX(-50%);font:900 30px "Zen Kaku Gothic New",sans-serif;color:#f7c64a;text-shadow:0 0 12px #f7c64a}
+.nlpk .sf{position:absolute;inset:0;background-image:radial-gradient(circle,#fff 0 1.2px,transparent 1.8px);background-size:22px 26px;opacity:.5}
+.nlpk .s3{position:absolute;left:0;right:0;bottom:22%;text-align:center;font:800 10px var(--mono,monospace);letter-spacing:.14em;color:#ffe7a5}
+.nlpk.sm{width:54px;border-radius:5px;transform:rotate(-4deg);margin:0 auto;box-shadow:0 8px 16px #000a,inset 0 0 0 1.5px #f7c64a}.nlpk.sm .t2{font-size:9px}.nlpk.sm .k{font-size:11px}.nlpk.sm .s3{display:none}
+.nlbtn{all:unset;box-sizing:border-box;cursor:pointer;display:block;text-align:center;padding:12px 16px;border-radius:14px;font:800 14px var(--title);color:#fff;background:linear-gradient(180deg,#2fbf6a,#1f8a4c);box-shadow:0 8px 24px #1f8a4c66,inset 0 1px 0 #ffffff66;border:1px solid #f7c64a88}
+.nlbtn small{display:block;font:600 11.5px Inter,system-ui,sans-serif;opacity:.9;margin-top:2px}.nlbtn[disabled]{opacity:.45;cursor:default}
+.nlms{display:grid;gap:8px}.nlms > div{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;background:#0006;border:1px solid #ffffff14;font-size:13.5px}
+.nlms span small{display:block;font-size:11.5px;color:#cfc3b8}.nlms b{font:800 12px var(--mono,monospace);color:#d9f2ff;white-space:nowrap}
+.nlms button{all:unset;cursor:pointer;font:800 12px var(--title);padding:7px 10px;border-radius:10px;background:linear-gradient(180deg,#ff4a55,#d1101e);white-space:nowrap}.nlms .ok{opacity:.55}
+.nlshop{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}@media (max-width:420px){.nlshop{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.nlshop button{all:unset;box-sizing:border-box;cursor:pointer;border-radius:14px;padding:10px 8px;text-align:center;display:grid;gap:6px;justify-items:center;align-content:start;font-size:12.5px;line-height:1.3;background:linear-gradient(180deg,#ffffff10,#ffffff04);border:1px solid #f7c64a33}
+.nlshop button[disabled]{opacity:.45;cursor:default}.nlshop b{font:800 12px var(--mono,monospace);color:#d9f2ff}
+.nlshop .v{height:64px;display:grid;place-items:center;position:relative}.nlshop .v .pk3d{width:46px!important;height:auto;filter:drop-shadow(0 6px 8px #000a)}.nlshop .v svg{width:52px;height:52px}.nlshop .v .n{position:absolute;right:-6px;top:0;font:900 12px var(--title);color:#fff6d6}
+.nlshop .fan{position:relative;width:70px;height:64px}.nlshop .fan img{position:absolute;top:4px;width:38px;aspect-ratio:450/666;object-fit:cover;border-radius:4px;border:1.5px solid #f7c64a;box-shadow:0 4px 10px #000a}
+.nlshop .fan img:nth-child(1){left:2px;transform:rotate(-12deg)}.nlshop .fan img:nth-child(2){left:16px;z-index:1}.nlshop .fan img:nth-child(3){left:30px;transform:rotate(12deg)}
+.nlfl{color:#d9f2ff}
+.nlcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px}@media (min-width:700px){.nlcards{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}}
+.nlcards button{all:unset;cursor:pointer;display:block}.nlcards .lk{opacity:.4;filter:grayscale(1)}
+/* carte « Édition Noël » */
+.nlc{position:relative;aspect-ratio:450/666;border-radius:6.5%/4.4%;padding:2.2%;background:linear-gradient(145deg,#fff1c2,#f7c64a 18%,#b9821a 34%,#e8283c 52%,#7a0010 66%,#f7c64a 84%,#fff1c2);box-shadow:0 14px 34px #000b,0 0 0 1px #00000080,inset 0 1px 0 #ffffffaa;container-type:inline-size;text-align:left}
+.nlc::after{content:"";position:absolute;inset:2.2%;border-radius:5.2%/3.5%;box-shadow:inset 0 0 0 1px #fff6d6cc,inset 0 0 0 2.5px #00000066;pointer-events:none;z-index:2}
+.nlc .in{position:relative;width:100%;height:100%;border-radius:5.2%/3.5%;overflow:hidden;isolation:isolate;background:#000}
+.nlc img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.nlc .vl{position:absolute;inset:0;background:linear-gradient(180deg,#0009 0,transparent 22%,transparent 58%,#000e 100%)}
+.nlc .sn{position:absolute;inset:0;background-image:radial-gradient(circle,#fff 0 1.3px,transparent 2px),radial-gradient(circle,#ffffffaa 0 .9px,transparent 1.6px);background-size:46px 54px,30px 38px;opacity:.55;mix-blend-mode:screen;animation:nlsnow 9s linear infinite}
+.nlc .ho{position:absolute;width:24cqw;height:24cqw;pointer-events:none}.nlc .ho.a{left:-3cqw;top:-3cqw}.nlc .ho.b{right:-3cqw;bottom:-3cqw;transform:rotate(180deg)}
+.nlc .tg{position:absolute;top:4cqw;left:16cqw;right:4cqw;display:flex;justify-content:flex-end}
+.nlc .tg span{font:800 3.4cqw var(--mono,monospace);letter-spacing:.12em;padding:1.3cqw 2.6cqw;border-radius:99px;background:linear-gradient(90deg,#b3122a,#e8283c);border:1px solid #f7c64a;color:#fff;white-space:nowrap}
+.nlc .ft{position:absolute;left:5cqw;right:5cqw;bottom:5cqw}
+.nlc .ft small{display:block;font:800 3.4cqw var(--mono,monospace);letter-spacing:.1em;color:#ffe7a5}
+.nlc .ft b{display:block;font:900 7.2cqw/1.1 var(--title);color:#fff;text-shadow:0 2px 10px #000}
+.nlc .ft em{display:block;font-style:normal;font-size:4.2cqw;line-height:1.3;color:#e8f4ef}
+.nlc .xn{position:absolute;left:4cqw;top:4cqw;font:900 4cqw var(--title);padding:1cqw 2.2cqw;border-radius:99px;background:#000a;border:1px solid #f7c64a99;color:#fff6d6}
+.nlc.num{background:conic-gradient(from var(--nla,0deg),#fff6c9,#f7c64a,#e8283c,#f7c64a,#d9f2ff,#fff6c9);animation:nlrot 6s linear infinite}
+.nlc.num .tg{left:auto;right:4cqw;top:4.6cqw}.nlc.num .tg span{font-size:2.5cqw;padding:1cqw 2cqw;letter-spacing:.1em}
+.nlc .nb{position:absolute;top:4cqw;left:4cqw;padding:1.3cqw 2.2cqw;border-radius:2cqw;background:linear-gradient(180deg,#fff6c9,#f7c64a 55%,#a86d08);color:#2a1503;font:900 3.6cqw/1 var(--title);white-space:nowrap;box-shadow:0 1.5cqw 4cqw #000a,inset 0 1px 0 #fff}
+.nlc .nb span{font-size:.62em;opacity:.8}
+.nlc .own{display:inline-block;margin-top:1.4cqw;font:700 3.4cqw var(--mono,monospace);color:#ffe7a5;padding:1cqw 2.4cqw;border-radius:99px;background:#0008;border:1px solid #f7c64a88}
+@media (prefers-reduced-motion:reduce){.nlv::before,.nlev::after,.nlhome::after,.nlc .sn,.nlc.num,.nlttl,.nlcd b,.nlpk::after,.nllights,.nlhome b{animation:none}}
+/* ---- habillage Noël de tout le site, du 1er au 24 décembre (demande du 3 nov. 2026) : classe hk-noel posée sur <html> ---- */
+html.hk-noel body::after{content:"";position:fixed;inset:0;z-index:46;pointer-events:none;background-image:radial-gradient(circle,#fff 0 1.4px,transparent 2.1px),radial-gradient(circle,#ffffffb0 0 1px,transparent 1.6px),radial-gradient(circle,#ffffff70 0 .8px,transparent 1.3px);background-size:120px 140px,76px 96px,44px 52px;opacity:.3;animation:nlsnow 16s linear infinite}
+html.hk-noel #nvTop{border-bottom-color:#f7c64a40;background:linear-gradient(180deg,color-mix(in srgb,#5a0d18 55%,var(--nvb,#0b0a0e)) ,color-mix(in srgb,var(--nvb,#0b0a0e) 92%,transparent))}
+html.hk-noel #nvTop::after{content:"";position:absolute;left:0;right:0;bottom:-9px;height:16px;pointer-events:none;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 16'%3E%3Cpath d='M0 3 Q12 11 24 4 T48 4 T72 4 T96 3' fill='none' stroke='%232a3a2c' stroke-width='1'/%3E%3Cg%3E%3Ccircle cx='10' cy='8.5' r='2.6' fill='%23ff4a5a'/%3E%3Ccircle cx='34' cy='7.5' r='2.6' fill='%23f7c64a'/%3E%3Ccircle cx='58' cy='7.5' r='2.6' fill='%233fbf6f'/%3E%3Ccircle cx='82' cy='7.5' r='2.6' fill='%237fd3ff'/%3E%3C/g%3E%3C/svg%3E") 0 0/96px 16px repeat-x;filter:drop-shadow(0 0 3px #ffd27a99);animation:nltw 2.4s ease-in-out infinite}
+html.hk-noel #nvLogo{position:relative}
+html.hk-noel #nvLogo::after{content:"";position:absolute;left:3px;right:3px;top:-3px;height:11px;pointer-events:none;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 18'%3E%3Cpath d='M2 14 C8 2 22 8 30 4 C38 0 52 6 58 14 C50 18 10 18 2 14Z' fill='%23fff'/%3E%3C/svg%3E") center/100% 100% no-repeat;filter:drop-shadow(0 1px 1px #0006)}
+html.hk-noel #nvTab .go i{position:relative;background:radial-gradient(circle at 50% 30%,#ff5a66,var(--nvr,#ff1e2d) 60%,#9a0d1c);box-shadow:0 0 0 4px #09080c,0 0 0 6px #f7c64a,0 8px 26px #ff1e2d77}
+html.hk-noel #nvTab .go i::after{content:"";position:absolute;left:8px;right:8px;top:-5px;height:13px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 18'%3E%3Cpath d='M2 14 C8 2 22 8 30 4 C38 0 52 6 58 14 C50 18 10 18 2 14Z' fill='%23fff'/%3E%3C/svg%3E") center/100% 100% no-repeat}
+html.hk-noel button.primary{box-shadow:inset 0 0 0 1px #f7c64aaa,0 0 34px color-mix(in srgb,var(--accent) 30%,transparent)}
+/* écran de connexion (premier écran des nouveaux joueurs) */
+html.hk-noel .cpgate .in{position:relative}
+html.hk-noel .cpgate .in::before{content:"";position:absolute;left:50%;top:-5px;width:58px;height:19px;transform:translateX(-50%);z-index:1;pointer-events:none;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 18'%3E%3Cpath d='M2 14 C8 2 22 8 30 4 C38 0 52 6 58 14 C50 18 10 18 2 14Z' fill='%23fff'/%3E%3C/svg%3E") center/100% 100% no-repeat;filter:drop-shadow(0 2px 2px #0006)}
+html.hk-noel .cpgate::after{content:"";position:fixed;left:0;right:0;top:env(safe-area-inset-top,0px);height:20px;pointer-events:none;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 16'%3E%3Cpath d='M0 3 Q12 11 24 4 T48 4 T72 4 T96 3' fill='none' stroke='%232a3a2c' stroke-width='1'/%3E%3Cg%3E%3Ccircle cx='10' cy='8.5' r='2.6' fill='%23ff4a5a'/%3E%3Ccircle cx='34' cy='7.5' r='2.6' fill='%23f7c64a'/%3E%3Ccircle cx='58' cy='7.5' r='2.6' fill='%233fbf6f'/%3E%3Ccircle cx='82' cy='7.5' r='2.6' fill='%237fd3ff'/%3E%3C/g%3E%3C/svg%3E") 0 0/120px 20px repeat-x;filter:drop-shadow(0 0 4px #ffd27a99);animation:nltw 2.4s ease-in-out infinite}
+html.hk-noel .cpgate h1::after{content:"聖夜 · JOYEUX NOËL";display:block;width:max-content;margin:8px auto 0;padding:4px 12px;border-radius:99px;background:linear-gradient(90deg,#1f8a4c,#0f5a30);border:1px solid #f7c64a;font:800 10.5px var(--mono,monospace);letter-spacing:.14em;color:#fff6d6}
+@media (prefers-reduced-motion:reduce){html.hk-noel body::after,html.hk-noel #nvTop::after,html.hk-noel .cpgate::after{animation:none}}
+/* ---- calendrier de l'Avent, version premium (3 nov. 2026) : portes en volume, parallaxe, ouverture chorégraphiée ---- */
+.nladv-w{position:relative;border-radius:24px;padding:16px 14px 18px;background:radial-gradient(ellipse 120% 70% at 50% 0%,#4a1220,#1a0a10 55%,#0d0709);box-shadow:inset 0 1px 0 #ffffff14,0 20px 44px #000a}
+.nladv-w::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1.5px;background:linear-gradient(120deg,#f7c64a,#e8283c 30%,#1f8a4c 55%,#f7c64a 80%,#e8283c);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+.nladv-h{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin:2px 2px 14px}
+.nladv-h h3{margin:0;font:900 19px/1.1 var(--title);background:linear-gradient(100deg,#fff6d6,#f7c64a 35%,#fff 50%,#f7c64a 70%);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:nlfoil 6s linear infinite}
+.nladv-h small{display:block;font:600 12px Inter,system-ui,sans-serif;color:#cfc3b8}.nladv-h b{font:800 12px var(--mono,monospace);color:#ffe7a5;white-space:nowrap}
+/* scène : légère inclinaison qui suit le doigt / la souris, reflet qui glisse */
+.nladv-sc{position:relative;perspective:1200px;perspective-origin:50% 40%}
+.nladv{--rx:0deg;--ry:0deg;position:relative;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-auto-flow:dense;gap:9px;padding:10px;border-radius:18px;transform-style:preserve-3d;transform:rotateX(var(--rx)) rotateY(var(--ry));transition:transform .35s cubic-bezier(.2,.8,.2,1);
+  background:radial-gradient(circle at 20% 10%,#ffffff0c,transparent 40%),repeating-linear-gradient(90deg,#2b1410 0 3px,#2f1612 3px 7px),#2a130f;box-shadow:inset 0 0 0 2px #00000080,inset 0 0 40px #000c,0 18px 40px #000b}
+.nladv::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:radial-gradient(circle at var(--lx,30%) var(--ly,20%),#ffe7a522,transparent 45%);mix-blend-mode:screen}
+@media (min-width:760px){.nladv{grid-template-columns:repeat(8,minmax(0,1fr));gap:11px}}
+.nld{all:unset;box-sizing:border-box;cursor:pointer;position:relative;aspect-ratio:3/4;transform-style:preserve-3d;-webkit-tap-highlight-color:transparent}
+.nld.big{grid-column:span 2;aspect-ratio:6/4}
+/* la case : creusée dans le bois, la récompense y flotte */
+.nld .ins{position:absolute;inset:0;border-radius:9px;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px;text-align:center;
+  background:radial-gradient(ellipse at 50% 30%,#5a2412,#1c0905 72%);box-shadow:inset 0 0 0 1px #f7c64a55,inset 0 12px 22px #000e,inset 0 -6px 14px #ffb45a1a}
+.nld .ins .v{height:46%;width:100%;flex:none;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 8px 10px #000d)}.nld .ins .v svg{height:100%;width:auto}.nld .ins .v .nlpk.sm{width:auto;height:100%;aspect-ratio:5/7.4}
+.nld .ins .v .pk3d{width:auto!important;height:100%}.nld .ins .v .fan{position:relative;height:100%;aspect-ratio:1}.nld .ins .v .fan img{position:absolute;top:0;height:92%;aspect-ratio:450/666;object-fit:cover;border-radius:3px;border:1px solid #f7c64a}.nld .ins .v .fan img:nth-child(1){left:0;transform:rotate(-10deg)}.nld .ins .v .fan img:nth-child(2){left:22%;z-index:1}.nld .ins .v .fan img:nth-child(3){left:44%;transform:rotate(10deg)}
+.nld.open .ins .v{animation:nlfloat 3.4s ease-in-out infinite}@keyframes nlfloat{50%{transform:translateY(-4px)}}
+.nld .ins span{font:700 10px/1.2 Inter,system-ui,sans-serif;color:#fff6d6}.nld .ins em{font:800 8.5px var(--mono,monospace);letter-spacing:.1em;color:#f7c64a;font-style:normal}
+.nld .ins .beam{position:absolute;inset:-60%;opacity:0;pointer-events:none;background:conic-gradient(from 0deg,transparent 0 6%,#ffe7a5aa 8%,transparent 10% 22%,#ffd27a88 24%,transparent 26% 38%,#ffe7a5aa 40%,transparent 42% 55%,#ffd27a88 57%,transparent 59% 72%,#ffe7a5aa 74%,transparent 76% 88%,#ffd27a88 90%,transparent 92%);mix-blend-mode:screen}
+/* la porte : face avant, épaisseur, revers en carton */
+.nld .dr{position:absolute;inset:0;transform-origin:0 50%;transform-style:preserve-3d;z-index:2;will-change:transform}
+.nld .df,.nld .db{position:absolute;inset:0;border-radius:9px;backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:hidden}
+.nld .df{display:grid;place-items:center;background:var(--pat);box-shadow:0 7px 14px #000a,inset 0 1px 0 #ffffff66,inset 0 -2px 0 #0005,inset 0 0 0 1px #0003}
+.nld .df::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 30%,#ffffff55 46%,transparent 60%);background-size:280% 100%;background-position:var(--sh,120%) 0;transition:background-position .2s}
+.nld .db{transform:rotateY(180deg);background:repeating-linear-gradient(0deg,#d9c39a 0 2px,#cdb488 2px 4px);box-shadow:inset 0 0 0 1px #00000040,inset -10px 0 18px #0004}
+.nld .db::after{content:"";position:absolute;inset:14% 18%;border:1.5px dashed #8a6a3a88;border-radius:6px}
+.nld .ed{position:absolute;top:2px;bottom:2px;right:0;width:6px;transform-origin:100% 50%;transform:rotateY(90deg);background:linear-gradient(180deg,#e9d6ad,#b8955c);border-radius:2px}
+.nld .df b{position:relative;z-index:1;font:900 clamp(22px,7.4vw,34px)/1 var(--title);background:linear-gradient(180deg,#fff8dc,#f7c64a 55%,#a86d08);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 2px 0 #0009) drop-shadow(0 0 8px #0006)}
+.nld.big .df b{font-size:clamp(30px,10vw,46px)}
+.nld .df i.rb{position:absolute;inset:0;background:linear-gradient(90deg,transparent calc(50% - 4px),var(--rib) calc(50% - 4px) calc(50% + 4px),transparent 0),linear-gradient(0deg,transparent calc(50% - 4px),var(--rib) calc(50% - 4px) calc(50% + 4px),transparent 0);opacity:.92;filter:drop-shadow(0 1px 1px #0006)}
+.nld .df i.kn{position:absolute;right:9%;top:50%;width:7px;height:7px;margin-top:-3.5px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff6c9,#b9821a);box-shadow:0 1px 2px #0009}
+.nld .df i.hg{position:absolute;left:3px;width:3px;height:14%;border-radius:2px;background:linear-gradient(90deg,#8a6a3a,#f7e1a8,#8a6a3a)}.nld .df i.hg.a{top:16%}.nld .df i.hg.b{bottom:16%}
+.nld .df .xc{position:absolute;left:8px;top:6px;z-index:1;font:800 8px var(--mono,monospace);letter-spacing:.12em;color:#fff6d6;padding:2px 6px;border-radius:99px;background:#000a;border:1px solid #f7c64a}
+.nld .df .seal{position:absolute;right:6%;top:9%;z-index:1;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font:900 13px "Zen Kaku Gothic New",sans-serif;color:#ffd9a0;background:radial-gradient(circle at 35% 30%,#ff6a5a,#b3122a 55%,#5c0010);box-shadow:0 3px 6px #000a,inset 0 0 0 3px #8a0c1c,inset 0 0 0 4px #ff5a6a55}
+.nld.p0,.nlcnb.p0{--pat:radial-gradient(circle,#f7c64a 0 1.3px,transparent 1.8px) 0 0/12px 12px,linear-gradient(160deg,#d41f33,#8a0c1c);--rib:#f7c64a}
+.nld.p1,.nlcnb.p1{--pat:repeating-linear-gradient(135deg,#ffffff22 0 5px,transparent 5px 12px),linear-gradient(160deg,#21a35a,#0d4f2b);--rib:#e8283c}
+.nld.p2,.nlcnb.p2{--pat:radial-gradient(circle at 25% 25%,#e8283c 0 2px,transparent 2.6px) 0 0/14px 14px,linear-gradient(160deg,#ffe7a5,#d8a23a);--rib:#1f8a4c}
+.nld.p3,.nlcnb.p3{--pat:radial-gradient(circle,#fff 0 1.2px,transparent 1.7px) 0 0/10px 13px,linear-gradient(160deg,#173a63,#0b1c33);--rib:#e8283c}
+.nld.p2 .df b{background:linear-gradient(180deg,#fff,#e8283c 60%,#7a0010);-webkit-background-clip:text;background-clip:text}
+/* états */
+.nld.lock .df{filter:saturate(.5) brightness(.6)}.nld.lock .df b{opacity:.7}
+.nld.today .dr{animation:nlbreath 3.2s ease-in-out infinite}.nld.today .df{box-shadow:0 0 0 2px #f7c64a,0 0 24px #f7c64acc,0 8px 18px #000a,inset 0 1px 0 #ffffff66}
+@keyframes nlbreath{0%,100%{transform:rotateY(0) translateZ(0)}45%{transform:rotateY(-11deg) translateZ(6px)}55%{transform:rotateY(-9deg) translateZ(6px)}}
+.nld.today::after{content:"AUJOURD'HUI";position:absolute;left:50%;top:-8px;transform:translate(-50%,0) translateZ(40px);font:800 7.5px var(--mono,monospace);letter-spacing:.14em;padding:2px 7px;border-radius:99px;background:#e8283c;border:1px solid #f7c64a;color:#fff;white-space:nowrap;z-index:3;box-shadow:0 3px 8px #000a}
+.nld.late .df{box-shadow:0 0 0 1.5px #f7c64a99,0 8px 18px #000a,inset 0 1px 0 #ffffff66}
+.nld.open .dr{display:none}.nld.open .ins{box-shadow:inset 0 0 0 1px #f7c64a88,inset 0 12px 22px #000e,0 0 16px #f7c64a22}
+.nld.shake .dr{animation:nlshake .45s}@keyframes nlshake{20%,60%{transform:translateX(-4px) rotateZ(-2deg)}40%,80%{transform:translateX(4px) rotateZ(2deg)}}
+.nladv.in .nld{animation:nlin .8s cubic-bezier(.2,.9,.3,1.2) backwards;animation-delay:calc(var(--i) * 30ms)}
+@keyframes nlin{from{opacity:0;transform:rotateX(-80deg) translateY(24px) translateZ(-40px) scale(.9)}}
+/* révélation plein écran */
+.nlrv{position:fixed;inset:0;z-index:135;display:grid;place-items:center;pointer-events:auto;background:radial-gradient(ellipse at 50% 45%,#3a0d16ee,#07060acc 70%);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+.nlrv canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.nlrv .rays{position:absolute;left:50%;top:44%;width:180vmax;height:180vmax;margin:-90vmax 0 0 -90vmax;pointer-events:none;background:conic-gradient(from 0deg,transparent 0 4%,#ffd27a30 6%,transparent 8% 16%,#ffe7a522 18%,transparent 20% 29%,#ffd27a30 31%,transparent 33% 41%,#ffe7a522 43%,transparent 45% 54%,#ffd27a30 56%,transparent 58% 66%,#ffe7a522 68%,transparent 70% 79%,#ffd27a30 81%,transparent 83% 91%,#ffe7a522 93%,transparent 95%);animation:nlrays 18s linear infinite;-webkit-mask:radial-gradient(circle,#000 0 25%,transparent 60%);mask:radial-gradient(circle,#000 0 25%,transparent 60%)}
+@keyframes nlrays{to{transform:rotate(360deg)}}
+.nlrv .bx{position:relative;display:grid;justify-items:center;gap:10px;text-align:center;padding:0 24px}
+.nlrv .rw{width:min(46vw,190px);height:min(46vw,190px);display:grid;place-items:center;filter:drop-shadow(0 18px 30px #000c) drop-shadow(0 0 30px #ffd27a66)}.nlrv .rw svg{width:100%;height:100%}.nlrv .rw .nlpk{width:62%;margin:0}.nlrv .rw .pk3d{width:62%!important;height:auto}
+.nlrv .rw .fan{position:relative;width:100%;height:100%}.nlrv .rw .fan img{position:absolute;top:6%;width:48%;aspect-ratio:450/666;object-fit:cover;border-radius:8px;border:2px solid #f7c64a;box-shadow:0 10px 24px #000a}.nlrv .rw .fan img:nth-child(1){left:2%;transform:rotate(-14deg)}.nlrv .rw .fan img:nth-child(2){left:26%;z-index:1;top:0}.nlrv .rw .fan img:nth-child(3){left:50%;transform:rotate(14deg)}
+.nlrv .dt{font:800 12px var(--mono,monospace);letter-spacing:.24em;color:#ffe7a5}
+.nlrv h2{margin:0;font:900 clamp(24px,7vw,34px)/1.1 var(--title);background:linear-gradient(100deg,#fff6d6,#f7c64a 30%,#fff 50%,#f7c64a 70%,#fff6d6);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:nlfoil 4s linear infinite}
+.nlrv .ex{font:800 10px var(--mono,monospace);letter-spacing:.2em;padding:4px 12px;border-radius:99px;background:linear-gradient(90deg,#b3122a,#e8283c);border:1px solid #f7c64a;color:#fff}
+.nlrv .ok{all:unset;cursor:pointer;margin-top:8px;padding:13px 28px;border-radius:16px;font:800 15px var(--title);color:#2a1503;background:linear-gradient(180deg,#fff3c4,#f7c64a 55%,#c8902a);box-shadow:0 10px 26px #f7c64a55,inset 0 1px 0 #fff}
+@media (prefers-reduced-motion:reduce){.nladv{transform:none!important}.nld.today .dr,.nladv.in .nld,.nld.open .ins .v,.nladv-h h3,.nlrv .rays,.nlrv h2{animation:none}}
+.pfav.fr-avent{--ring:conic-gradient(from 0deg,#e8283c,#f7c64a,#1f8a4c,#f7c64a,#e8283c)}.pfav.fr-etoile{--ring:radial-gradient(circle at 50% 0,#fff,#fff6c9 25%,#f7c64a 50%,#a86d08 80%)}
+/* raccourcis de l'écran Noël : calendrier, boutique, cartes (chacun sa page) */
+.nltis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.nlti{all:unset;box-sizing:border-box;cursor:pointer;position:relative;display:grid;justify-items:center;gap:4px;padding:12px 6px 10px;border-radius:18px;text-align:center;background:linear-gradient(180deg,#ffffff14,#ffffff05);box-shadow:inset 0 1px 0 #ffffff1f,0 10px 22px #0008;transition:transform .2s}
+.nlti::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;background:linear-gradient(140deg,#f7c64a,#f7c64a22 40%,#e8283c55 70%,#f7c64a88);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+.nlti:active{transform:scale(.96)}.nlti .ic{height:46px;display:grid;place-items:center}.nlti .ic svg{width:38px;height:38px}
+.nlti b{font:800 13px var(--title);color:#fff6d6}.nlti small{font:700 10.5px var(--mono,monospace);color:#cfc3b8;white-space:nowrap}
+.nlti .dot{position:absolute;top:8px;right:10px;width:10px;height:10px;border-radius:50%;background:#ff2d3a;box-shadow:0 0 0 2px #1a0a0e}
+.nlti.hot{animation:nlhot 1.4s ease-in-out infinite}.nlti.hot .dot{animation:nldot 1.4s ease-in-out infinite}
+@keyframes nlhot{0%,100%{box-shadow:inset 0 1px 0 #ffffff1f,0 10px 22px #0008,0 0 0 0 #f7c64a00}50%{box-shadow:inset 0 1px 0 #ffffff1f,0 10px 22px #0008,0 0 0 3px #f7c64a,0 0 26px #f7c64aaa}}
+@keyframes nldot{50%{transform:scale(1.35)}}
+.nlti .mini-d{position:relative;width:34px;height:44px;border-radius:5px;background:radial-gradient(circle,#f7c64a 0 1px,transparent 1.5px) 0 0/8px 8px,linear-gradient(160deg,#d41f33,#8a0c1c);box-shadow:0 4px 10px #000a,inset 0 1px 0 #ffffff55;display:grid;place-items:center;transform:perspective(200px) rotateY(-18deg);transform-origin:0 50%}
+.nlti .mini-d i{position:absolute;inset:0;background:linear-gradient(90deg,transparent 44%,#f7c64a 44% 56%,transparent 0),linear-gradient(0deg,transparent 44%,#f7c64a 44% 56%,transparent 0);opacity:.8;border-radius:inherit}
+.nlti .mini-d b{position:relative;font:900 15px var(--title);color:#fff;text-shadow:0 1px 0 #000}
+.nlti .fan{position:relative;width:52px;height:46px}.nlti .fan img{position:absolute;top:2px;width:28px;aspect-ratio:450/666;object-fit:cover;border-radius:3px;border:1px solid #f7c64a;box-shadow:0 3px 8px #000a}
+.nlti .fan img:nth-child(1){left:0;transform:rotate(-12deg)}.nlti .fan img:nth-child(2){left:12px;z-index:1}.nlti .fan img:nth-child(3){left:24px;transform:rotate(12deg)}
+.nlsub{padding-top:30px}.nlbk{font-size:18px}
+.nlsub .nladv-w{background:none;box-shadow:none;padding:10px 4px 4px;overflow:visible}.nlsub .nladv-w::before{display:none}.nlsub .nladv-h h3{display:none}
+@media (prefers-reduced-motion:reduce){.nlti.hot,.nlti.hot .dot{animation:none}}
+.nlsold{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;font:800 14px var(--title)!important;color:#cfc3b8!important}.nlsold b{font:900 22px var(--title);color:#fff6d6}
+.nlsub .nladv-h{padding:0 2px}
+.nlhelp{display:grid;gap:12px;max-width:420px}.nlhelp h2{margin:0;font:900 22px var(--title);color:#fff6d6}
+.nlhelp .it{display:grid;grid-template-columns:40px minmax(0,1fr);gap:10px;align-items:start}.nlhelp .it i{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;font:900 18px "Zen Kaku Gothic New",sans-serif;font-style:normal;color:#2a1503;background:radial-gradient(circle at 35% 30%,#fff6c9,#f7c64a 55%,#a86d08)}
+.nlhelp .it b{font:800 14px var(--title);color:#fff6d6}.nlhelp .it p{margin:2px 0 0;font-size:13px;line-height:1.45;color:#cfc3b8}
+.nlfab{all:unset;box-sizing:border-box;cursor:pointer;position:fixed;right:12px;bottom:calc(96px + env(safe-area-inset-bottom,0px));z-index:44;width:66px;height:74px;border-radius:20px;display:grid;justify-items:center;align-content:center;gap:1px;background:radial-gradient(ellipse at 50% 20%,#7a1020,#2a0810 70%);box-shadow:0 10px 26px #000b,0 0 0 1.5px #f7c64a,0 0 22px #e8283c66;animation:nlbob 2.6s ease-in-out infinite}
+.nlfab .nllgw .lg{width:38px;height:38px;display:block}.nlfab .nllgw .cap{left:3px;right:3px;top:-6px;height:12px}
+.nlfab span:not(.nllgw){font:900 11px var(--title);color:#fff6d6;letter-spacing:.02em}
+.nlfab .dot{position:absolute;top:-4px;right:-4px;width:14px;height:14px;border-radius:50%;background:#ff2d3a;box-shadow:0 0 0 2px #1a0a0e;animation:nldot 1.4s ease-in-out infinite}
+@keyframes nlbob{50%{transform:translateY(-5px)}}
+@media (min-width:900px){.nlfab{bottom:28px;right:24px}}
+@media (prefers-reduced-motion:reduce){.nlfab,.nlfab .dot{animation:none}}
+.nlmg{display:flex;align-items:center;gap:8px}.nlms .hkgo{padding:7px 10px;font-size:12px}
+/* ---- cinématique d'ouverture d'une porte (plein écran, plans successifs) ---- */
+.nlcn{position:fixed;inset:0;z-index:136;overflow:hidden;display:grid;place-items:center;background:radial-gradient(ellipse at 50% 42%,#2a0a12f2,#050407fa 70%)}
+.nlcn canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.nlcn .vig{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 45%,transparent 40%,#000c 100%)}
+.nlcn .flash{position:absolute;inset:0;background:radial-gradient(circle at 50% 42%,#fff,#ffe7a5 30%,transparent 70%);opacity:0;pointer-events:none;mix-blend-mode:screen}
+.nlcn .rays{position:absolute;left:50%;top:42%;width:200vmax;height:200vmax;margin:-100vmax 0 0 -100vmax;opacity:0;pointer-events:none;background:conic-gradient(from 0deg,transparent 0 3%,#ffd27a40 5%,transparent 7% 14%,#fff1c230 16%,transparent 18% 26%,#ffd27a40 28%,transparent 30% 39%,#fff1c230 41%,transparent 43% 51%,#ffd27a40 53%,transparent 55% 64%,#fff1c230 66%,transparent 68% 76%,#ffd27a40 78%,transparent 80% 89%,#fff1c230 91%,transparent 93%);-webkit-mask:radial-gradient(circle,#000 0 18%,transparent 55%);mask:radial-gradient(circle,#000 0 18%,transparent 55%)}
+.nlcn .stg{position:relative;perspective:1300px;perspective-origin:50% 40%;display:grid;justify-items:center;gap:18px;width:100%}
+.nlcnb{position:relative;width:min(62vw,280px);aspect-ratio:3/4;transform-style:preserve-3d;border-radius:18px}
+.nlcnb.big{width:min(84vw,400px);aspect-ratio:6/4}
+.nlcnb .hole{position:absolute;inset:0;border-radius:18px;overflow:hidden;background:radial-gradient(ellipse at 50% 40%,#ffcf7a,#b8561c 30%,#3a1206 70%);box-shadow:inset 0 0 0 3px #f7c64a88,inset 0 20px 40px #000c,0 30px 60px #000c}
+.nlcnb .hole::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 45%,#fff8dc,transparent 55%);opacity:.0;transition:opacity .6s}.nlcnb.lit .hole::before{opacity:.9}
+.nlcnb .dor{position:absolute;inset:0;transform-origin:0 50%;transform-style:preserve-3d;z-index:3}
+.nlcnb .fr,.nlcnb .bk{position:absolute;inset:0;border-radius:18px;overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.nlcnb .fr{display:grid;place-items:center;background:var(--pat);box-shadow:inset 0 2px 0 #ffffff70,inset 0 -3px 0 #0006,inset 0 0 0 2px #0003,0 24px 50px #000c}
+.nlcnb .fr .sheen{position:absolute;inset:0;background:linear-gradient(110deg,transparent 35%,#ffffff70 48%,transparent 60%);background-size:300% 100%;background-position:120% 0}
+.nlcnb .fr .shade{position:absolute;inset:0;background:#000;opacity:0}
+.nlcnb .fr b{position:relative;z-index:2;font:900 clamp(64px,22vw,110px)/1 var(--title);background:linear-gradient(180deg,#fffbe6,#f7c64a 50%,#9a6206);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 4px 0 #0009) drop-shadow(0 0 18px #0007)}
+.nlcnb.p2 .fr b{background:linear-gradient(180deg,#fff,#e8283c 60%,#7a0010);-webkit-background-clip:text;background-clip:text}
+.nlcnb .rv,.nlcnb .rh{position:absolute;background:var(--rib);z-index:1;box-shadow:0 0 0 1px #0002,inset 0 0 6px #0003}
+.nlcnb .rv{top:0;bottom:0;left:calc(50% - 9px);width:18px}.nlcnb .rh{left:0;right:0;top:calc(50% - 9px);height:18px}
+.nlcnb .bow{position:absolute;left:50%;top:50%;width:64px;height:40px;margin:-20px 0 0 -32px;z-index:2;background:radial-gradient(ellipse at 25% 50%,var(--rib) 0 46%,transparent 48%),radial-gradient(ellipse at 75% 50%,var(--rib) 0 46%,transparent 48%),radial-gradient(circle at 50% 50%,var(--rib) 0 22%,transparent 24%);filter:drop-shadow(0 3px 3px #0008) brightness(1.08)}
+.nlcnb .sl{position:absolute;right:10%;top:9%;z-index:3;width:64px;height:64px;border-radius:50%;display:grid;place-items:center;font:900 26px "Zen Kaku Gothic New",sans-serif;color:#ffd9a0;background:radial-gradient(circle at 35% 30%,#ff6a5a,#b3122a 55%,#5c0010);box-shadow:0 6px 12px #000a,inset 0 0 0 5px #8a0c1c,inset 0 0 0 6px #ff5a6a55}
+.nlcnb .shard{position:absolute;right:10%;top:9%;z-index:3;width:24px;height:24px;margin:20px;background:radial-gradient(circle at 35% 30%,#ff6a5a,#8a0c1c);clip-path:polygon(50% 0,100% 40%,70% 100%,10% 80%,0 30%)}
+.nlcnb .bk{transform:rotateY(180deg);background:repeating-linear-gradient(0deg,#dcc69e 0 3px,#cfb68a 3px 6px);box-shadow:inset 0 0 0 2px #0004,inset -24px 0 40px #0005}
+.nlcnb .bk::after{content:"";position:absolute;inset:14% 16%;border:2px dashed #8a6a3a99;border-radius:10px}
+.nlcnb .ed{position:absolute;top:3px;bottom:3px;right:0;width:12px;transform-origin:100% 50%;transform:rotateY(90deg);background:linear-gradient(180deg,#efdcb3,#b08850);border-radius:3px}
+.nlcnb .hg{position:absolute;left:5px;width:6px;height:16%;z-index:2;border-radius:3px;background:linear-gradient(90deg,#7a5a2a,#ffe8b0,#7a5a2a)}.nlcnb .hg.a{top:14%}.nlcnb .hg.b{bottom:14%}
+.nlcnb .rwd{position:absolute;left:50%;top:50%;width:62%;aspect-ratio:1;margin:-31% 0 0 -31%;display:grid;place-items:center;z-index:4;transform-style:preserve-3d;opacity:0;filter:drop-shadow(0 20px 30px #000c) drop-shadow(0 0 40px #ffd27a99)}
+.nlcnb.big .rwd{width:40%;margin:-20% 0 0 -20%}
+.nlcnb .rwd svg{width:100%;height:100%}.nlcnb .rwd .nlpk{width:64%;margin:0}.nlcnb .rwd .pk3d{width:64%!important;height:auto}
+.nlcnb .rwd .fan{position:relative;width:100%;height:100%}.nlcnb .rwd .fan img{position:absolute;top:6%;width:48%;aspect-ratio:450/666;object-fit:cover;border-radius:8px;border:2px solid #f7c64a}.nlcnb .rwd .fan img:nth-child(1){left:2%;transform:rotate(-14deg)}.nlcnb .rwd .fan img:nth-child(2){left:26%;z-index:1;top:0}.nlcnb .rwd .fan img:nth-child(3){left:50%;transform:rotate(14deg)}
+.nlcn .txt{display:grid;justify-items:center;gap:8px;text-align:center;min-height:120px;padding:0 20px}
+.nlcn .dt{font:800 12px var(--mono,monospace);letter-spacing:.28em;color:#ffe7a5;opacity:0}
+.nlcn h2{margin:0;font:900 clamp(22px,7vw,32px)/1.12 var(--title);color:#fff6d6;text-shadow:0 0 24px #f7c64a88}
+.nlcn h2 span{display:inline-block;opacity:0;white-space:pre}
+.nlcn .ex{font:800 11px var(--mono,monospace);letter-spacing:.22em;padding:5px 14px;border-radius:6px;background:linear-gradient(90deg,#b3122a,#e8283c);border:1.5px solid #f7c64a;color:#fff;opacity:0;transform:rotate(-6deg)}
+.nlcn .ok{all:unset;cursor:pointer;margin-top:6px;padding:13px 30px;border-radius:16px;font:800 15px var(--title);color:#2a1503;background:linear-gradient(180deg,#fff3c4,#f7c64a 55%,#c8902a);box-shadow:0 10px 26px #f7c64a55,inset 0 1px 0 #fff;opacity:0}
+.nlcn .skip{all:unset;cursor:pointer;position:absolute;right:16px;top:calc(14px + env(safe-area-inset-top,0px));font:700 12px Inter,sans-serif;color:#ffffff99;padding:6px 10px}
+/* révélation après l'ouverture */
+.nlrev{display:grid;gap:12px;justify-items:center;text-align:center;max-width:320px;margin:0 auto}.nlrev .nlc{width:min(260px,70vw)}
+.nlrev h2{margin:0;font:900 22px/1.15 var(--title);color:#fff6d6}.nlrev p{margin:0;font-size:13px;color:#cfc3b8}
+.nlpick{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;max-height:62vh;overflow:auto}.nlpick button{all:unset;cursor:pointer}
+/* cadre de profil « Neige » (boutique de Noël) */
+.pfav.fr-neige{--ring:linear-gradient(135deg,#fff,#d9f2ff 35%,#e8283c 65%,#1f8a4c)}
+</style>
+<script>
+/* ===== Événement Noël 2026 : du 1er au 24 décembre, actif tout seul (heure du téléphone ; les cartes numérotées : heure du serveur).
+   Booster de Noël (1 gratuit par jour, puis 300 ◆), flocons (missions, boutique ; perdus après le 24), 12 cartes « Édition Noël » (1 chance sur 8 par booster),
+   6 cartes numérotées en 100 exemplaires tirées par le serveur (noel-numerotees-supabase.sql). Rendu validé sur data/coffrets/noel.html le 3 nov. 2026. ===== */
+const NL = {y: 2026, a: new Date(2026, 11, 1).getTime(), b: new Date(2026, 11, 25).getTime(), price: 300, pNc: .125};
+/* essai en local seulement : 127.0.0.1:8765/…?noel=1 ouvre l'événement avant le 1er décembre */
+const nlTest = () => { try { return /^(127\.0\.0\.1|localhost)$/.test(location.hostname) && /[?&]noel=1/.test(location.search); } catch { return false; } };
+const nlOn = () => nlTest() || (Date.now() >= NL.a && Date.now() < NL.b);
+const NL_C = [
+  {id: "op", im: "noel-op-luffy.jpg", c: "MOMENT · 海 ONE PIECE", n: "Le traîneau de Chopper", x: "L'équipage sous la lune."},
+  {id: "op2", im: "noel-op-luffy2.jpg", c: "PERSONNAGE · 海 ONE PIECE", n: "Monkey D. Luffy", x: "Un cadeau sous la couronne."},
+  {id: "db", im: "noel-db-goku.jpg", c: "MOMENT · 龍 DRAGON BALL", n: "La tournée du nuage", x: "Goku, Gohan et Goten en Pères Noël."},
+  {id: "db2", im: "noel-db-goku2.jpg", c: "MOMENT · 龍 DRAGON BALL", n: "Le sapin des Son", x: "Goku et Gohan décorent le sapin."},
+  {id: "na", im: "noel-na-naruto.jpg", c: "MOMENT · 忍 NARUTO", n: "La famille Uzumaki", x: "Noël en famille, en costumes."},
+  {id: "na2", im: "noel-na-naruto2.jpg", c: "MOMENT · 忍 NARUTO", n: "Le bonhomme de neige", x: "Sous la neige de Konoha."},
+  {id: "jjk", im: "noel-jjk-1.jpg", c: "MOMENT · 呪 JUJUTSU KAISEN", n: "Le repas de Noël", x: "Itadori, Nobara et Megumi à table."},
+  {id: "jjk2", im: "noel-jjk-2.jpg", c: "PERSONNAGE · 呪 JUJUTSU KAISEN", n: "Yuji Itadori", x: "Sous le grand sapin illuminé."},
+  {id: "ds", im: "noel-ds-1.jpg", c: "MOMENT · 鬼 DEMON SLAYER", n: "Bataille de boules de neige", x: "Tanjiro et ses amis sous le sapin."},
+  {id: "ds2", im: "noel-ds-2.jpg", c: "MOMENT · 鬼 DEMON SLAYER", n: "La veillée de Noël", x: "Au coin du feu."},
+  {id: "mha", im: "noel-mha-1.jpg", c: "MOMENT · 英 MY HERO ACADEMIA", n: "La tournée de Yuei", x: "La classe A distribue les cadeaux au-dessus de la ville."},
+  {id: "mha2", im: "noel-mha-2.jpg", c: "PERSONNAGE · 英 MY HERO ACADEMIA", n: "Le cadeau de Bakugo", x: "Sous les lumières du sapin."}];
+/* numérotées : les clés (db, op…) sont celles de la table noel_numbered du serveur */
+const NL_N = [
+  {id: "db", im: "noel-num-goku.jpg", c: "PERSONNAGE · 龍 DRAGON BALL", n: "Son Goku", x: "La tournée de Noël."},
+  {id: "op", im: "noel-num-op.jpg", c: "PERSONNAGE · 海 ONE PIECE", n: "Monkey D. Luffy", x: "La hotte de Noël."},
+  {id: "na", im: "noel-num-na.jpg", c: "MOMENT · 忍 NARUTO", n: "Naruto et Sasuke", x: "Au coin du feu, sous le sapin."},
+  {id: "jjk", im: "noel-num-jjk.jpg", c: "MOMENT · 呪 JUJUTSU KAISEN", n: "Bataille de boules de neige", x: "Itadori, Megumi et Nobara."},
+  {id: "ds", im: "noel-num-ds.jpg", c: "PERSONNAGE · 鬼 DEMON SLAYER", n: "Tanjiro Kamado", x: "Le sapin de la famille."},
+  {id: "mha", im: "noel-num-mha.jpg", c: "MOMENT · 英 MY HERO ACADEMIA", n: "La tournée des héros", x: "Fat Gum en Père Noël et ses lutins."}];
+const NL_HOLLY = cls => `<svg class="ho ${cls}" viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="nlhl" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3fbf6f"/><stop offset="1" stop-color="#0f5a30"/></linearGradient></defs>${[[5, 22, -35], [18, 5, 55]].map(([x, y, r]) => `<g transform="translate(${x} ${y}) rotate(${r})"><path d="M0 0 C3 -3 5 -2 7 -5 C8 -2 11 -2 13 -4 C13 -1 16 0 18 -1 C16 2 17 4 16 6 C13 5 11 7 9 6 C9 8 6 9 4 8 C4 6 1 5 0 0Z" fill="url(#nlhl)" stroke="#0a3d20" stroke-width=".8"/><path d="M1 0 L16 1" stroke="#0a3d20" stroke-width=".6" fill="none"/></g>`).join("")}<circle cx="15" cy="17" r="3.3" fill="#e8283c" stroke="#7a0010" stroke-width=".6"/><circle cx="20" cy="15" r="2.9" fill="#ff3a4d" stroke="#7a0010" stroke-width=".6"/><circle cx="17" cy="21.5" r="2.7" fill="#d1101e" stroke="#7a0010" stroke-width=".6"/><circle cx="14" cy="16" r=".9" fill="#fff" opacity=".8"/></svg>`;
+const NL_LIGHTS = `<div class="nllights" aria-hidden="true"><svg viewBox="0 0 100 20" preserveAspectRatio="none"><path d="M0 6 Q8 16 16 8 T33 8 T50 8 T67 8 T84 8 T100 6" fill="none" stroke="#2a3a2c" stroke-width="1"/>${Array.from({length: 12}, (_, i) => { const c = ["#ff4a5a", "#f7c64a", "#3fbf6f", "#7fd3ff"][i % 4]; return `<circle cx="${(4 + i * 8.2).toFixed(1)}" cy="${i % 2 ? 12 : 16}" r="2.6" fill="${c}" style="filter:drop-shadow(0 0 3px ${c})"/>`; }).join("")}</svg></div>`;
+const NL_LOGO = `<span class="nllgw"><svg class="cap" viewBox="0 0 60 18" aria-hidden="true"><path d="M2 14 C8 2 22 8 30 4 C38 0 52 6 58 14 C50 18 10 18 2 14Z" fill="#fff" opacity=".95"/></svg><svg class="lg" viewBox="0 0 100 100" aria-hidden="true"><path d="M50 3l40.7 23.5v47L50 97 9.3 73.5v-47z" fill="#ff1e2d"/><path d="M50 12l32.9 19v38L50 88 17.1 69V31z" fill="#120506"/><rect x="31" y="28" width="11" height="44" rx="2.5" fill="#ff1e2d"/><rect x="58" y="28" width="11" height="44" rx="2.5" fill="#ff1e2d"/><path d="M27 60l46-21v10L27 70z" fill="#ff1e2d"/></svg></span>`;
+const NL_PK = sm => `<div class="nlpk ${sm ? "sm" : ""}" aria-hidden="true"><i class="sf"></i><i class="bd t"></i><span class="k">聖</span><span class="t2">NOËL</span><span class="s3">HANKO · 5 CARTES</span><i class="bd b"></i></div>`;
+const nlFl = n => `${(n || 0).toLocaleString("fr-FR")} <i class="hkflk" role="img" aria-label="flocons"></i>`;
+/* une carte : C = entrée de NL_C ou NL_N ; o.num = numéro (numérotée), o.n = exemplaires (×2…), o.nm = 1er propriétaire */
+function nlCard(C, o = {}){ const num = o.num != null || o.numv;
+  return `<div class="nlc ${num ? "num" : ""} ${o.cls || ""}"><div class="in"><img src="${C.im}" alt="" loading="lazy"><i class="vl"></i><i class="sn"></i>${NL_HOLLY("a")}${NL_HOLLY("b")}${num ? `<div class="nb">N° ${o.num != null ? String(o.num).padStart(3, "0") : "???"}<span>/100</span></div>` : o.n > 1 ? `<span class="xn">×${o.n}</span>` : ""}<div class="tg"><span>${num ? "NUMÉROTÉE · NOËL " + NL.y : "ÉDITION NOËL " + NL.y}</span></div><div class="ft"><small>${esc(C.c)}</small><b>${esc(C.n)}</b><em>${esc(C.x)}</em>${num && o.nm ? `<span class="own">1er propriétaire : ${esc(o.nm)}</span>` : ""}</div></div></div>`; }
+/* ---- état (dans la sauvegarde) ---- */
+function nlSt(s){ if (!s.noel || s.noel.y !== NL.y) s.noel = {y: NL.y, f: 0, fd: "", od: "", st: 0, c: {}, num: [], cd: {k: "", L: []}, cw: {k: 0, L: []}};
+  const N = s.noel; if (N.cd.k !== tcDay()) N.cd = {k: tcDay(), L: []}; if (N.cw.k !== tcWeekKey()) N.cw = {k: tcWeekKey(), L: []}; return N; }
+const nlFree = N => N.fd !== tcDay();
+const nlLeft = () => { const ms = Math.max(0, NL.b - Date.now()); return {j: Math.floor(ms / 864e5), h: String(Math.floor(ms % 864e5 / 36e5)).padStart(2, "0"), m: String(Math.floor(ms % 36e5 / 6e4)).padStart(2, "0"), s: String(Math.floor(ms % 6e4 / 1e3)).padStart(2, "0")}; };
+/* ---- missions de Noël (flocons) ---- */
+const NL_MIS = [
+  {k: "o", t: "Ouvre ton booster de Noël du jour", f: 20, g: 1, go: "nlbo", v: (s, N) => N.od === tcDay() ? 1 : 0},
+  {k: "p3", t: "Joue 3 parties", f: 15, g: 3, go: "p3", v: s => s.day.play || 0},
+  {k: "df", t: "Trouve le défi du jour", f: 15, g: 1, go: "df", v: s => s.day.df ? 1 : 0},
+  {k: "w5", t: "Semaine : 5 jours de connexion", f: 80, g: 5, w: 1, v: s => (tcWeek(s).days || []).length},
+  {k: "wd", t: "Semaine : une partie en ligne avec un ami", f: 60, g: 1, w: 1, go: "wd", v: s => s.week && s.week.duo ? 1 : 0}];
+function nlMisDo(k){ const s = tcLoad(), N = nlSt(s), M = NL_MIS.find(x => x.k === k); if (!M || !nlOn()) return; const L = M.w ? N.cw.L : N.cd.L;
+  if (L.includes(k) || M.v(s, N) < M.g) return; L.push(k); N.f += M.f; tcSave(s); try { SFX.play("win"); } catch {} nlPaint(); }
+/* ---- boutique ---- */
+const NL_SHOP = [
+  {k: "nc", t: "Carte Édition Noël au choix", f: 200, v: () => `<span class="fan">${[0, 4, 10].map(i => `<img src="${NL_C[i].im}" alt="" loading="lazy">`).join("")}</span>`},
+  {k: "bo", t: "Booster de Noël", f: 40, v: () => NL_PK(1)},
+  {k: "fr", t: "Cadre « Neige »", f: 120, one: s => (s.bpU || []).includes("neige"), v: () => BP_FRAME},
+  {k: "vt", t: "Titre « Esprit de Noël »", f: 80, one: s => (s.unl || []).includes("noel26"), v: () => BP_TITLE},
+  {k: "ag", t: "2 boosters Argent", f: 60, v: () => `<span class="n">×2</span>${tcPouch3D("mix:1", "sm")}`},
+  {k: "g", t: "300 ◆", f: 50, v: () => BP_GEM(3)}];
+function nlBuy(k){ const s = tcLoad(), N = nlSt(s), it = NL_SHOP.find(x => x.k === k); if (!it || !nlOn() || N.f < it.f || (it.one && it.one(s))) return;
+  if (k === "nc") return nlPick();
+  N.f -= it.f; s.bpU = s.bpU || []; s.unl = s.unl || [];
+  if (k === "bo") N.st = (N.st || 0) + 1; else if (k === "fr") s.bpU.push("neige"); else if (k === "vt") s.unl.push("noel26"); else if (k === "ag") tcGive(s, "mix:1", 2); else if (k === "g") s.gems = (s.gems || 0) + 300;
+  N.fv = N.f; tcSave(s); try { SFX.play("pop"); tcToast(`${it.t} : ajouté`); } catch {} nlPaint(); }
+function nlPick(){ const {M, close} = hvModal(`<h3 style="margin:0 0 4px">Choisis ta carte Édition Noël</h3><p class="small" style="margin:0 0 10px">200 ❄. Elle rejoint tes cartes exclusives.</p><div class="nlpick">${NL_C.map(C => `<button data-nlp="${C.id}" aria-label="${esc(C.n)}">${nlCard(C)}</button>`).join("")}</div><button class="ghost" data-close style="margin-top:10px">Annuler</button>`);
+  M.style.zIndex = 130; M.querySelector("[data-close]").onclick = close;
+  M.querySelectorAll("[data-nlp]").forEach(b => b.onclick = () => { const s = tcLoad(), N = nlSt(s), C = NL_C.find(x => x.id === b.dataset.nlp); if (!C || N.f < 200) return close();
+    N.f -= 200; N.fv = N.f; N.c[C.id] = (N.c[C.id] || 0) + 1; tcSave(s); close(); nlPaint(); nlShow([{C}]); }); }
+/* ---- booster de Noël ---- */
+const NL_AFTER = {L: null, wait: 0};
+function nlOpen(){ if (!nlOn()) return; { const o = document.querySelector(".tcopen"); if (o && Date.now() - (+o.dataset.t0 || 0) < 2500) return; }
+  const s = tcLoad(), N = nlSt(s);
+  if (nlFree(N)) N.fd = tcDay(); else if (N.st > 0) N.st--; else { if ((s.gems || 0) < NL.price) return; if (!tcPaidOk(NL.price, nlOpen)) return; s.gems -= NL.price; }
+  N.od = tcDay();
+  const g = tcOpenPack(s, "mix:0"); g.packs = 1; g.pb = [0];
+  const L = []; if (Math.random() < NL.pNc){ const C = NL_C[Math.floor(Math.random() * NL_C.length)]; N.c[C.id] = (N.c[C.id] || 0) + 1; L.push({C}); }
+  tcSave(s); NL_AFTER.L = L; NL_AFTER.wait = 0;
+  /* carte numérotée : tirée par le serveur (stock, numéro, plafond par semaine, comptes de confiance) */
+  if (typeof CP !== "undefined" && CP.user && CP.sb && !window.__INVITE){ NL_AFTER.wait = 1; CP.sb.rpc("noel_num_roll").then(({data}) => { if (data && data.k){ const s2 = tcLoad(), N2 = nlSt(s2); if (!N2.num.some(x => x.k === data.k)){ N2.num.push({k: data.k, no: data.no}); tcSave(s2); } NL_AFTER.L.push({C: NL_N.find(x => x.id === data.k), num: data.no}); } }).catch(() => {}).finally(() => { NL_AFTER.wait = 0; }); }
+  document.querySelector(".nlv")?.remove();
+  tcOpening("mix:0", g); nlWatch(); }
+/* à la fermeture de l'écran d'ouverture : on montre la carte Noël (et la numérotée) */
+function nlWatch(){ let seen = false, t0 = Date.now(); const it = setInterval(() => { const o = document.querySelector(".tcopen"); if (o){ seen = true; return; }
+  if (!seen && Date.now() - t0 < 4000) return; if (NL_AFTER.wait && Date.now() - t0 < 2e4) return; clearInterval(it); const L = NL_AFTER.L || []; NL_AFTER.L = null; if (L.length) nlShow(L); else nlOpenScreen(); }, 400); }
+function nlShow(L){ const x = L.shift(); if (!x || !x.C) return L.length ? nlShow(L) : nlOpenScreen(); const nm = (typeof profGet === "function" && profGet()?.name) || "toi";
+  const {M, close} = hvModal(`<div class="nlrev"><p class="nleb">${x.num != null ? "Rarissime · 100 exemplaires" : "Édition Noël " + NL.y}</p><h2>${x.num != null ? "Carte numérotée !" : "Une carte de Noël !"}</h2>${nlCard(x.C, x.num != null ? {num: x.num, nm} : {})}<p>${x.num != null ? `N° ${String(x.num).padStart(3, "0")} sur 100. Tu en restes le premier propriétaire.` : "Elle rejoint tes cartes exclusives (Collection)."}</p><button class="primary" data-close>Super</button></div>`);
+  M.style.zIndex = 130; try { SFX.play("fanfare"); } catch {}
+  M.querySelector("[data-close]").onclick = () => { close(); L.length ? nlShow(L) : nlOpenScreen(); }; }
+/* au chargement de l'écran : retrouver ses numérotées (autre appareil) */
+async function nlSync(){ if (!(typeof CP !== "undefined" && CP.user && CP.sb) || window.__INVITE) return; try { const {data} = await CP.sb.rpc("noel_num_mine"); if (!Array.isArray(data)) return; const s = tcLoad(), N = nlSt(s); let ch = false;
+  data.forEach(d => { if (!N.num.some(x => x.k === d.k)){ N.num.push({k: d.k, no: d.no}); ch = true; } }); if (ch){ tcSave(s); nlPaint(); } } catch {} }
+/* ---- écran de l'événement ---- */
+function nlOpenScreen(sub){ if (!nlOn()) return; NL.sub = sub || ""; NL.advIn = 0; setTimeout(() => { NL.advIn = 1; }, 2500); document.querySelector(".nlv")?.remove(); document.body.insertAdjacentHTML("beforeend", `<div class="nlv" role="dialog" aria-modal="true" aria-label="Noël à Hanko"><div class="nlin"></div></div>`); nlPaint(); nlSync(); }
+function nlPaint(){ try { nlHomeDraw(); } catch {} const V = document.querySelector(".nlv"); if (!V) return; const s = tcLoad(), N = nlSt(s), free = nlFree(N), cd = nlLeft();
+  const btn = free ? `Ouvrir · gratuit aujourd'hui` : N.st > 0 ? `Ouvrir<small>${N.st} en réserve</small>` : `Ouvrir · ${NL.price} ◆<small>Tu as ${(s.gems || 0).toLocaleString("fr-FR")} ◆</small>`;
+  const mis = NL_MIS.map(M => { const v = Math.min(M.g, M.v(s, N)), done = (M.w ? N.cw.L : N.cd.L).includes(M.k);
+    return `<div><span>${esc(M.t)}${M.g > 1 ? `<small>${v} / ${M.g}</small>` : ""}</span>${done ? `<b class="ok">Fait ✓</b>` : v >= M.g ? `<button data-nlm="${M.k}">+${M.f} ❄</button>` : M.go ? `<span class="nlmg"><b>+${M.f} ❄</b><button class="hkgo" data-nlgo="${M.go}">Y aller ›</button></span>` : `<b>+${M.f} ❄</b>`}</div>`; }).join("");
+  const shop = NL_SHOP.map(it => { const own = it.one && it.one(s); return `<button data-nlb="${it.k}" ${own || N.f < it.f ? "disabled" : ""}><span class="v">${it.v()}</span><span>${esc(it.t)}</span><b>${own ? "Obtenu" : it.f + " ❄"}</b></button>`; }).join("");
+  const mine = NL_C.filter(C => N.c[C.id]), nums = N.num.map(x => ({x, C: NL_N.find(c => c.id === x.k)})).filter(y => y.C), nm = (typeof profGet === "function" && profGet()?.name) || "";
+  const sub = NL.sub || "", day = nlAdvDay(), advDue = day > 0 && Array.from({length: day}, (_, k) => k + 1).some(d => !(N.adv || []).includes(d)), shopOk = N.f > (N.fv || 0) && NL_SHOP.some(it => !(it.one && it.one(s)) && N.f >= it.f), owned = mine.length + nums.length, cardsNew = owned > (N.seen || 0);
+  const tile = (k, ic, t, sm, hot) => `<button class="nlti ${hot ? "hot" : ""}" data-nlsub="${k}"><span class="ic">${ic}</span><b>${t}</b><small>${sm}</small>${hot ? `<i class="dot"></i>` : ""}</button>`;
+  const tiles = `<div class="nltis">${tile("adv", `<span class="mini-d"><i></i><b>${day || 1}</b></span>`, "Calendrier", advDue ? "Porte à ouvrir" : `${(N.adv || []).length}/24 portes`, advDue)}${tile("shop", `<svg viewBox="0 0 40 40" aria-hidden="true"><g stroke="#d9f2ff" stroke-width="3" stroke-linecap="round"><path d="M20 4v32M6 12l28 16M6 28l28-16"/><path d="M15 6l5 4 5-4M15 34l5-4 5 4" fill="none"/></g></svg>`, "Boutique", `${N.f} ❄`, shopOk)}${tile("cards", `<span class="fan">${[0, 4, 10].map(i => `<img src="${NL_C[i].im}" alt="">`).join("")}</span>`, "Cartes", `${mine.length}/12${nums.length ? " + " + nums.length + " N°" : ""}`, cardsNew)}</div>`;
+  const page = sub === "adv" ? nlAdvHtml(s, N) : sub === "shop" ? `<div class="nlbox"><h3 class="nlsold">Ton solde <b>${nlFl(N.f)}</b></h3><div class="nlshop">${shop}</div></div>` : sub === "cards" ? `<div class="nlbox"><h3 class="nlsold">Ta collection <small>· ${mine.length}/12${nums.length ? ` · ${nums.length} numérotée${nums.length > 1 ? "s" : ""}` : ""}</small></h3><div class="nlcards">${nums.map(y => `<button data-nlv="n:${y.x.k}">${nlCard(y.C, {num: y.x.no, nm})}</button>`).join("")}${NL_C.map(C => N.c[C.id] ? `<button data-nlv="c:${C.id}">${nlCard(C, {n: N.c[C.id]})}</button>` : `<div class="lk">${nlCard(C)}</div>`).join("")}</div><p class="nlnote">Les cartes restent dans ta collection après l'événement (Collection › Exclusives).</p></div><div class="nlbox"><h3 class="nlsold">Les 6 numérotées <small>· 100 exemplaires chacune</small></h3><p class="nlnote">Rarissimes : une chance à chaque booster de Noël (3 essais par jour), une seule par joueur. Le numéro est gravé dans l'ordre de sortie.</p><div class="nlcards">${NL_N.map(C => { const x = N.num.find(y => y.k === C.id); return x ? `<button data-nlv="n:${C.id}">${nlCard(C, {num: x.no, nm})}</button>` : `<div class="lk">${nlCard(C, {numv: 1})}</div>`; }).join("")}</div></div>` : "";
+  const T = {adv: "Calendrier de l'Avent", shop: "Boutique de flocons", cards: "Mes cartes de Noël"}[sub];
+  if (sub === "cards" && cardsNew){ N.seen = owned; tcSave(s); } if (sub === "shop" && N.fv !== N.f){ N.fv = N.f; tcSave(s); }
+  V.querySelector(".nlin").innerHTML = sub ? `<div class="nlev nlsub">${NL_LIGHTS}<div class="nlhd"><button class="nlx nlbk" id="nlBack" aria-label="Retour">←</button><div><p class="nleb">Noël à Hanko</p><h2 class="nlttl" style="font-size:clamp(22px,6vw,32px)">${T}</h2></div><button class="nlx" id="nlX" aria-label="Fermer">✕</button></div>${page}</div>`
+    : `<div class="nlev">${NL_LIGHTS}
+    <div class="nlhd">${NL_LOGO}<div><p class="nleb">Événement · du 1er au 24 décembre</p><h2 class="nlttl">Noël à Hanko</h2><span class="nlrib">聖夜 · ÉDITION NOËL ${NL.y}</span></div><span style="display:grid;gap:8px;align-self:flex-start"><button class="nlx" id="nlX" aria-label="Fermer">✕</button><button class="nlx" id="nlHelp" aria-label="Comment ça marche">?</button></span></div>
+    <div class="nlcd" aria-label="Fin de l'événement dans ${cd.j} jours">${["j", "h", "m", "s"].map(k => `<div><b data-k="${k}">${cd[k]}</b><small>${{j: "JOURS", h: "HEURES", m: "MIN", s: "SEC"}[k]}</small></div>`).join("")}</div>
+${tiles}
+    <div class="nlg2"><div class="nlbox"><h3>Booster de Noël</h3>${NL_PK()}<p class="nlnote">1 gratuit par jour pendant l'événement, puis ${NL.price} ◆. 5 cartes habituelles + 1 chance sur 8 d'avoir une carte « Édition Noël » ; rarissime : une carte numérotée.</p><button class="nlbtn" id="nlOpen" ${free || N.st > 0 || (s.gems || 0) >= NL.price ? "" : "disabled"}>${btn}</button></div>
+      <div class="nlbox"><h3>Missions de Noël</h3><div class="nlms">${mis}</div><p class="nlnote">Les flocons se dépensent dans la boutique. Ceux qui restent disparaissent après le 24 décembre.</p></div></div>
+</div>`;
+  V.querySelector("#nlHelp") && (V.querySelector("#nlHelp").onclick = nlHelp);
+  V.querySelector("#nlBack") && (V.querySelector("#nlBack").onclick = () => { NL.sub = ""; nlPaint(); V.scrollTop = 0; });
+  V.querySelectorAll("[data-nlsub]").forEach(b => b.onclick = () => { NL.sub = b.dataset.nlsub; if (NL.sub === "adv"){ NL.advIn = 0; setTimeout(() => { NL.advIn = 1; }, 2500); } nlPaint(); V.scrollTop = 0; });
+  V.querySelector("#nlX").onclick = () => { NL.sub = ""; V.remove(); }; V.querySelector("#nlOpen") && (V.querySelector("#nlOpen").onclick = nlOpen);
+  V.querySelectorAll("[data-nlm]").forEach(b => b.onclick = () => nlMisDo(b.dataset.nlm)); V.querySelectorAll("[data-nlb]").forEach(b => b.onclick = () => nlBuy(b.dataset.nlb));
+  V.querySelectorAll("[data-nlv]").forEach(b => b.onclick = () => nlBig(b.dataset.nlv)); }
+function nlBig(key){ const s = tcLoad(), N = nlSt(s), [t, id] = key.split(":"), nm = (typeof profGet === "function" && profGet()?.name) || "";
+  const h = t === "n" ? (x => x ? nlCard(NL_N.find(c => c.id === id), {num: x.no, nm}) : "")(N.num.find(x => x.k === id)) : nlCard(NL_C.find(c => c.id === id), {n: N.c[id]});
+  if (!h) return; const {M, close} = hvModal(`<div class="nlrev">${h}<button class="ghost" data-close>Fermer</button></div>`); M.style.zIndex = 130; M.querySelector("[data-close]").onclick = close; }
+setInterval(() => { const V = document.querySelector(".nlv .nlcd"); if (!V) return; const v = nlLeft(); V.querySelectorAll("b[data-k]").forEach(b => { const t = String(v[b.dataset.k]); if (b.textContent !== t) b.textContent = t; }); }, 1000);
+/* ---- accueil : bannière au-dessus du pass, seulement pendant l'événement ---- */
+function nlHomeDraw(){ const P = document.querySelector("#bpHome"); if (!P) return; let box = document.querySelector("#nlHome");
+  if (!nlOn()){ box && box.remove(); return; } if (!box){ P.insertAdjacentHTML("beforebegin", `<div id="nlHome"></div>`); box = document.querySelector("#nlHome"); }
+  const s = tcLoad(), N = nlSt(s), cd = nlLeft(), dot = nlFree(N) || (nlAdvDay() > 0 && !(N.adv || []).includes(nlAdvDay())) || NL_MIS.some(M => !(M.w ? N.cw.L : N.cd.L).includes(M.k) && M.v(s, N) >= M.g);
+  box.innerHTML = `<button class="nlhome" id="nlGo">${NL_LIGHTS}<span style="position:relative">${NL_LOGO.replace('class="nllgw"', 'class="nllgw" style="display:block"')}${dot ? `<i class="dot"></i>` : ""}</span><span class="tx"><small>Événement · J-${cd.j}</small><b>Noël à Hanko</b><span>${nlAdvDay() > 0 && !(N.adv || []).includes(nlAdvDay()) ? "Porte du " + nlAdvDay() + " à ouvrir" : nlFree(N) ? "Booster de Noël gratuit" : "Missions et boutique"} · ${nlFl(N.f)}</span></span><span class="go">Ouvrir</span></button>`;
+  box.querySelector("#nlGo").onclick = () => nlOpenScreen(); }
+{ const base = bpHomeDraw; bpHomeDraw = function(){ const r = base.apply(this, arguments); try { nlHomeDraw(); } catch {} return r; }; }
+/* ---- collection : les cartes de Noël rejoignent les cartes exclusives ---- */
+{ const base = hkExList; hkExList = function(){ const L = base.apply(this, arguments); try { const s = tcLoad(); if (!s.noel || s.noel.y !== NL.y) return L; const N = s.noel, nm = (typeof profGet === "function" && profGet()?.name) || "";
+  (N.num || []).forEach(x => { const C = NL_N.find(c => c.id === x.k); if (C) L.push({h: nlCard(C, {num: x.no, nm}), go: () => nlBig("n:" + x.k)}); });
+  NL_C.forEach(C => { if ((N.c || {})[C.id]) L.push({h: nlCard(C, {n: N.c[C.id]}), go: () => nlBig("c:" + C.id)}); }); } catch {} return L; }; }
+{ const base = hkExPass; hkExPass = function(){ const h = base.apply(this, arguments); try { const s = tcLoad(), N = s.noel && s.noel.y === NL.y ? s.noel : null; if (!N && !nlOn()) return h;
+  const c = (N && N.c) || {}, nums = (N && N.num) || [], nm = (typeof profGet === "function" && profGet()?.name) || "";
+  return h + `<h2 class="kzt">Noël ${NL.y}</h2><p class="kzs">12 cartes « Édition Noël » et 6 numérotées en 100 exemplaires, du 1er au 24 décembre.</p><div class="kzg hkexp">${nums.map(x => { const C = NL_N.find(y => y.id === x.k); return C ? `<button data-nlx="n:${x.k}">${nlCard(C, {num: x.no, nm})}</button>` : ""; }).join("")}${NL_C.map(C => c[C.id] ? `<button data-nlx="c:${C.id}">${nlCard(C, {n: c[C.id]})}</button>` : `<div class="hkexl"><span class="kzw">${nlCard(C)}</span><em>Booster de Noël</em></div>`).join("")}</div>`; } catch { return h; } }; }
+document.addEventListener("click", e => { const b = e.target.closest && e.target.closest("[data-nlx]"); if (b) nlBig(b.dataset.nlx); });
+/* titre de la boutique (débloqué par l'achat, jamais par vtCheck) et cadre de profil */
+VT.push(["noel26", "Esprit de Noël", "聖", 3, "Boutique de Noël " + NL.y, () => 0, 1]);
+PF_FRAMES.push(["neige", "Neige", "Boutique de Noël " + NL.y, s => (s.bpU || []).includes("neige")]);
+/* ===== calendrier de l'Avent : une porte par jour du 1er au 24 décembre (heure du téléphone). Une porte oubliée se rattrape jusqu'au 24 au soir (fin de l'événement).
+   Exclusivités du calendrier : cadre « Avent » (6), titre « Lutin de Hanko » (18), cadre « Étoile de Noël » (24), titre « Gardien de l'Avent » (les 24 portes). ===== */
+const NL_ADV = [null,
+  {f: 50}, {bo: 1}, {g: 200}, {p: "mix:1"}, {f: 80}, {fr: "avent"}, {bo: 1}, {g: 300}, {f: 100}, {p: "mix:1", n: 2}, {bo: 2}, {nc: 1},
+  {g: 400}, {f: 120}, {p: "mix:2"}, {bo: 2}, {g: 500}, {vt: "lutin"}, {f: 150}, {p: "mix:2"}, {bo: 3}, {g: 800}, {p: "mix:3"}, {nc: 1, fr: "etoile"}];
+const NL_ADV_BIG = [6, 12, 18, 24];
+/* ordre des portes dans la grille, mélangé comme un vrai calendrier (4 cases par rangée, les grandes portes en prennent 2) */
+const NL_ADV_ORD = [24, 7, 15, 3, 19, 11, 1, 12, 22, 5, 9, 17, 2, 20, 8, 14, 18, 21, 4, 13, 10, 16, 23, 6];
+const nlAdvDay = () => { try { const m = location.search.match(/[?&]nlday=(\d+)/); if (nlTest() && m) return Math.min(24, +m[1]); } catch {}
+  const d = new Date(); return d.getFullYear() === NL.y && d.getMonth() === 11 ? Math.min(24, d.getDate()) : 0; };
+const nlAdvLabel = rw => { const L = [];
+  if (rw.nc) L.push("Carte Édition Noël au choix"); if (rw.fr) L.push(`Cadre « ${rw.fr === "avent" ? "Avent" : "Étoile de Noël"} »`); if (rw.vt) L.push("Titre « Lutin de Hanko »");
+  if (rw.f) L.push(rw.f + " flocons"); if (rw.bo) L.push(rw.bo > 1 ? rw.bo + " boosters de Noël" : "Booster de Noël"); if (rw.g) L.push(rw.g.toLocaleString("fr-FR") + " ◆");
+  if (rw.p) L.push((rw.n > 1 ? rw.n + " boosters " : "Booster ") + TC_T[tcParse(rw.p).t].n); return L.join(" + "); };
+const nlAdvVis = rw => rw.nc ? `<span class="fan">${[0, 4, 10].map(i => `<img src="${NL_C[i].im}" alt="" loading="lazy">`).join("")}</span>` : rw.fr ? BP_FRAME : rw.vt ? BP_TITLE : rw.bo ? NL_PK(1) : rw.g ? BP_GEM(rw.g >= 500 ? 3 : 1) : rw.p ? tcPouch3D(rw.p, "sm")
+  : NL_FLAKE;
+/* flocon en cristal (récompense « flocons ») */
+const NL_FLAKE = (() => { const arm = `<g><path d="M50 50V8"/><path d="M50 22l-9-8M50 22l9-8M50 34l-12-10M50 34l12-10"/><circle cx="50" cy="8" r="2.6" fill="url(#nlfk)" stroke="none"/></g>`;
+  return `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="nlfk" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".5" stop-color="#bfe9ff"/><stop offset="1" stop-color="#5fb8ff"/></linearGradient><filter id="nlfg" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><g filter="url(#nlfg)" fill="none" stroke="url(#nlfk)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">${[0, 60, 120, 180, 240, 300].map(a => `<g transform="rotate(${a} 50 50)">${arm}</g>`).join("")}<path d="M50 40l8.7 5v10L50 60l-8.7-5V45z" fill="#e9f8ff" stroke-width="3"/></g></svg>`; })();
+const nlAdvExcl = rw => rw.fr || rw.vt;
+function nlAdvHtml(s, N){ const day = nlAdvDay(), got = N.adv || [];
+  const doors = NL_ADV_ORD.map((d, i) => { const rw = NL_ADV[d], o = got.includes(d), st = o ? "open" : d > day ? "lock" : d === day ? "today" : "late";
+    return `<button class="nld p${d % 4} ${NL_ADV_BIG.includes(d) ? "big" : ""} ${st}" data-nld="${d}" style="--i:${i}" aria-label="Porte du ${d} décembre${o ? ", ouverte" : d > day ? ", pas encore" : ""}"><span class="ins"><i class="beam"></i><span class="v">${nlAdvVis(rw)}</span><span>${esc(nlAdvLabel(rw))}</span>${nlAdvExcl(rw) ? "<em>EXCLUSIF</em>" : ""}</span><span class="dr"><span class="df"><i class="rb"></i><i class="hg a"></i><i class="hg b"></i><b>${d}</b><i class="kn"></i>${NL_ADV_BIG.includes(d) && !o ? `<span class="xc">${d === 24 ? "GRANDE PORTE" : "EXCLUSIF"}</span><span class="seal">聖</span>` : ""}</span><span class="db"></span><span class="ed"></span></span></button>`; }).join("");
+  return `<div class="nladv-w"><div class="nladv-h"><div><h3>Calendrier de l'Avent</h3><small>Une porte par jour jusqu'au 24 décembre · récompenses exclusives</small></div><b>${got.length}/24</b></div><div class="nladv-sc"><div class="nladv ${NL.advIn ? "" : "in"}">${doors}</div></div></div>`; }
+function nlAdvGive(s, N, rw){ s.bpU = s.bpU || []; s.unl = s.unl || [];
+  if (rw.f) N.f += rw.f; if (rw.bo) N.st = (N.st || 0) + rw.bo; if (rw.g) s.gems = (s.gems || 0) + rw.g; if (rw.p) tcGive(s, rw.p, rw.n || 1);
+  if (rw.fr && !s.bpU.includes(rw.fr)) s.bpU.push(rw.fr); if (rw.vt && !s.unl.includes(rw.vt)) s.unl.push(rw.vt); }
+/* confettis en papier (physique simple : gravité, résistance de l'air, rotation 3D simulée) */
+function nlConfetti(cv, x0, y0){ if (tcCalm()) return; const d = Math.min(2, devicePixelRatio || 1), ctx = cv.getContext("2d"); cv.width = innerWidth * d; cv.height = innerHeight * d;
+  const C = ["#f7c64a", "#fff1c2", "#e8283c", "#ff5a6a", "#1f8a4c", "#3fbf6f", "#ffffff"], P = [];
+  for (let i = 0; i < 170; i++){ const a = -Math.PI / 2 + (Math.random() - .5) * 2.4, v = (7 + Math.random() * 11) * d; P.push({x: x0 * d, y: y0 * d, vx: Math.cos(a) * v, vy: Math.sin(a) * v, w: (5 + Math.random() * 6) * d, h: (8 + Math.random() * 8) * d, r: Math.random() * 6.28, vr: (Math.random() - .5) * .35, t: Math.random() * 6.28, vt: .08 + Math.random() * .15, c: C[i % C.length], st: Math.random() < .25}); }
+  const t0 = performance.now(); const loop = now => { if (!cv.isConnected) return; const k = (now - t0) / 1000; ctx.clearRect(0, 0, cv.width, cv.height);
+    for (const p of P){ p.vy += .32 * d; p.vx *= .985; p.vy *= .985; p.x += p.vx; p.y += p.vy; p.r += p.vr; p.t += p.vt; const sx = Math.cos(p.t);
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.scale(sx, 1); ctx.globalAlpha = Math.max(0, 1 - Math.max(0, k - 2.6) / 1.2); ctx.fillStyle = p.c;
+      if (p.st){ ctx.beginPath(); for (let j = 0; j < 5; j++){ const aa = j * 1.2566 - 1.5708; ctx.lineTo(Math.cos(aa) * p.w, Math.sin(aa) * p.w); ctx.lineTo(Math.cos(aa + .628) * p.w * .45, Math.sin(aa + .628) * p.w * .45); } ctx.fill(); }
+      else { ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); ctx.fillStyle = "#0002"; ctx.fillRect(-p.w / 2, 0, p.w, p.h / 2); } ctx.restore(); }
+    if (k < 4) requestAnimationFrame(loop); }; requestAnimationFrame(loop); }
+/* parallaxe : la planche suit le doigt / la souris, le reflet glisse sur les portes */
+document.addEventListener("pointermove", e => { const g = e.target.closest && e.target.closest(".nladv"); if (!g || tcCalm()) return; const r = g.getBoundingClientRect(), x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+  g.style.setProperty("--ry", ((x - .5) * 7).toFixed(2) + "deg"); g.style.setProperty("--rx", ((.5 - y) * 5).toFixed(2) + "deg"); g.style.setProperty("--lx", (x * 100).toFixed(1) + "%"); g.style.setProperty("--ly", (y * 100).toFixed(1) + "%");
+  g.querySelectorAll(".nld .df").forEach(f => f.style.setProperty("--sh", (130 - x * 160).toFixed(0) + "%")); }, {passive: true});
+document.addEventListener("pointerleave", () => document.querySelectorAll(".nladv").forEach(g => { g.style.setProperty("--rx", "0deg"); g.style.setProperty("--ry", "0deg"); }), true);
+const nlWait = ms => new Promise(r => setTimeout(r, ms));
+/* étincelles à traînée (canvas, mélange additif) */
+function nlSparks(cv, cx, cy, n = 140){ const d = Math.min(2, devicePixelRatio || 1), x = cv.getContext("2d"); cv.width = innerWidth * d; cv.height = innerHeight * d; const P = [];
+  const add = () => { for (let i = 0; i < n; i++){ const a = Math.random() * 6.283, v = (2 + Math.random() * 9) * d; P.push({x: cx * d, y: cy * d, px: cx * d, py: cy * d, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 3 * d, l: 0, L: 50 + Math.random() * 60, r: (1 + Math.random() * 2.2) * d, c: Math.random() < .7 ? [255, 214, 140] : [255, 255, 255]}); } };
+  add(); const loop = () => { if (!cv.isConnected) return; x.globalCompositeOperation = "destination-out"; x.fillStyle = "rgba(0,0,0,.22)"; x.fillRect(0, 0, cv.width, cv.height); x.globalCompositeOperation = "lighter";
+    for (let i = P.length - 1; i >= 0; i--){ const p = P[i]; p.l++; p.px = p.x; p.py = p.y; p.vx *= .975; p.vy = p.vy * .975 + .06 * d; p.x += p.vx; p.y += p.vy; const a = Math.max(0, 1 - p.l / p.L);
+      x.strokeStyle = `rgba(${p.c},${a})`; x.lineWidth = p.r; x.lineCap = "round"; x.beginPath(); x.moveTo(p.px, p.py); x.lineTo(p.x, p.y); x.stroke(); if (p.l > p.L) P.splice(i, 1); }
+    /* poussière dorée qui flotte ensuite */
+    if (P.length < 30 && Math.random() < .5) P.push({x: Math.random() * cv.width, y: cv.height + 10, px: 0, py: 0, vx: (Math.random() - .5) * .4 * d, vy: -(.6 + Math.random()) * d, l: 0, L: 260, r: (1 + Math.random() * 1.5) * d, c: [255, 225, 160]});
+    requestAnimationFrame(loop); }; loop(); }
+async function nlAdvOpen(btn){ const d = +btn.dataset.nld, day = nlAdvDay(), s = tcLoad(), N = nlSt(s); N.adv = N.adv || [];
+  if (N.adv.includes(d)) return; if (!nlOn() || d > day){ btn.classList.remove("shake"); void btn.offsetWidth; btn.classList.add("shake"); try { tcToast(`Patience : cette porte s'ouvre le ${d} décembre`); } catch {} return; }
+  if (btn.dataset.busy) return; btn.dataset.busy = 1; const rw = NL_ADV[d], big = NL_ADV_BIG.includes(d), calm = tcCalm(), ex = !!nlAdvExcl(rw);
+  N.adv.push(d); nlAdvGive(s, N, rw); const all = N.adv.length === 24 && !(s.unl || []).includes("avent24"); if (all) s.unl.push("avent24"); tcSave(s);
+  const lab = nlAdvLabel(rw), r0 = btn.getBoundingClientRect(); btn.style.visibility = "hidden";
+  document.body.insertAdjacentHTML("beforeend", `<div class="nlcn" role="dialog" aria-modal="true" aria-label="Porte du ${d} décembre"><i class="rays"></i><canvas></canvas><i class="vig"></i><i class="flash"></i><button class="skip">Passer ›</button>
+    <div class="stg"><div class="nlcnb p${d % 4} ${big ? "big" : ""}"><div class="hole"></div><div class="rwd">${nlAdvVis(rw)}</div>
+      <div class="dor"><div class="fr"><i class="rv"></i><i class="rh"></i><i class="bow"></i><i class="hg a"></i><i class="hg b"></i><b>${d}</b>${big ? `<i class="sl">聖</i>` : ""}<i class="sheen"></i><i class="shade"></i></div><div class="bk"></div><i class="ed"></i></div></div>
+      <div class="txt"><span class="dt">${d} DÉCEMBRE</span><h2>${[...lab].map(c => `<span>${esc(c)}</span>`).join("")}</h2>${ex ? `<span class="ex">EXCLUSIF DU CALENDRIER</span>` : ""}<button class="ok">Récupérer</button></div></div></div>`);
+  const C = document.querySelector(".nlcn"), $c = q => C.querySelector(q), B = $c(".nlcnb"), dor = $c(".dor"), fr = $c(".fr"), rwd = $c(".rwd"), stg = $c(".stg");
+  const A = (el, kf, o) => el ? el.animate(kf, Object.assign({fill: "forwards"}, o)) : {finished: Promise.resolve()};
+  let skip = false; const W = ms => skip ? Promise.resolve() : nlWait(ms);
+  const finish = () => { [dor, $c(".rv"), $c(".rh"), $c(".bow"), $c(".sl")].forEach(e => e && (e.style.display = "none")); B.classList.add("lit"); rwd.style.opacity = 1; rwd.getAnimations().forEach(a => a.cancel()); rwd.style.transform = "none";
+    $c(".dt").style.opacity = 1; C.querySelectorAll("h2 span").forEach(x => { x.getAnimations().forEach(a => a.cancel()); x.style.opacity = 1; }); const e = $c(".ex"); if (e){ e.getAnimations().forEach(a => a.cancel()); e.style.opacity = 1; } const o = $c(".ok"); o.getAnimations().forEach(a => a.cancel()); o.style.opacity = 1; };
+  $c(".skip").onclick = () => { skip = true; C.getAnimations({subtree: true}).forEach(a => { try { a.finish(); } catch {} }); finish(); };
+  if (calm){ finish(); }
+  else {
+    /* plan 1 : la porte quitte la grille et vient au centre, comme une caméra qui zoome */
+    const r1 = B.getBoundingClientRect(), sx = r0.width / r1.width;
+    A(C, [{opacity: 0}, {opacity: 1}], {duration: 380});
+    try { SFX.play("pop"); } catch {}
+    await A(B, [{transform: `translate(${r0.left + r0.width / 2 - (r1.left + r1.width / 2)}px,${r0.top + r0.height / 2 - (r1.top + r1.height / 2)}px) scale(${sx}) rotateX(0deg)`}, {transform: "translate(0,-10px) scale(1.04) rotateX(14deg) rotateY(-8deg)", offset: .7}, {transform: "translate(0,0) scale(1) rotateX(6deg) rotateY(-4deg)"}], {duration: 820, easing: "cubic-bezier(.2,.85,.25,1)"}).finished;
+    /* plan 2 : reflet sur le papier, le ruban se dénoue */
+    A($c(".sheen"), [{backgroundPosition: "120% 0"}, {backgroundPosition: "-40% 0"}], {duration: 700, easing: "ease-in-out"}); await W(380);
+    A($c(".bow"), [{transform: "scale(1)", opacity: 1}, {transform: "scale(1.25)", opacity: 1, offset: .3}, {transform: "scale(.2) rotate(40deg)", opacity: 0}], {duration: 420, easing: "ease-in"});
+    A($c(".rv"), [{transform: "translateY(0)", opacity: 1}, {transform: "translateY(-120%) rotate(-8deg)", opacity: 0}], {duration: 520, delay: 160, easing: "cubic-bezier(.5,0,.8,.5)"});
+    await A($c(".rh"), [{transform: "translateX(0)", opacity: 1}, {transform: "translateX(130%) rotate(6deg)", opacity: 0}], {duration: 520, delay: 160, easing: "cubic-bezier(.5,0,.8,.5)"}).finished;
+    /* plan 3 : le sceau éclate, la porte tremble */
+    const sl = $c(".sl"); if (sl){ const rr = sl.getBoundingClientRect(), br = B.getBoundingClientRect(); sl.style.visibility = "hidden";
+      for (let i = 0; i < 7; i++){ const sh = document.createElement("i"); sh.className = "shard"; B.appendChild(sh); const a = i / 7 * 6.283; A(sh, [{transform: "translate(0,0) rotate(0)", opacity: 1}, {transform: `translate(${Math.cos(a) * 120}px,${Math.sin(a) * 120 + 60}px) rotate(${(Math.random() - .5) * 720}deg)`, opacity: 0}], {duration: 700, easing: "cubic-bezier(.2,.7,.4,1)"}); }
+      try { SFX.play("pop"); } catch {} await W(200); }
+    await A(dor, [{transform: "rotateY(0)"}, {transform: "rotateY(-7deg)"}, {transform: "rotateY(2deg)"}, {transform: "rotateY(-9deg)"}, {transform: "rotateY(0)"}], {duration: 420, easing: "ease-in-out"}).finished;
+    /* plan 4 : ouverture, flash, faisceau, étincelles, travelling avant */
+    try { SFX.play(big ? "fanfare" : "win"); } catch {} B.classList.add("lit");
+    A(dor, [{transform: "rotateY(0)"}, {transform: "rotateY(-160deg) translateZ(4px)", offset: .7}, {transform: "rotateY(-142deg) translateZ(4px)", offset: .86}, {transform: "rotateY(-150deg) translateZ(4px)"}], {duration: 1150, easing: "cubic-bezier(.25,.75,.3,1)"});
+    A($c(".shade"), [{opacity: 0}, {opacity: .55}], {duration: 700, easing: "ease-in"});
+    A($c(".flash"), [{opacity: 0}, {opacity: .95, offset: .25}, {opacity: 0}], {duration: 650, delay: 220, easing: "ease-out"});
+    A($c(".rays"), [{opacity: 0, transform: "scale(.5) rotate(0)"}, {opacity: 1, transform: "scale(1) rotate(30deg)"}], {duration: 1200, delay: 200, easing: "ease-out"}).finished.then(() => A($c(".rays"), [{transform: "rotate(30deg)"}, {transform: "rotate(390deg)"}], {duration: 24000, iterations: Infinity}));
+    A(stg, [{transform: "scale(1)"}, {transform: "scale(1.08)"}], {duration: 2200, easing: "cubic-bezier(.3,0,.2,1)"});
+    setTimeout(() => { const r = B.getBoundingClientRect(); nlSparks($c("canvas"), r.left + r.width / 2, r.top + r.height / 2); }, skip ? 0 : 320);
+    await W(620);
+    /* plan 5 : la récompense sort de la case en double vrille et se pose */
+    await A(rwd, [{opacity: 0, transform: "translateZ(-120px) scale(.3) rotateY(0)"}, {opacity: 1, transform: "translateZ(140px) translateY(-18px) scale(1.25) rotateY(620deg)", offset: .72}, {opacity: 1, transform: "translateZ(90px) scale(1.12) rotateY(720deg)"}], {duration: 1200, easing: "cubic-bezier(.2,.8,.25,1)"}).finished;
+    A(rwd, [{transform: "translateZ(90px) scale(1.12) rotateY(720deg) translateY(0)"}, {transform: "translateZ(90px) scale(1.12) rotateY(720deg) translateY(-8px)"}], {duration: 1800, direction: "alternate", iterations: Infinity, easing: "ease-in-out"});
+    /* plan 6 : titre lettre par lettre, tampon « exclusif », bouton */
+    A($c(".dt"), [{opacity: 0, letterSpacing: ".6em"}, {opacity: 1, letterSpacing: ".28em"}], {duration: 600, easing: "ease-out"});
+    C.querySelectorAll("h2 span").forEach((x, i) => A(x, [{opacity: 0, transform: "translateY(14px) rotateX(-70deg)"}, {opacity: 1, transform: "none"}], {duration: 420, delay: 120 + i * 22, easing: "cubic-bezier(.2,.9,.3,1.3)"}));
+    const e = $c(".ex"); if (e) A(e, [{opacity: 0, transform: "rotate(-6deg) scale(2.4)"}, {opacity: 1, transform: "rotate(-6deg) scale(.92)", offset: .7}, {opacity: 1, transform: "rotate(-6deg) scale(1)"}], {duration: 420, delay: 420 + lab.length * 22, easing: "ease-in"});
+    A($c(".ok"), [{opacity: 0, transform: "translateY(12px)"}, {opacity: 1, transform: "none"}], {duration: 420, delay: 700 + lab.length * 22, easing: "ease-out"}); }
+  $c(".ok").onclick = async () => { $c(".ok").disabled = true; if (!calm){ A(rwd, [{transform: "translateZ(90px) scale(1.12)"}, {transform: "translateY(-60vh) scale(.2)", opacity: 0}], {duration: 520, easing: "cubic-bezier(.5,0,.8,.3)"}); await A(C, [{opacity: 1}, {opacity: 0}], {duration: 520, delay: 160}).finished; }
+    C.remove(); nlPaint(); if (all) try { tcCele("Gardien de l'Avent", "Les 24 portes ouvertes : titre exclusif", "守", "#e8283c"); } catch {}
+    if (rw.nc) setTimeout(() => nlPickFree(), all ? 2600 : 200); }; }
+/* carte au choix offerte par le calendrier (sans flocons) */
+function nlPickFree(){ const {M, close} = hvModal(`<h3 style="margin:0 0 4px">Ta carte Édition Noël offerte</h3><p class="small" style="margin:0 0 10px">Cadeau du calendrier. Choisis-en une.</p><div class="nlpick">${NL_C.map(C => `<button data-nlp="${C.id}" aria-label="${esc(C.n)}">${nlCard(C)}</button>`).join("")}</div>`);
+  M.style.zIndex = 130; M.querySelectorAll("[data-nlp]").forEach(b => b.onclick = () => { const s = tcLoad(), N = nlSt(s), C = NL_C.find(x => x.id === b.dataset.nlp); if (C){ N.c[C.id] = (N.c[C.id] || 0) + 1; tcSave(s); } close(); nlPaint(); if (C) nlShow([{C}]); }); }
+document.addEventListener("click", e => { const b = e.target.closest && e.target.closest(".nlv [data-nld]"); if (b) nlAdvOpen(b); });
+VT.push(["lutin", "Lutin de Hanko", "精", 3, "Calendrier de l'Avent " + NL.y + ", 18 décembre", () => 0, 1], ["avent24", "Gardien de l'Avent", "守", 4, "Calendrier de l'Avent " + NL.y + " : les 24 portes", () => 0, 1]);
+PF_FRAMES.push(["avent", "Avent", "Calendrier de l'Avent " + NL.y + ", 6 décembre", s => (s.bpU || []).includes("avent")], ["etoile", "Étoile de Noël", "Calendrier de l'Avent " + NL.y + ", 24 décembre", s => (s.bpU || []).includes("etoile")]);
+/* « Comment ça marche » : l'événement expliqué en une page */
+function nlHelp(){ const L = [["暦", "Calendrier de l'Avent", "Une porte par jour du 1er au 24. Une porte oubliée se rattrape jusqu'au 24 au soir. Grandes portes (6, 12, 18, 24) : récompenses exclusives. Les 24 ouvertes : titre « Gardien de l'Avent »."],
+    ["袋", "Booster de Noël", `1 gratuit par jour, puis ${NL.price} ◆. 5 cartes habituelles + 1 chance sur 8 d'avoir une carte « Édition Noël ».`],
+    ["番", "6 cartes numérotées", "100 exemplaires chacune, numéro gravé dans l'ordre de sortie. Une chance à chaque booster de Noël (3 essais par jour), une seule par joueur."],
+    ["雪", "Flocons", "Gagnés avec les missions de Noël et le calendrier. À dépenser dans la boutique avant le 24 au soir : après, ils fondent."],
+    ["札", "Tes cartes de Noël", "12 cartes « Édition Noël » à collectionner. Elles restent dans ta collection après l'événement (Collection › Exclusives)."]];
+  const {M, close} = hvModal(`<div class="nlhelp"><p class="nleb">Noël à Hanko · du 1er au 24 décembre</p><h2>Comment ça marche</h2>${L.map(([k, t, x]) => `<div class="it"><i>${k}</i><div><b>${t}</b><p>${x}</p></div></div>`).join("")}<button class="primary" data-close>C'est parti</button></div>`);
+  M.style.zIndex = 130; M.querySelector("[data-close]").onclick = close; }
+/* bouton flottant de l'événement sur l'accueil, comme dans les jeux mobiles : toujours là, pastille quand il y a quelque chose à récupérer */
+function nlFab(){ let F = document.querySelector(".nlfab"); const home = document.querySelector("#nvHome"), show = nlOn() && home && home.offsetParent && !document.querySelector(".nlv,.bpv,.tcopen");
+  if (!show){ F && F.remove(); return; } const s = tcLoad(), N = nlSt(s), day = nlAdvDay(), hot = nlFree(N) || (day > 0 && !(N.adv || []).includes(day)) || NL_MIS.some(M => !(M.w ? N.cw.L : N.cd.L).includes(M.k) && M.v(s, N) >= M.g);
+  if (!F){ document.body.insertAdjacentHTML("beforeend", `<button class="nlfab" aria-label="Événement Noël"></button>`); F = document.querySelector(".nlfab"); F.onclick = () => nlOpenScreen(); }
+  const h = `${NL_LOGO}<span>Noël</span>${hot ? `<i class="dot"></i>` : ""}`; if (F.innerHTML !== h) F.innerHTML = h; }
+setInterval(nlFab, 1200);
+/* habillage Noël du site : posé et retiré tout seul (vérifié chaque minute, pour un téléphone resté ouvert le 30 novembre au soir) */
+const nlDress = () => { try { document.documentElement.classList.toggle("hk-noel", nlOn()); nlHomeDraw(); } catch {} }; nlDress(); setInterval(nlDress, 6e4);
+/* bascule à la seconde près le 1er décembre à 0 h (et le 1er janvier à 0 h), si la page est ouverte à ce moment-là */
+[NL.a, NL.b].forEach(t => { const d = t - Date.now(); if (d > 0 && d < 2147e6) setTimeout(() => { nlDress(); try { bpHomeDraw(); } catch {} }, d + 50); });
+</script>
+
+<style>
+/* ==== Page « Flammes » : série solo et séries duo (3 nov. 2026, sortie du pass) ==== */
+.flhome{all:unset;box-sizing:border-box;cursor:pointer;position:relative;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;width:100%;margin:0 0 14px;padding:12px 14px;border-radius:18px;color:#f3f1f5;background:linear-gradient(110deg,#2a0f08,#1a0b0c 55%,#120a12);box-shadow:0 10px 26px #0007,inset 0 1px 0 #ffffff12}
+.flhome::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;background:linear-gradient(110deg,#ff9a3c,#ff2d3a55 45%,#ffffff12 70%,#ff9a3c88);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+.flhome .fi{position:relative;width:44px;height:44px;display:grid;place-items:center}.flhome .fi svg{width:40px;height:40px;filter:drop-shadow(0 0 10px #ff6a2a88)}
+.flhome .fi b{position:absolute;bottom:-2px;right:-4px;min-width:20px;padding:1px 5px;border-radius:99px;font:900 11px var(--title);background:#ff5a1a;color:#fff;box-shadow:0 0 0 2px #1a0b0c;text-align:center}
+.flhome small{display:block;font:800 10px var(--mono,monospace);letter-spacing:.14em;color:#ffb27a;text-transform:uppercase}.flhome strong{display:block;font:900 15px var(--title);color:#fff6ec}
+.flhome span.s{display:block;font-size:12.5px;color:#d8c8bc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.flhome .go{font:900 20px var(--title);color:#ff9a3c}
+.flhome.risk{animation:flrisk 2s ease-in-out infinite}@keyframes flrisk{50%{box-shadow:0 10px 26px #0007,0 0 0 2px #ff9a3c,0 0 24px #ff6a2a88}}
+.flv{position:fixed;inset:0;z-index:118;overflow:auto;color:#f3f1f5;padding:calc(14px + env(safe-area-inset-top,0px)) 16px calc(40px + env(safe-area-inset-bottom,0px));overscroll-behavior:contain;background:radial-gradient(ellipse 100% 55% at 50% 0%,#5a1a08,#1a0a0a 50%,#0b0809 85%) fixed,#0b0809}
+.flin{max-width:760px;margin:0 auto;display:grid;gap:16px}
+.flhd{display:flex;align-items:center;gap:12px}.flhd h1{margin:0;flex:1;font:900 clamp(26px,7vw,36px)/1.05 var(--title);background:linear-gradient(100deg,#fff1dc,#ffb27a 35%,#fff 50%,#ff9a3c 70%);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:flfoil 6s linear infinite}
+@keyframes flfoil{to{background-position:-250% 0}}
+.flx{all:unset;cursor:pointer;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:#0006;border:1px solid #ffffff2a}
+.flbox{position:relative;border-radius:20px;padding:16px;background:linear-gradient(180deg,#ffffff0e,#ffffff04);border:1px solid #ff9a3c33;box-shadow:inset 0 1px 0 #ffffff14,0 14px 30px #0007;display:grid;gap:12px}
+.flbox h2{margin:0;font:900 16px var(--title);color:#fff1dc}.flbox h2 small{font:600 12px Inter,system-ui,sans-serif;color:#c9b6a8}
+.flnote{margin:0;font-size:12.5px;line-height:1.45;color:#c9b6a8}
+/* série solo */
+.flsolo{display:grid;grid-template-columns:auto minmax(0,1fr);gap:16px;align-items:center}
+.flbig{position:relative;width:96px;height:110px;display:grid;place-items:center}.flbig svg{width:92px;height:92px;filter:drop-shadow(0 0 22px #ff6a2acc);animation:flflick 2.2s ease-in-out infinite;transform-origin:50% 90%}
+@keyframes flflick{0%,100%{transform:scale(1) rotate(0)}30%{transform:scale(1.04,.97) rotate(-1.5deg)}60%{transform:scale(.98,1.04) rotate(1.5deg)}}
+.flbig b{position:absolute;bottom:0;left:50%;transform:translateX(-50%);font:900 26px var(--title);color:#fff;text-shadow:0 2px 10px #000,0 0 18px #ff6a2a}
+.flsolo .t{font:900 20px var(--title);color:#fff6ec}.flsolo .m{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.flchip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:99px;font:700 11.5px Inter,system-ui,sans-serif;background:#ffffff10;border:1px solid #ffffff1a;color:#eadbd0}
+.flchip.ok{background:#1f8a4c33;border-color:#3fbf6f88;color:#c9ffd9}.flchip.risk{background:#ff9a3c22;border-color:#ff9a3c;color:#ffd2a8;animation:flrisk2 1.6s ease-in-out infinite}
+@keyframes flrisk2{50%{box-shadow:0 0 14px #ff9a3c88}}
+.flnext{display:grid;gap:6px}.flnext .bar{height:8px;border-radius:99px;background:#ffffff12;overflow:hidden}.flnext .bar i{display:block;height:100%;width:var(--w);border-radius:inherit;background:linear-gradient(90deg,#ff5a1a,#ffb27a)}
+.flnext small{font:700 11.5px var(--mono,monospace);color:#ffb27a}
+/* duos */
+.flduo{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px;border-radius:16px;background:#0005;border:1px solid #ffffff12}
+.flduo.pin{background:linear-gradient(100deg,#ff5a1a1c,#0005 60%);border-color:#ff9a3c66}
+.flduo .av{position:relative;width:48px;height:48px;border-radius:14px;display:grid;place-items:center;font:900 18px var(--title);color:#fff;background:linear-gradient(140deg,#ff6a2a,#b3122a)}
+.flduo .av .f{position:absolute;right:-8px;bottom:-8px;width:28px;height:28px;display:grid;place-items:center}.flduo .av .f svg{width:26px;height:26px;filter:drop-shadow(0 0 6px #ff6a2a)}
+.flduo .nm b{display:block;font:800 14.5px var(--title);color:#fff6ec;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.flduo .nm .m{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}
+.flduo .acts{display:grid;gap:6px;justify-items:end}.flduo .flchip{font-size:11px;padding:3px 8px;white-space:nowrap}.flduo .nm .m{gap:4px}
+.flpin{all:unset;cursor:pointer;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:17px;background:#ffffff0e;border:1px solid #ffffff1a;color:#9a8a80}
+.flpin.on{color:#ffd27a;background:#ffd27a1f;border-color:#ffd27a88;text-shadow:0 0 10px #ffd27a}
+.flplay{all:unset;box-sizing:border-box;cursor:pointer;padding:8px 12px;border-radius:12px;font:800 12.5px var(--title);color:#fff;white-space:nowrap;background:linear-gradient(180deg,#ff7a3a,#d1401e);box-shadow:0 6px 16px #ff5a1a55,inset 0 1px 0 #ffffff55}
+.flpal{display:flex;flex-wrap:wrap;gap:6px}.flpal span{padding:5px 10px;border-radius:99px;font:700 11.5px var(--mono,monospace);background:#ffffff0c;border:1px solid #ffffff16;color:#e6d6ca}.flpal span.got{border-color:#ffb27a;color:#ffd2a8}
+.fltgl{display:flex;align-items:center;justify-content:space-between;gap:12px}.fltgl button{all:unset;cursor:pointer;width:48px;height:28px;border-radius:99px;background:#ffffff22;position:relative;flex:none}.fltgl button::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .2s}.fltgl button.on{background:#ff7a3a}.fltgl button.on::after{transform:translateX(20px)}
+@media (prefers-reduced-motion:reduce){.flbig svg,.flhome.risk,.flchip.risk,.flhd h1{animation:none}}
+</style>
+<script>
+/* ===== Page « Flammes » (3 nov. 2026) : série solo + séries duo, sorties du pass.
+   Duos épinglés (3 au plus, serveur : duo_pin), « Jouer avec » qui invite l'ami dès que le salon est ouvert, sablier quand une flamme risque de s'éteindre,
+   rappel du soir à 21 h (serveur : push_flame_run, flammes-supabase.sql). La journée de jeu bascule à 10 h (TC_RESET). ===== */
+const FLM = {inv: null};
+const flOnline = () => typeof CP !== "undefined" && CP.user && CP.sb && !window.__INVITE;
+/* risque : pas encore entretenue aujourd'hui, et on est le soir (20 h) ou la nuit avant la bascule de 10 h */
+const flLate = () => { const h = new Date().getHours(); return h >= 20 || h < TC_RESET; };
+const flFriend = uid => { try { return (FRS.data && FRS.data.friends || []).find(f => f.uid === uid) || null; } catch { return null; } };
+const flNext = (n, P) => P.find(([k]) => k > n);
+function flHomeDraw(){ const P = document.querySelector("#bpHome"); if (!P) return; let box = document.querySelector("#flHome"); if (!box){ P.insertAdjacentHTML("afterend", `<div id="flHome"></div>`); box = document.querySelector("#flHome"); }
+  const s = tcLoad(), fire = fireLive(s), F = s.fire || {}, doneSolo = F.last === tcDay(), L = DUO.L || [], duoRisk = L.filter(x => x.n > 0 && !x.today), risk = flLate() && ((fire > 0 && !doneSolo) || duoRisk.length);
+  const sub = risk ? `${duoRisk.length ? "Flamme duo à entretenir" : "Ta série à entretenir"} avant 10 h` : L.filter(x => x.n > 0).length ? `${L.filter(x => x.n > 0).length} flamme${L.filter(x => x.n > 0).length > 1 ? "s" : ""} duo · record ${F.best || 0} j` : "Joue chaque jour, seul ou avec un ami";
+  box.innerHTML = `<button class="flhome ${risk ? "risk" : ""}" id="flGo"><span class="fi">${hkFire(fire >= 100)}${fire ? `<b>${fire}</b>` : ""}</span><span><small>${risk ? "⏳ " : ""}Flammes</small><strong>${fire ? `Série de ${fire} jour${fire > 1 ? "s" : ""}` : "Lance ta flamme"}</strong><span class="s">${sub}</span></span><span class="go">›</span></button>`;
+  box.querySelector("#flGo").onclick = () => flOpen(); }
+{ const base = bpHomeDraw; bpHomeDraw = function(){ const r = base.apply(this, arguments); try { flHomeDraw(); } catch {} return r; }; }
+function flOpen(){ document.querySelector(".flv")?.remove(); document.body.insertAdjacentHTML("beforeend", `<div class="flv" role="dialog" aria-modal="true" aria-label="Flammes"><div class="flin"></div></div>`); flPaint(); if (flOnline()) duoLoad(true).then(flPaint); }
+function flPaint(){ try { flHomeDraw(); } catch {} const V = document.querySelector(".flv"); if (!V) return; const s = tcLoad(), F = s.fire || {n: 0, best: 0, gel: 0}, fire = fireLive(s), doneSolo = F.last === tcDay(), late = flLate();
+  const nx = flNext(fire, FIRE_P), prev = [...FIRE_P].reverse().find(([k]) => k <= fire), from = prev ? prev[0] : 0;
+  const solo = `<div class="flbox"><div class="flsolo"><span class="flbig">${hkFire(fire >= 100)}<b>${fire}</b></span><div><div class="t">${fire ? `${fire} jour${fire > 1 ? "s" : ""} d'affilée` : "Pas encore de série"}</div>
+    <div class="m">${doneSolo ? `<span class="flchip ok">✓ Entretenue aujourd'hui</span>` : fire ? `<span class="flchip ${late ? "risk" : ""}">${late ? "⏳ S'éteint à 10 h" : "À entretenir aujourd'hui"}</span>` : ""}<span class="flchip">Record ${F.best || 0} j</span><span class="flchip">Gels ${F.gel || 0}/2</span></div></div></div>
+    ${nx ? `<div class="flnext"><small>Prochain palier : ${nx[0]} jours · ${esc(bpLabel(nx[1]))}</small><div class="bar"><i style="--w:${Math.round((fire - from) / (nx[0] - from) * 100)}%"></i></div></div>` : ""}
+    <p class="flnote">Un jour compte dès que tu ouvres un booster, joues une partie, fais le défi, la tier list ou votes au débat. Un gel de série (gagné tous les 7 jours) couvre un jour manqué. La journée bascule à 10 h.</p>
+    <div class="flpal">${FIRE_P.map(([k, rw]) => `<span class="${fire >= k ? "got" : ""}">${k} j · ${esc(bpLabel(rw))}</span>`).join("")}</div></div>`;
+  let duo;
+  if (!flOnline()) duo = `<p class="flnote">Connecte-toi à ton compte pour avoir des flammes duo avec tes amis.</p>`;
+  else if (DUO.L == null) duo = `<p class="flnote">Chargement…</p>`;
+  else { const L = DUO.L.slice().sort((a, b) => (b.pin ? 1 : 0) - (a.pin ? 1 : 0) || b.n - a.n), pins = L.filter(x => x.pin).length, F2 = (FRS.data && FRS.data.friends) || [], have = new Set(L.map(x => x.uid));
+    const row = x => { const nm = duoName(x.uid), at = x.n > 0 && !x.today, nxd = flNext(x.n, DUO_P);
+      return `<div class="flduo ${x.pin ? "pin" : ""}"><span class="av">${esc((nm || "?").slice(0, 1).toUpperCase())}<span class="f">${hkFire(x.n >= 100)}</span></span><span class="nm"><b>${esc(nm)}</b><span class="m"><span class="flchip">${x.n} j ensemble</span>${x.today ? `<span class="flchip ok">✓ Aujourd'hui</span>` : at ? `<span class="flchip ${late ? "risk" : ""}">${late ? "⏳ S'éteint à 10 h" : "À jouer aujourd'hui"}</span>` : ""}${nxd ? `<span class="flchip">${nxd[0] - x.n} j avant : ${esc(bpLabel(nxd[1]))}</span>` : ""}</span></span>
+        <span class="acts"><button class="flpin ${x.pin ? "on" : ""}" data-flpin="${x.uid}" aria-label="${x.pin ? "Désépingler" : "Épingler"}" ${!x.pin && pins >= 3 ? "disabled" : ""}>★</button>${x.today ? "" : `<button class="flplay" data-flplay="${x.uid}">Jouer avec</button>`}</span></div>`; };
+    const start = F2.filter(f => !have.has(f.uid)).slice(0, 8).map(f => `<div class="flduo"><span class="av">${esc((f.name || "?").slice(0, 1).toUpperCase())}</span><span class="nm"><b>${esc(f.name)}</b><span class="m"><span class="flchip">Pas encore de flamme</span></span></span><span class="acts"><button class="flpin" data-flpin="${f.uid}" aria-label="Épingler" ${pins >= 3 ? "disabled" : ""}>★</button><button class="flplay" data-flplay="${f.uid}">Jouer avec</button></span></div>`).join("");
+    duo = `${L.length ? L.map(row).join("") : `<p class="flnote">Aucune flamme duo pour l'instant.</p>`}${start ? `<h2 style="margin-top:6px">Lancer une flamme</h2>${start}` : F2.length ? "" : `<p class="flnote">Ajoute des amis (menu Amis) pour lancer des flammes duo.</p>`}`; }
+  const pushOn = !(s.flPush === false);
+  V.querySelector(".flin").innerHTML = `<div class="flhd"><h1>Flammes</h1><button class="flx" id="flX" aria-label="Fermer">✕</button></div>
+    <div><h2 style="margin:0 0 8px;font:900 16px var(--title);color:#fff1dc">Ta série</h2>${solo}</div>
+    <div class="flbox"><h2>Flammes duo <small>· ★ épingle jusqu'à 3 duos</small></h2><p class="flnote">Jouez au moins une partie en ligne ensemble chaque jour : votre flamme commune monte et vous gagnez tous les deux les mêmes récompenses.</p>${duo}
+      <div class="flpal">${DUO_P.map(([k, rw]) => `<span>${k} j · ${esc(bpLabel(rw))}</span>`).join("")}</div></div>
+    ${flOnline() ? `<div class="flbox"><div class="fltgl"><span><b style="font:800 14px var(--title)">Rappel du soir</b><br><span class="flnote">À 21 h, une notification si une flamme duo va s'éteindre.</span></span><button id="flPush" class="${pushOn ? "on" : ""}" aria-label="Rappel du soir"></button></div></div>` : ""}`;
+  V.querySelector("#flX").onclick = () => V.remove();
+  V.querySelectorAll("[data-flpin]").forEach(b => b.onclick = () => flPin(b.dataset.flpin, !b.classList.contains("on")));
+  V.querySelectorAll("[data-flplay]").forEach(b => b.onclick = () => flPlay(b.dataset.flplay));
+  V.querySelector("#flPush") && (V.querySelector("#flPush").onclick = async () => { const s2 = tcLoad(); s2.flPush = s2.flPush === false; tcSave(s2); flPaint(); try { await CP.sb.rpc("flame_pref", {p_on: s2.flPush !== false}); } catch {} }); }
+async function flPin(uid, on){ if (!flOnline()) return; try { const {error} = await CP.sb.rpc("duo_pin", {p_mate: uid, p_on: on}); if (error) return tcToast(error.message.replace(/^.*?:\s*/, "")); } catch {} await duoLoad(true);
+  if (on && !(DUO.L || []).some(x => x.uid === uid)) DUO.L = [...(DUO.L || []), {uid, n: 0, today: false, me: false, pin: true}]; flPaint(); }
+/* « Jouer avec » : on part choisir un jeu ; dès que le salon de la partie est ouvert, l'ami reçoit l'invitation */
+function flPlay(uid){ const f = flFriend(uid), nm = f ? f.name : duoName(uid); FLM.inv = {uid, nm, id: f && f.id, at: Date.now()}; document.querySelector(".flv")?.remove(); document.querySelector(".bpv")?.remove();
+  try { show("home"); setTimeout(() => document.querySelector("#cat1")?.scrollIntoView({behavior: "smooth", block: "start"}), 80); } catch {}
+  try { frToast(`Choisis un jeu en ligne et crée la partie : ${nm} sera invité automatiquement.`); } catch {} }
+setInterval(async () => { const I = FLM.inv; if (!I) return; if (Date.now() - I.at > 15 * 6e4){ FLM.inv = null; return; }
+  const c = document.querySelector("#lobbyBox .code"), code = c && c.textContent.trim(); if (!/^[A-Z0-9]{4}$/.test(code || "")) return; FLM.inv = null;
+  const h = document.querySelector("#lobbyBox h2"), game = (h ? h.textContent : "une partie").replace(/\s+/g, " ").trim().slice(0, 40) || "une partie";
+  try { if (flOnline()) await CP.sb.from("game_invites").insert({from_id: CP.user.id, to_id: I.uid, game, code}); } catch {}
+  try { if (I.id) frInvite(I.id, code, {set textContent(v){}, set disabled(v){}}); } catch {}
+  try { SFX.play("pop"); frToast(`Invitation envoyée à ${I.nm} (salon ${code}).`); } catch {} }, 1500);
+/* notification du soir : ouvre la page */
+{ const base = appNotif; appNotif = function(t){ if (t === "flammes"){ try { flOpen(); } catch {} return; } return base.apply(this, arguments); }; }
 </script>
 
 </body>
