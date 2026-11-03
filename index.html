@@ -10806,10 +10806,10 @@ const tcStock = s => Object.values(s.packs).reduce((a, b) => a + b, 0) + s.free.
 // ---- tirage ----
 function tcRoll(rate){ let r = Math.random() * Object.values(rate).reduce((a, b) => a + b, 0); for (const k in rate){ r -= rate[k]; if (r <= 0) return k; } return Object.keys(rate)[0]; }
 // boosters secrets : un booster Classique peut se révéler en être un à l'ouverture (validés par l'utilisateur le 12 octobre 2026).
-// [clé, nom, kanji, une chance sur…, couleur, ce qu'il garantit]
-const TC_SECRET = [["divin", "Divin caché", "神", 1000, "#c9a2ff", "Légendaire garantie, taux du booster Divin"], ["tresor", "Trésor", "宝", 400, "#2fd38f", "un objet Légendaire ou Mythique garanti"], ["eveil", "Éveil", "覚", 600, "#8fe9ff", "une transformation garantie"],
-  ["rouge", "Sceau rouge", "判", 200, "#ff5a36", "une version rare garantie (AR, Wanted ou Red Blood)"], ["dore", "Doré", "金", 80, "#f7c64a", "Épique garantie, taux du booster Or"]];
-const TC_DPITY = 120;   /* 3 nov. 2026 : rééquilibré (était 180 après ÷ 3) */   /* booster Doré garanti au 60e Classique ouvert sans Doré (13 oct. 2026) ; le compteur s.pity.D ne redescend qu'avec un Doré */
+// [clé, nom, kanji, une chance sur…, couleur, ce qu'il garantit] — 3 nov. 2026 : valeurs d'origine remises
+const TC_SECRET = [["divin", "Divin caché", "神", 500, "#c9a2ff", "Légendaire garantie, taux du booster Divin"], ["tresor", "Trésor", "宝", 200, "#2fd38f", "un objet Légendaire ou Mythique garanti"], ["eveil", "Éveil", "覚", 150, "#8fe9ff", "une transformation garantie"],
+  ["rouge", "Sceau rouge", "判", 100, "#ff5a36", "une version rare garantie (AR, Wanted ou Red Blood)"], ["dore", "Doré", "金", 40, "#f7c64a", "Épique garantie, taux du booster Or"]];
+const TC_DPITY = 60;   /* 3 nov. 2026 (soir) : retour aux chances d'origine des boosters secrets, demandé par l'utilisateur (Divin 1/500, Trésor 1/200, Éveil 1/150, Sceau rouge 1/100, Doré 1/40, Doré garanti au 60e) */   /* booster Doré garanti au 60e Classique ouvert sans Doré (13 oct. 2026) ; le compteur s.pity.D ne redescend qu'avec un Doré */
 const tcSecretRoll = s => { let r = ""; for (const sx of TC_SECRET) if (Math.random() < 1 / sx[3]){ r = sx[0]; break; }
   if (s){ s.pity = s.pity || {M: 0, L: 0}; if (!r && (s.pity.D || 0) + 1 >= TC_DPITY) r = "dore"; s.pity.D = r === "dore" ? 0 : (s.pity.D || 0) + 1; }
   return r; };
@@ -11610,7 +11610,10 @@ function tcCine(c, o = {}){
   return new Promise(res => {
     const sty = c.f === "Z" ? "Z" : c.f === "G" ? "G" : c.f === "K" ? "M" : c.f === "S" ? "S" : c.f === "W" ? "L" : c.r === "X" ? "X" : c.r === "M" ? "M" : c.r === "L" ? "L" : "E", myth = sty !== "L" && sty !== "E", calm = tcCalm(), mini = !!o.mini || (sty === "E" && !o.full);
     /* 2 nov. 2026 : Épique (grand format), Légendaire, Mythique et Éveil passent par l'Invocation 3D (src/invgl.part) ; les versions spéciales gardent leur cinématique */
-    if (!mini && !calm && !o.no3d && window.THREE && /^[ELMX]$/.test(sty) && typeof tcInvGL === "function"){ tcInvGL(c, o, sty).then(r => r === "ko" ? tcCine(c, {...o, no3d: true}).then(res) : res(), () => tcCine(c, {...o, no3d: true}).then(res)); return; }
+    /* 3 nov. 2026 : TOUTES les cinématiques passent par l'Invocation 3D (avant : les AR, dont les Épiques AR, avaient la mini-cinématique, et SAR / UR / Légende l'ancienne).
+       Clé de l'invocation : version spéciale d'abord (AR → « A » sauf sur une Légendaire ou plus, qui garde sa rareté), sinon la rareté. L'ancienne cinématique ne reste qu'en secours (3D indisponible ou mode calme). */
+    const ivk = c.f === "Z" ? "Z" : c.f === "G" ? "G" : c.f === "S" ? "S" : c.f === "K" ? "M" : c.f === "W" ? "L" : /^[ABC]$/.test(c.f || "") ? (/^[LMX]$/.test(c.r) ? c.r : "A") : /^[LMX]$/.test(c.r) ? c.r : "E";
+    if (!calm && !o.no3d && window.THREE && typeof tcInvGL === "function" && typeof HKInv !== "undefined" && HKInv.IV[ivk]){ tcInvGL(c, o, ivk).then(r => r === "ko" ? tcCine(c, {...o, no3d: true}).then(res) : res(), () => tcCine(c, {...o, no3d: true}).then(res)); return; }
     try {   /* 19 oct. 2026 : si la cinématique échoue, on la retire et on continue (avant, l'écran restait bloqué) */
     const img = tcArt(c, c.f); document.querySelectorAll(".tccine").forEach(x => x.remove());
     document.body.insertAdjacentHTML("beforeend", `<div class="tccine r-${tcER(c, c.f)} y${sty} ${mini ? "mini" : ""} ${TC_LITE ? "lite" : ""}" role="dialog" aria-modal="true" aria-label="${TC_R[tcER(c, c.f)][0]} : ${esc(c.n)}">
@@ -15402,8 +15405,8 @@ if (matchMedia("(hover: none) and (pointer: coarse)").matches) document.addEvent
 <script>
 const GX = {rows: [], at: 0};
 try { const _c = JSON.parse(localStorage.getItem("hanko-gx") || "[]"); if (Array.isArray(_c) && _c.length) GX.rows = _c; } catch {}   /* 1er nov. 2026 : dernier fil gardé en cache → affichage instantané sans attendre le réseau */
-const GX_FIN = {S: "#7fd6ff", K: "#ff3b3b", W: "#d9a066", G: "#f7c64a", Z: "#ffe9a8"}, GX_COL = {L: "#f5c518", M: "#ff5f8f", X: "#b58cff"};
-const gxBig = c => "LMX".includes(c.r) || !!GX_FIN[c.f];   /* carte du jeu : Légendaire, Mythique, Éveil, ou version Art spécial, Red Blood, Wanted, UR, Légende */
+const GX_FIN = {A: "#ff7ac8", B: "#ff7ac8", C: "#ff7ac8", S: "#7fd6ff", K: "#ff3b3b", W: "#d9a066", G: "#f7c64a", Z: "#ffe9a8"}   /* 3 nov. 2026 : les AR entrent dans les gros tirages */, GX_COL = {L: "#f5c518", M: "#ff5f8f", X: "#b58cff"};
+const gxBig = c => "LMX".includes(c.r) || !!GX_FIN[c.f];   /* carte du jeu : Légendaire, Mythique, Éveil, ou version Art rare (AR), Art spécial, Red Blood, Wanted, UR, Légende */
 const gxOff = () => !!tcLoad().noFeed;
 const gxAgo = t => { const m = Math.floor((Date.now() - Date.parse(t)) / 6e4); return m < 1 ? "à l'instant" : m < 60 ? "il y a " + m + " min" : m < 1440 ? "il y a " + Math.floor(m / 60) + " h" : "il y a " + Math.floor(m / 1440) + " j"; };
 /* une ligne du fil devient une vignette ; rien pour une carte inconnue ou trop commune (le serveur ne connaît pas les raretés) */
@@ -21151,8 +21154,10 @@ new MutationObserver(() => { const sh = document.querySelector("#nvPk .nvsh>div"
    =================================================================================== */
 const HKInv = (() => {
   let T = null, RND = null;
-  const IV = {R: {rgb: [77, 163, 255], kj: "希少", n: "RARE"}, E: {rgb: [176, 124, 255], kj: "叙事", n: "ÉPIQUE"}, L: {rgb: [255, 201, 58], kj: "伝説", n: "LÉGENDAIRE"}, M: {rgb: [255, 61, 90], kj: "神話", n: "MYTHIQUE"}, X: {rgb: [110, 240, 255], kj: "覚醒", n: "ÉVEIL", rb: true}};
-  const ivChain = k => k === "L" ? ["E", "L"] : k === "M" ? ["E", "L", "M"] : k === "X" ? ["E", "L", "X"] : [k];
+  const IV = {R: {rgb: [77, 163, 255], kj: "希少", n: "RARE"}, E: {rgb: [176, 124, 255], kj: "叙事", n: "ÉPIQUE"}, L: {rgb: [255, 201, 58], kj: "伝説", n: "LÉGENDAIRE"}, M: {rgb: [255, 61, 90], kj: "神話", n: "MYTHIQUE"}, X: {rgb: [110, 240, 255], kj: "覚醒", n: "ÉVEIL", rb: true},
+    /* 3 nov. 2026 : versions spéciales, elles aussi en Invocation (avant : ancienne cinématique) */
+    A: {rgb: [255, 122, 200], kj: "芸術", n: "ART RARE"}, S: {rgb: [255, 140, 220], kj: "特別", n: "ART SPÉCIAL", rb: true}, G: {rgb: [255, 214, 90], kj: "究極", n: "UR"}, Z: {rgb: [255, 236, 170], kj: "伝承", n: "LÉGENDE", rb: true}};
+  const ivChain = k => k === "L" ? ["E", "L"] : k === "M" ? ["E", "L", "M"] : k === "X" ? ["E", "L", "X"] : k === "A" ? ["E", "A"] : k === "S" ? ["E", "L", "S"] : k === "G" ? ["E", "L", "G"] : k === "Z" ? ["L", "M", "Z"] : [k];
   const ivCol = (k, t, a, j = 0) => IV[k].rb ? `hsla(${(t / 8 + j * 40) % 360},95%,65%,${a})` : `rgba(${IV[k].rgb.join(",")},${a})`;
   const cl1 = x => Math.max(0, Math.min(1, x)), sg = (t, a, b) => cl1((t - a) / (b - a)), eo3 = x => 1 - Math.pow(1 - cl1(x), 3), backOut = x => 1 + 2.2 * Math.pow(x - 1, 3) + 1.2 * Math.pow(x - 1, 2);
   const UP = [3000, 3550], HIT = 4100, DUR = 7400, TTL = "Unbounded, system-ui", MONO = '"JetBrains Mono", monospace', KJF = '900 92px "Zen Kaku Gothic New", "Hiragino Sans", sans-serif';
@@ -21273,7 +21278,7 @@ const HKInv = (() => {
       wrap.style.transform = `translate(${((Math.random() - .5) * sh * k).toFixed(2)}px,${((Math.random() - .5) * sh * k).toFixed(2)}px) scale(${zs.toFixed(4)})`; }
     /* une image de la cinématique à l'instant t (en ms) ; renvoie le tremblement et le zoom à appliquer à l'ensemble */
     function step(t){
-      const key = D.key, chain = ivChain(key), pal = D.pal || [IV[key].rgb], stg = t < UP[0] ? 0 : t < UP[1] ? 1 : 2, kNow = chain[Math.min(stg, chain.length - 1)], pc = (j, a) => { const c = pal[j % pal.length]; return `rgba(${c[0]},${c[1]},${c[2]},${a})`; };
+      const key = D.key, chain = ivChain(key), pal = D.pal && D.pal.length ? D.pal : [IV[key].rgb]   /* 3 nov. 2026 : palette vide (illustration illisible) → couleur de la rareté, au lieu d'une erreur */, stg = t < UP[0] ? 0 : t < UP[1] ? 1 : 2, kNow = chain[Math.min(stg, chain.length - 1)], pc = (j, a) => { const c = pal[j % pal.length]; return `rgba(${c[0]},${c[1]},${c[2]},${a})`; };
       const C = (a, j = 0) => t < HIT ? ivCol(kNow, t, a, j) : pc(j, a), beam = sg(t, D.b0 || 2300, HIT), pre = t < HIT ? eo3(sg(t, HIT - 260, HIT)) : 0, punch = t >= HIT ? 1 - eo3(sg(t, HIT, HIT + 550)) : 0;
       const ups = UP.slice(0, chain.length - 1), cu = ups.find(u => t >= u && t < u + 260 && t < HIT), crF = cu == null ? 0 : 1 - sg(t, cu, cu + 260);
       const sA = 1 - sg(t, HIT + 200, HIT + 900), Rr = 210 * (.6 + eo3(t / 900) * .4);
