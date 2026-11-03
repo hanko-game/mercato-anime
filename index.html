@@ -21616,8 +21616,9 @@ span.hkgem,span.hkflk{display:inline-block!important;flex:none!important;padding
 .hkwin.rec .ic{background:radial-gradient(circle at 35% 30%,#ffd2d6,#ff4a55 55%,#a3000f);color:#fff}
 .hkwin .tt{display:grid;flex:1 1 auto;min-width:0;overflow:hidden;line-height:1.15}.hkwin .tt b,.hkwin .tt small{overflow:hidden;text-overflow:ellipsis}.hkwin .tt b{font:900 15px var(--title);color:#fff}.hkwin .tt small{font:600 11.5px Inter,system-ui,sans-serif;color:#b9b3ad}
 .hkwin .rw{display:flex;gap:6px;flex:1 0 100%;padding-left:48px}.hkwin .rw em{font-style:normal;display:inline-flex;align-items:center;gap:4px;padding:6px 10px;border-radius:11px;font:800 13.5px var(--title);color:#fff;background:#ffffff10;box-shadow:inset 0 0 0 1px #ffffff18;white-space:nowrap}
-/* 3 nov. 2026 : iPhone, la barre du bas restait au milieu de l'écran après la fermeture du clavier (bug d'iOS) : on la recale sur le bas réel de l'écran, et on la cache pendant la saisie */
-@media (max-width:760px){#nvTab{transform:translateY(var(--hkvv,0px))}body.hkkb #nvTab{visibility:hidden}}
+/* 3 nov. 2026 (v2) : iPhone. Le recalage calculé en JS (--hkvv) déplaçait la barre au milieu de l'écran pendant le défilement : retiré.
+   La barre reste en position fixe native, sur son propre calque (évite les sauts des barres floutées sur iOS), et elle est cachée pendant la saisie */
+@media (max-width:760px){#nvTab{-webkit-transform:translateZ(0);transform:translateZ(0);will-change:transform}body.hkkb #nvTab{visibility:hidden}}
 .tctoast.tctoast .hkgem,.tctoast.tctoast .hkflk,.tctoast.tctoast.hkwin .hkgem{width:1.05em;height:1.05em;border-radius:0;background-color:transparent;box-shadow:none;display:inline-block;flex:none}
 .hkwin .rw em{font-size:12.5px!important;padding:5px 8px!important;gap:3px!important}.hkwin .tt b{font-size:14px!important}.hkwin .tt small{white-space:nowrap}
 .hkwin .rw em.pk{color:#ffe7a5;box-shadow:inset 0 0 0 1px #f7c64a77}
@@ -21970,15 +21971,11 @@ function hkPlayInfo(){ const P = document.querySelector("#nvPlay"); if (!P || !P
     <p class="ft">En solo comme en ligne · chaque partie fait aussi monter ton pass de saison.</p></div>`;
   if (h) h.insertAdjacentHTML("afterend", html); else P.insertAdjacentHTML("afterbegin", html); }
 setInterval(() => { try { hkPlayInfo(); } catch {} }, 700);
-/* 3 nov. 2026 : barre du bas sur iPhone (voir le CSS --hkvv) */
-{ const vv = window.visualViewport, R = document.documentElement;
-  const fix = () => { if (!vv) return; const d = Math.round(vv.height + vv.offsetTop - window.innerHeight); R.style.setProperty("--hkvv", (d > 1 && !document.body.classList.contains("hkkb") ? d : 0) + "px"); };
-  if (vv){ vv.addEventListener("resize", fix); vv.addEventListener("scroll", fix); }
-  addEventListener("scroll", fix, {passive: true}); addEventListener("orientationchange", () => setTimeout(fix, 300));
-  const typing = e => { const t = e.target; return !!(t && t.matches && t.matches('input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=button]):not([type=submit]),textarea,select,[contenteditable="true"]')); };
+/* 3 nov. 2026 (v2) : barre du bas sur iPhone : cachée pendant la saisie ; à la fermeture du clavier on remet la page en place (iOS la laisse parfois décalée) */
+{ const typing = e => { const t = e.target; return !!(t && t.matches && t.matches('input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=button]):not([type=submit]),textarea,select,[contenteditable="true"]')); };
   document.addEventListener("focusin", e => { if (typing(e)) document.body.classList.add("hkkb"); });
-  document.addEventListener("focusout", e => { if (!typing(e)) return; setTimeout(() => { const a = document.activeElement; if (a && typing({target: a})) return; document.body.classList.remove("hkkb"); window.scrollTo(window.scrollX, window.scrollY); fix(); setTimeout(fix, 350); }, 80); });
-  fix(); }
+  document.addEventListener("focusout", e => { if (!typing(e)) return; setTimeout(() => { const a = document.activeElement; if (a && typing({target: a})) return; document.body.classList.remove("hkkb"); window.scrollTo(window.scrollX, window.scrollY); }, 80); });
+  document.documentElement.style.removeProperty("--hkvv"); }
 </script>
 
 <style>
