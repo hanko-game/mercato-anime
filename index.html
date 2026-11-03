@@ -12908,7 +12908,7 @@ function hsOpenUI(id, q = 1){
   box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--nc) 55%,transparent),inset 0 1px 0 rgba(255,255,255,.14),0 20px 50px rgba(0,0,0,.6),0 0 36px color-mix(in srgb,var(--nc) 24%,transparent)}
 @media (min-width:900px){.tctoast.tctoast{top:auto;bottom:24px;left:auto;right:24px;margin:0}}   /* 2 nov. 2026 : sur PC, en bas à droite (en haut, elles couvraient le menu) */
 .tctoast.tctoast.t1{--nc:#dfe5ee}.tctoast.tctoast.t2{--nc:#f2c230}.tctoast.tctoast.t3{--nc:#c9a2ff}
-.tctoast.tctoast i{flex:none;display:grid;place-items:center;width:38px;height:38px;border-radius:11px;font-size:19px;color:#0e0d12;background:var(--nc);box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 4px 10px rgba(0,0,0,.4)}
+.tctoast.tctoast > i{flex:none;display:grid;place-items:center;width:38px;height:38px;border-radius:11px;font-size:19px;color:#0e0d12;background:var(--nc);box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 4px 10px rgba(0,0,0,.4)}
 @media (prefers-reduced-motion:no-preference){.tctoast.tctoast{animation:vnin .5s cubic-bezier(.2,.9,.25,1.15) both}}
 /* allègement sans perdre le mouvement (12 oct. 2026) : toutes les cartes de visite gardent leurs animations, mais seules celles qui sont à l'écran
    (classe .on posée par vtWatch, avec une marge) sont dessinées et animées ; les autres gardent leur place, sans rien coûter au téléphone */
@@ -21603,6 +21603,7 @@ function hkDiag(k, e){ try { const d = JSON.parse(localStorage.getItem("mercato-
 /* 3 nov. 2026 : récompenses des 3 mini-jeux du jour mises en avant sur l'accueil */
 #dfHome .hkrw.hkrw{position:static!important;display:inline-flex;align-self:flex-start;width:max-content;align-items:center;gap:4px;margin:0 0 6px!important;padding:2px 8px 2px 3px;border-radius:99px;font:800 10px var(--title);letter-spacing:.01em;color:#ffe7a5;background:rgba(12,10,14,.55);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);box-shadow:inset 0 0 0 1px #f7c64a4d;white-space:nowrap;pointer-events:none;z-index:2}
 .hkrw i{width:13px;height:13px;border-radius:50%;display:grid;place-items:center;font:900 7.5px "Zen Kaku Gothic New",sans-serif;font-style:normal;color:#2a1503;background:linear-gradient(180deg,#fff3c4,#f7c64a)}
+span.hkgem,span.hkflk{display:inline-block!important;flex:none!important;padding:0!important;border:0!important;border-radius:0!important;background-color:transparent!important;box-shadow:none!important}
 .hkrw .hkgem{width:.95em;height:.95em}
 #dfHome .hkrw.ok{color:#c9ffd9;box-shadow:inset 0 0 0 1px #3fbf6f77}
 /* débat : le VS au centre de l'image (3 nov. 2026) */
@@ -21615,7 +21616,9 @@ function hkDiag(k, e){ try { const d = JSON.parse(localStorage.getItem("mercato-
 .hkwin.rec .ic{background:radial-gradient(circle at 35% 30%,#ffd2d6,#ff4a55 55%,#a3000f);color:#fff}
 .hkwin .tt{display:grid;flex:1 1 auto;min-width:0;overflow:hidden;line-height:1.15}.hkwin .tt b,.hkwin .tt small{overflow:hidden;text-overflow:ellipsis}.hkwin .tt b{font:900 15px var(--title);color:#fff}.hkwin .tt small{font:600 11.5px Inter,system-ui,sans-serif;color:#b9b3ad}
 .hkwin .rw{display:flex;gap:6px;flex:1 0 100%;padding-left:48px}.hkwin .rw em{font-style:normal;display:inline-flex;align-items:center;gap:4px;padding:6px 10px;border-radius:11px;font:800 13.5px var(--title);color:#fff;background:#ffffff10;box-shadow:inset 0 0 0 1px #ffffff18;white-space:nowrap}
-.tctoast.tctoast.hkwin i.hkgem{width:1.05em;height:1.05em;border-radius:0;background-color:transparent;box-shadow:none;display:inline-block;flex:none}
+/* 3 nov. 2026 : iPhone, la barre du bas restait au milieu de l'écran après la fermeture du clavier (bug d'iOS) : on la recale sur le bas réel de l'écran, et on la cache pendant la saisie */
+@media (max-width:760px){#nvTab{transform:translateY(var(--hkvv,0px))}body.hkkb #nvTab{visibility:hidden}}
+.tctoast.tctoast .hkgem,.tctoast.tctoast .hkflk,.tctoast.tctoast.hkwin .hkgem{width:1.05em;height:1.05em;border-radius:0;background-color:transparent;box-shadow:none;display:inline-block;flex:none}
 .hkwin .rw em{font-size:12.5px!important;padding:5px 8px!important;gap:3px!important}.hkwin .tt b{font-size:14px!important}.hkwin .tt small{white-space:nowrap}
 .hkwin .rw em.pk{color:#ffe7a5;box-shadow:inset 0 0 0 1px #f7c64a77}
 .hkxp{display:inline-block;margin-left:4px;padding:1px 7px;border-radius:99px;font:800 10.5px var(--title);color:#ffd2d6;background:#ff2d3a22;box-shadow:inset 0 0 0 1px #ff2d3a66;white-space:nowrap}
@@ -21925,7 +21928,7 @@ const hkClose = () => document.querySelectorAll(".bpv,.nlv,.bp-rks,.hvm,.tccele"
   const fix = root => { if (!root || root.nodeType !== 1 && root.nodeType !== 3) return; const L = [];
     if (root.nodeType === 3){ if (RX.test(root.data)) L.push(root); }
     else { if (SKIP.test(root.nodeName.toUpperCase()) || root.closest && root.closest("svg,textarea,select,[contenteditable]")) return; const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); let n; while ((n = w.nextNode())) if (RX.test(n.data) && !SKIP.test(n.parentNode.nodeName.toUpperCase()) && !n.parentNode.closest("svg,textarea,select,[contenteditable]")) L.push(n); }
-    for (const t of L){ const f = document.createDocumentFragment(); t.data.split(/([◆❄])/).forEach(x => { if (x === "◆" || x === "❄"){ const i = document.createElement("i"); i.className = x === "◆" ? "hkgem" : "hkflk"; i.setAttribute("role", "img"); i.setAttribute("aria-label", x === "◆" ? "éclats" : "flocons"); f.appendChild(i); } else if (x) f.appendChild(document.createTextNode(x)); }); t.parentNode && t.parentNode.replaceChild(f, t); } };
+    for (const t of L){ const f = document.createDocumentFragment(); t.data.split(/([◆❄])/).forEach(x => { if (x === "◆" || x === "❄"){ const i = document.createElement("span"); i.className = x === "◆" ? "hkgem" : "hkflk"; i.setAttribute("role", "img"); i.setAttribute("aria-label", x === "◆" ? "éclats" : "flocons"); f.appendChild(i); } else if (x) f.appendChild(document.createTextNode(x)); }); t.parentNode && t.parentNode.replaceChild(f, t); } };
   const go = () => { fix(document.body); new MutationObserver(M => { for (const m of M){ if (m.type === "characterData") fix(m.target); else m.addedNodes.forEach(fix); } }).observe(document.body, {childList: true, subtree: true, characterData: true}); };
   document.readyState === "loading" ? addEventListener("DOMContentLoaded", go) : go(); }
 /* ---- mini-jeux du jour : la récompense est écrite sur chaque carte de l'accueil (défi, débat, tier list) ---- */
@@ -21967,6 +21970,15 @@ function hkPlayInfo(){ const P = document.querySelector("#nvPlay"); if (!P || !P
     <p class="ft">En solo comme en ligne · chaque partie fait aussi monter ton pass de saison.</p></div>`;
   if (h) h.insertAdjacentHTML("afterend", html); else P.insertAdjacentHTML("afterbegin", html); }
 setInterval(() => { try { hkPlayInfo(); } catch {} }, 700);
+/* 3 nov. 2026 : barre du bas sur iPhone (voir le CSS --hkvv) */
+{ const vv = window.visualViewport, R = document.documentElement;
+  const fix = () => { if (!vv) return; const d = Math.round(vv.height + vv.offsetTop - window.innerHeight); R.style.setProperty("--hkvv", (d > 1 && !document.body.classList.contains("hkkb") ? d : 0) + "px"); };
+  if (vv){ vv.addEventListener("resize", fix); vv.addEventListener("scroll", fix); }
+  addEventListener("scroll", fix, {passive: true}); addEventListener("orientationchange", () => setTimeout(fix, 300));
+  const typing = e => { const t = e.target; return !!(t && t.matches && t.matches('input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=button]):not([type=submit]),textarea,select,[contenteditable="true"]')); };
+  document.addEventListener("focusin", e => { if (typing(e)) document.body.classList.add("hkkb"); });
+  document.addEventListener("focusout", e => { if (!typing(e)) return; setTimeout(() => { const a = document.activeElement; if (a && typing({target: a})) return; document.body.classList.remove("hkkb"); window.scrollTo(window.scrollX, window.scrollY); fix(); setTimeout(fix, 350); }, 80); });
+  fix(); }
 </script>
 
 <style>
@@ -22243,7 +22255,7 @@ const NL_HOLLY = cls => `<svg class="ho ${cls}" viewBox="0 0 40 40" aria-hidden=
 const NL_LIGHTS = `<div class="nllights" aria-hidden="true"><svg viewBox="0 0 100 20" preserveAspectRatio="none"><path d="M0 6 Q8 16 16 8 T33 8 T50 8 T67 8 T84 8 T100 6" fill="none" stroke="#2a3a2c" stroke-width="1"/>${Array.from({length: 12}, (_, i) => { const c = ["#ff4a5a", "#f7c64a", "#3fbf6f", "#7fd3ff"][i % 4]; return `<circle cx="${(4 + i * 8.2).toFixed(1)}" cy="${i % 2 ? 12 : 16}" r="2.6" fill="${c}" style="filter:drop-shadow(0 0 3px ${c})"/>`; }).join("")}</svg></div>`;
 const NL_LOGO = `<span class="nllgw"><svg class="cap" viewBox="0 0 60 18" aria-hidden="true"><path d="M2 14 C8 2 22 8 30 4 C38 0 52 6 58 14 C50 18 10 18 2 14Z" fill="#fff" opacity=".95"/></svg><svg class="lg" viewBox="0 0 100 100" aria-hidden="true"><path d="M50 3l40.7 23.5v47L50 97 9.3 73.5v-47z" fill="#ff1e2d"/><path d="M50 12l32.9 19v38L50 88 17.1 69V31z" fill="#120506"/><rect x="31" y="28" width="11" height="44" rx="2.5" fill="#ff1e2d"/><rect x="58" y="28" width="11" height="44" rx="2.5" fill="#ff1e2d"/><path d="M27 60l46-21v10L27 70z" fill="#ff1e2d"/></svg></span>`;
 const NL_PK = sm => `<div class="nlpk ${sm ? "sm" : ""}" aria-hidden="true"><i class="sf"></i><i class="bd t"></i><span class="k">聖</span><span class="t2">NOËL</span><span class="s3">HANKO · 5 CARTES</span><i class="bd b"></i></div>`;
-const nlFl = n => `${(n || 0).toLocaleString("fr-FR")} <i class="hkflk" role="img" aria-label="flocons"></i>`;
+const nlFl = n => `${(n || 0).toLocaleString("fr-FR")} <span class="hkflk" role="img" aria-label="flocons"></span>`;
 /* une carte : C = entrée de NL_C ou NL_N ; o.num = numéro (numérotée), o.n = exemplaires (×2…), o.nm = 1er propriétaire */
 function nlCard(C, o = {}){ const num = o.num != null || o.numv;
   return `<div class="nlc ${num ? "num" : ""} ${o.cls || ""}"><div class="in"><img src="${C.im}" alt="" loading="lazy"><i class="vl"></i><i class="sn"></i>${NL_HOLLY("a")}${NL_HOLLY("b")}${num ? `<div class="nb">N° ${o.num != null ? String(o.num).padStart(3, "0") : "???"}<span>/100</span></div>` : o.n > 1 ? `<span class="xn">×${o.n}</span>` : ""}<div class="tg"><span>${num ? "NUMÉROTÉE · NOËL " + NL.y : "ÉDITION NOËL " + NL.y}</span></div><div class="ft"><small>${esc(C.c)}</small><b>${esc(C.n)}</b><em>${esc(C.x)}</em>${num && o.nm ? `<span class="own">1er propriétaire : ${esc(o.nm)}</span>` : ""}</div></div></div>`; }
