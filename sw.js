@@ -6,6 +6,8 @@ self.addEventListener("activate", e => e.waitUntil(self.clients.claim()));
 const IMG = "hanko-img-v1";
 self.addEventListener("fetch", e => { const r = e.request, u = new URL(r.url);
   if (r.method !== "GET" || u.origin !== location.origin || !/\.(webp|jpe?g|png)$/i.test(u.pathname)) return;
+  // 2 nov. 2026 : i/<empreinte> = images sorties de la page ; leur nom change avec leur contenu, on ne les retélécharge jamais
+  if (/\/i\/[0-9a-f]{20}\./.test(u.pathname)) return e.respondWith(caches.open(IMG).then(c => c.match(r).then(hit => hit || fetch(r).then(res => { if (res && res.ok) c.put(r, res.clone()); return res; }))));
   e.respondWith(caches.open(IMG).then(c => c.match(r, {ignoreSearch: true}).then(hit => { const net = fetch(r).then(res => { if (res && res.ok) c.put(r, res.clone()); return res; }).catch(() => hit);
     if (hit){ e.waitUntil(net); return hit; } return net; }))); });
 self.addEventListener("push", e => { let d = {}; try { d = e.data.json(); } catch {}
