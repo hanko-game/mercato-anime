@@ -1984,7 +1984,7 @@ const p2pRoom = {
       const pid = call.peer, old = voice.calls.get(pid); if (old && old.call !== call){ try { old.call.close(); } catch {} }
       const rec = {call, audio: null, ok: false, t0: Date.now()}; voice.calls.set(pid, rec);
       const drop = () => { if (voice.calls.get(pid) === rec){ voice.calls.delete(pid); if (rec.audio){ rec.audio.srcObject = null; } } vChanged(); };
-      call.on("stream", s => { const a = new Audio(); a.srcObject = s; a.autoplay = true; a.muted = !!voice.hush; a.play().catch(() => {}); rec.audio = a; rec.ok = true; vChanged(); });
+      call.on("stream", s => { const a = new Audio(); a.srcObject = s; a.autoplay = true; a.muted = !!voice.hush || !!voice.deaf; a.play().catch(() => {}); rec.audio = a; rec.ok = true; vChanged(); });
       call.on("close", drop); call.on("error", drop);
     };
     // on appelle seulement les joueurs dont l'identifiant est « plus grand » : un seul des deux côtés appelle
@@ -2116,9 +2116,11 @@ const p2pRoom = {
         stop: vStop,
         mute: b => { voice.muted = !!b; voice.stream?.getAudioTracks().forEach(t => t.enabled = !voice.muted && !voice.hush); vChanged(); },
         // silence imposé par le jeu (mode Mimic) : micro coupé pour les autres et voix des autres coupées, sans toucher au réglage du joueur
-        hush: b => { voice.hush = !!b; voice.stream?.getAudioTracks().forEach(t => t.enabled = !voice.muted && !voice.hush); voice.calls.forEach(r => { if (r.audio) r.audio.muted = voice.hush; }); },
+        hush: b => { voice.hush = !!b; voice.stream?.getAudioTracks().forEach(t => t.enabled = !voice.muted && !voice.hush); voice.calls.forEach(r => { if (r.audio) r.audio.muted = voice.hush || voice.deaf; }); },
+        // 3 nov. 2026 : le joueur coupe le son des autres (il ne les entend plus), son micro reste comme il l'a réglé
+        deaf: b => { voice.deaf = !!b; voice.calls.forEach(r => { if (r.audio) r.audio.muted = voice.hush || voice.deaf; }); vChanged(); },
         state: () => { const all = [...voice.calls.values()], now = Date.now();
-          return {on: voice.on, muted: voice.muted, err: voice.err, others: voice.roster.filter(p => p !== st.peer?.id).length,
+          return {on: voice.on, muted: voice.muted, deaf: !!voice.deaf, err: voice.err, others: voice.roster.filter(p => p !== st.peer?.id).length,
             linked: all.filter(r => r.ok).length, failed: all.filter(r => !r.ok && now - r.t0 > 12000).length}; },
       },
       // « aucune partie » : l'hôte n'a répondu par aucun chemin au bout de 10 secondes
@@ -9332,7 +9334,8 @@ pcInit();
 .profhist div b{font-size:14px}
 .profhist div span{color:var(--muted);font-size:12.5px}
 /* vocal : un petit bouton micro rond, seulement pendant une partie en ligne (jamais sur l'accueil, l'écran de lancement, les Cartes ou la Carrière).
-   Un toucher active le vocal (le navigateur demande alors l'accès au micro), les suivants coupent ou rouvrent le micro. */
+   Un toucher active le vocal (le navigateur demande alors l'accès au micro), les suivants coupent ou rouvrent le micro.
+   Une fois le vocal actif, un second bouton (haut-parleur) coupe ou rétablit le son des autres joueurs. */
 .vox{position:fixed;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:45;display:flex;align-items:center;gap:8px;pointer-events:none}
 .vox button{all:unset;box-sizing:border-box;pointer-events:auto;cursor:pointer;position:relative;display:grid;place-items:center;width:46px;height:46px;border-radius:50%;background:var(--panel);color:var(--muted);box-shadow:inset 0 0 0 1.5px var(--line),0 6px 18px rgba(0,0,0,.5)}
 .vox button svg{width:22px;height:22px}
@@ -9341,6 +9344,7 @@ pcInit();
 .vox.on.muted button{background:var(--panel);color:#ff5a6a;box-shadow:inset 0 0 0 1.5px #ff5a6a,0 6px 18px rgba(0,0,0,.5)}
 .vox button u{position:absolute;right:-3px;top:-3px;min-width:17px;height:17px;padding:0 4px;box-sizing:border-box;border-radius:9px;background:#0b0a0e;color:var(--text);box-shadow:inset 0 0 0 1px var(--line);font:700 10.5px/17px var(--mono);text-align:center;text-decoration:none}
 .vox .st{pointer-events:none;max-width:56vw;padding:6px 10px;border-radius:999px;background:var(--panel);box-shadow:inset 0 0 0 1px var(--line);font-size:12px;color:var(--muted)}
+.vox.deaf #voxEar{background:var(--panel);color:#ff5a6a;box-shadow:inset 0 0 0 1.5px #ff5a6a,0 6px 18px rgba(0,0,0,.5)}
 body.has-emojis .vox{bottom:calc(74px + env(safe-area-inset-bottom,0px))}
 </style>
 <script>
@@ -9474,6 +9478,8 @@ profApply("");
    ===================================================================== */
 const VOX_MIC = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>`;
 const VOX_OFF = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 9.5V6a3 3 0 0 0-5.7-1.300M9 9v2a3 3 0 0 0 4.500 2.600M5 11a7 7 0 0 0 11.300 5.500M19 11a7 7 0 0 1-.400 2.300M12 18v3M4 4l16 16"/></svg>`;
+const VOX_EAR = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.500 8.500 0 0 1 0 12"/></svg>`;
+const VOX_DEAF = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9l5 6M21 9l-5 6"/></svg>`;
 let VOX_KEY = "";
 function voxRender(){
   const room = p2pRoom.current, box = $("#vox"); if (!box) return;
@@ -9485,10 +9491,12 @@ function voxRender(){
   const s = room.voice.state(), n = s.on ? s.linked : 0;
   const status = !s.on ? (s.err ? s.err : "") : s.failed && !s.linked ? "le vocal ne passe pas sur ce réseau" : "";
   const label = !s.on ? "Activer le vocal (le navigateur demandera l'accès au micro)" : s.muted ? "Micro coupé : toucher pour le rouvrir" : "Micro ouvert : toucher pour le couper";
-  const key = [s.on, s.muted, n, status].join("|"); if (key === VOX_KEY) return; VOX_KEY = key;   /* on ne redessine que si quelque chose a changé */
-  box.classList.toggle("on", s.on); box.classList.toggle("muted", !!s.on && !!s.muted);
-  box.innerHTML = `${status ? `<span class="st">${esc(status)}</span>` : ""}<button id="voxBtn" aria-label="${label}" title="${label}" aria-pressed="${s.on && !s.muted}">${!s.on || s.muted ? VOX_OFF : VOX_MIC}${n ? `<u>${n}</u>` : ""}</button>`;
+  const ear = s.deaf ? "Son des joueurs coupé : toucher pour les réentendre" : "Couper le son des joueurs (tu ne les entends plus)";
+  const key = [s.on, s.muted, s.deaf, n, status].join("|"); if (key === VOX_KEY) return; VOX_KEY = key;   /* on ne redessine que si quelque chose a changé */
+  box.classList.toggle("on", s.on); box.classList.toggle("muted", !!s.on && !!s.muted); box.classList.toggle("deaf", !!s.on && !!s.deaf);
+  box.innerHTML = `${status ? `<span class="st">${esc(status)}</span>` : ""}${s.on ? `<button id="voxEar" aria-label="${ear}" title="${ear}" aria-pressed="${!!s.deaf}">${s.deaf ? VOX_DEAF : VOX_EAR}</button>` : ""}<button id="voxBtn" aria-label="${label}" title="${label}" aria-pressed="${s.on && !s.muted}">${!s.on || s.muted ? VOX_OFF : VOX_MIC}${n ? `<u>${n}</u>` : ""}</button>`;
   $("#voxBtn").onclick = async () => { const st = room.voice.state(); if (!st.on){ await room.voice.start(); } else room.voice.mute(!st.muted); VOX_KEY = ""; voxRender(); };
+  const eb = $("#voxEar"); if (eb) eb.onclick = () => { room.voice.deaf(!room.voice.state().deaf); VOX_KEY = ""; voxRender(); };
 }
 p2pRoom.onVoice = voxRender;
 setInterval(voxRender, 2000);
