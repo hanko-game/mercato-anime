@@ -21626,9 +21626,15 @@ function hkDiag(k, e){ try { const d = JSON.parse(localStorage.getItem("mercato-
 .mihome .ic{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;font:900 20px "Zen Kaku Gothic New",sans-serif;color:#fff;background:linear-gradient(140deg,#c9a2ff,#7a4ad8)}
 .mihome small{display:block;font:800 10px var(--mono,monospace);letter-spacing:.14em;color:#d6c2ff;text-transform:uppercase}.mihome strong{display:block;font:900 15px var(--title)}.mihome span.s{display:block;font-size:12.5px;color:#cbbfd8}
 .mihome .pill{font:800 12px var(--title);padding:7px 11px;border-radius:12px;background:linear-gradient(180deg,#ff4a55,#d1101e);white-space:nowrap}.mihome .pill.n{background:#ffffff12;color:#d6c2ff}
-.hkplay{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:start;margin:4px 0 16px;padding:12px 14px;border-radius:16px;background:linear-gradient(110deg,#2a1d0a,#14100a 60%,#1a0c10);border:1px solid #f7c64a55;box-shadow:0 10px 24px #0006}
-.hkplay .ic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;font:900 18px "Zen Kaku Gothic New",sans-serif;color:#2a1503;background:radial-gradient(circle at 35% 30%,#fff3c4,#f7c64a 55%,#c8902a)}
-.hkplay b{display:block;font:900 14.5px var(--title);color:#fff3c4;margin-bottom:4px}.hkplay ul{margin:0;padding:0;list-style:none;display:grid;gap:4px;font-size:12.5px;line-height:1.4;color:#e6dccd}.hkplay li::before{content:"✦ ";color:#f7c64a}
+.hkplay{position:relative;margin:6px 0 18px;padding:14px;border-radius:20px;background:linear-gradient(160deg,#1d150a,#0f0c0e 55%,#140b10);box-shadow:0 14px 30px #0007,inset 0 1px 0 #ffffff12}
+.hkplay::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;background:linear-gradient(120deg,#f7c64a99,#ffffff10 40%,#ff2d3a44 70%,#f7c64a66);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+.hkplay .hd{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0 2px 12px}.hkplay .hd b{font:900 15px var(--title);color:#fff3c4}.hkplay .hd small{font:700 10.5px var(--mono,monospace);letter-spacing:.12em;color:#b9a98a;text-transform:uppercase;white-space:nowrap}
+.hkplay .g{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}@media (min-width:700px){.hkplay .g{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.hkplay .t{display:grid;grid-template-columns:auto minmax(0,1fr);gap:9px;align-items:center;padding:10px;border-radius:14px;background:#ffffff08;box-shadow:inset 0 0 0 1px #ffffff12}
+.hkplay .t .ic{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;font:900 15px "Zen Kaku Gothic New",sans-serif;color:#2a1503;background:radial-gradient(circle at 35% 30%,#fff3c4,#f7c64a 55%,#c8902a)}
+.hkplay .t .ic.b{background:radial-gradient(circle at 35% 30%,#e6f2ff,#7fb6ff 55%,#2f5fd0);color:#fff}.hkplay .t .ic.f{background:radial-gradient(circle at 35% 30%,#ffe0c8,#ff7a3a 55%,#b3300e);color:#fff}.hkplay .t .ic.r{background:radial-gradient(circle at 35% 30%,#ffd6dc,#ff4a55 55%,#a3000f);color:#fff}
+.hkplay .t strong{display:block;font:900 15px var(--title);color:#fff;white-space:nowrap}.hkplay .t span{display:block;font:600 11px/1.3 Inter,system-ui,sans-serif;color:#bfb6ad}
+.hkplay .ft{margin:10px 2px 0;font-size:11.5px;color:#a99f96}
 /* 3 nov. 2026 : bandeau des boosters secrets plus fin et premium (verre sombre, filet de couleur, kanji en médaillon) */
 .osecs .osec.osec{display:inline-flex;align-items:center;gap:10px;padding:6px 14px 6px 6px;border-radius:14px;background:rgba(14,12,18,.72);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);color:#f3f1f5;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--sc) 60%,transparent),0 0 22px color-mix(in srgb,var(--sc) 22%,transparent);font-size:12px;text-align:left}
 .osecs .osec i{width:30px;height:30px;flex:none;border-radius:9px;display:grid;place-items:center;font-size:15px;color:#0e0d12;background:radial-gradient(circle at 35% 30%,#fff,var(--sc) 60%);box-shadow:0 0 12px color-mix(in srgb,var(--sc) 55%,transparent)}
@@ -21953,11 +21959,12 @@ setInterval(() => { try { if (document.querySelector("#bpHome")) hkMisHome(); } 
     const box = first.parentElement.closest("div") || first.parentElement; (document.querySelector("#tcMain") || box.parentElement).insertAdjacentHTML("afterbegin", `<div class="hkmisb"><span class="lv">${lv}</span><span><b>Tes missions font monter le pass de saison.</b> Chaque mission réclamée : <b>+100 XP</b> (semaine +300, mois +600), en plus de sa récompense. Ta première connexion du jour : <b>+100 XP</b>.</span></div>`); } } } catch {} return r; }; }
 /* ---- page Jouer : ce que rapportent les parties (3 nov. 2026, c'était écrit nulle part) ---- */
 function hkPlayInfo(){ const P = document.querySelector("#nvPlay"); if (!P || !P.offsetParent || P.querySelector("#hkPlay")) return; const h = P.querySelector("h1,h2");
-  const html = `<div class="hkplay" id="hkPlay"><span class="ic">勝</span><div><b>Chaque victoire rapporte</b><ul>
-    <li><b style="display:inline;font:inherit;color:#fff">+${TC_GAIN.win} ◆</b> par victoire, en solo comme en ligne (10 victoires récompensées par jour)</li>
-    <li>Une chance de gagner un <b style="display:inline;font:inherit;color:#fff">booster de l'univers du jeu</b> (Classique, Argent, Or, voire Divin)</li>
-    <li>En ligne, ta <b style="display:inline;font:inherit;color:#fff">série de victoires</b> augmente les éclats (+${TC_GAIN.streak} ◆ par victoire d'affilée) et la chance de booster (jusqu'à 1 sur 2)</li>
-    <li>Record battu : booster garanti · chaque partie fait aussi monter le pass de saison</li></ul></div></div>`;
+  const html = `<div class="hkplay" id="hkPlay"><div class="hd"><b>Chaque victoire rapporte</b><small>Solo et en ligne</small></div><div class="g">
+    <div class="t"><span class="ic">◆</span><div><strong>+${TC_GAIN.win} ◆</strong><span>par victoire · 10 par jour</span></div></div>
+    <div class="t"><span class="ic b">札</span><div><strong>Booster</strong><span>de l'univers du jeu, 1 chance sur 4</span></div></div>
+    <div class="t"><span class="ic f">連</span><div><strong>Série</strong><span>en ligne : +${TC_GAIN.streak} ◆ et plus de boosters</span></div></div>
+    <div class="t"><span class="ic r">新</span><div><strong>Record</strong><span>battu : booster garanti</span></div></div></div>
+    <p class="ft">Chaque partie fait aussi monter ton pass de saison.</p></div>`;
   if (h) h.insertAdjacentHTML("afterend", html); else P.insertAdjacentHTML("afterbegin", html); }
 setInterval(() => { try { hkPlayInfo(); } catch {} }, 700);
 </script>
