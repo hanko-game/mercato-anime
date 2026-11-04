@@ -10060,7 +10060,7 @@ html:has(.tccine),html:has(.tccine) body,html:has(.crpov),html:has(.crpov) body,
    qui sont donc recopiées sur le support (.vf, --vfsh) ; le dos est caché tant que la carte est de face (son coin blanc dépassait en bas à gauche). */
 .tcview .vf .tc{-webkit-mask-image:-webkit-radial-gradient(white,black)}
 .tcview .vf{box-shadow:var(--vfsh,none)}
-.tcview .vf .tc.arp > img{clip-path:inset(0 round 7px)}   /* AR : l'illustration intérieure garde ses coins arrondis (Safari ignorait son arrondi une fois agrandie) */
+.tcview .vf .tc.arp > img{clip-path:inset(0 round 6cqw)}   /* AR : l'illustration intérieure garde ses coins arrondis (Safari ignorait son arrondi une fois agrandie) */
 .tcview .vcard:not(.bk) .vb{visibility:hidden;transition:visibility 0s .28s}
 .tc.f-Z.live{transition:transform .08s linear;box-shadow:0 0 54px rgba(255,122,184,.85),0 18px 40px rgba(0,0,0,.6)}
 .tc.f-Z > .aur,.tc.f-Z > .bolt,.tc.f-Z > .glare,.tc.f-Z > img.g{position:absolute}
@@ -19044,6 +19044,9 @@ body.crret:has(#cr:not(.hidden)) .crwel #crWelGo,body.crret:has(#cr:not(.hidden)
 .tc.tc.tc.arp::before,.tc.tc.tc.arp::after{display:none!important}
 .tc.tc.tc.arp{border-radius:12px!important;box-shadow:0 0 16px color-mix(in srgb,var(--am) 55%,transparent),0 10px 24px rgba(0,0,0,.6)!important}
 .tc.tc.tc.arp > img,.tc.tc.tc.arp .ap,.tc.tc.tc.arp .ag{border-radius:7px!important}
+/* 4 nov. 2026 : l'illustration intérieure des AR suit la courbe du cadre épais (avant : 7 px, l'image paraissait carrée dans un bord arrondi) ;
+   arrondi proportionnel à la carte, tenu aussi par un rognage (Safari ignore parfois l'arrondi des calques animés) */
+.tc.tc.tc.tc.arp .ap,.tc.tc.tc.tc.arp .ag{border-radius:6cqw!important;clip-path:inset(0 round 6cqw)}
 /* reflet : bande aux couleurs de la carte, invisible au repos, n'apparaît qu'en inclinant et glisse avec le doigt ou la souris (redemandé le 15 oct. 2026) */
 .tc.tc.tc.arp .ap{opacity:0!important;mix-blend-mode:normal!important;background-position:var(--px,var(--mx,40%)) 50%!important;transition:opacity .35s ease!important}
 :is(.tc.hl,.vcard.live .tc).tc.tc.arp .ap{opacity:calc(.3 + var(--ph,0) * .25)!important}   /* réduit le 16 oct. 2026 : sur téléphone l'image disparaissait en inclinant */
