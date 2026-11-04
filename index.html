@@ -12921,6 +12921,17 @@ function hsOpenUI(id, q = 1){
 .vtrwb{display:grid;grid-template-columns:40px 1fr;gap:10px;align-items:center;padding:8px 10px;border-radius:12px;background:#0b0a0e;box-shadow:inset 0 0 0 1px var(--line)}
 .vtrwb .pk{width:40px}.vtrwb .pk .pouch{width:100%;max-width:none;border-radius:4px;box-shadow:0 4px 10px rgba(0,0,0,.5);filter:none;animation:none}
 .vtrwb small{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}.vtnote .vn-f{justify-content:flex-end}
+/* 4 nov. 2026 : notification compacte. La carte de visite en pleine largeur couvrait tout le haut de l'écran :
+   elle passe en vignette à gauche, récompenses sur une ligne et bouton à droite */
+.vtnote .vn-in{width:min(100%,420px);grid-template-columns:116px minmax(0,1fr);align-items:center;gap:6px 10px;padding:10px 10px 12px}
+.vtnote .vn-h{grid-column:1/-1}
+.vtnote .vn-in > .vt{grid-column:1;grid-row:2 / span 2;width:232px;zoom:.5}
+.vtnote .vn-rw{grid-column:2;flex-wrap:nowrap;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,#000 82%,transparent);mask-image:linear-gradient(90deg,#000 82%,transparent)}
+.vtnote .vn-f{grid-column:2;justify-content:space-between;flex-wrap:nowrap}
+.vtnote .vn-go{padding:7px 12px;font-size:12.5px;white-space:nowrap}
+.vtnote .vn-m{display:none}
+.vtnote .vn-f{justify-content:flex-end}
+.vtnote .vn-x{width:30px;height:30px;font-size:13px}
 /* les autres annonces (booster gagné en partie, message d'un ami) prennent le même habillage : panneau en haut de l'écran, plus de pastille en bas */
 .tctoast.tctoast{--nc:var(--accent);left:12px;right:12px;bottom:auto;top:calc(12px + env(safe-area-inset-top,0px));transform:none;margin:0 auto;width:fit-content;max-width:min(calc(100vw - 24px),440px);z-index:10001;gap:12px;padding:11px 16px 11px 11px;border:0;border-radius:16px;cursor:pointer;
   background:linear-gradient(180deg,rgba(26,24,32,.96),rgba(14,13,18,.97));-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);font-weight:600;line-height:1.3;
