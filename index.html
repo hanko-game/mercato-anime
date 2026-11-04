@@ -10053,10 +10053,15 @@ html:has(.tccine),html:has(.tccine) body,html:has(.crpov),html:has(.crpov) body,
 .tcsh.q0{--qc:#c9a36a}.tcsh.q2{--qc:#f2c230}
 /* ---- version Légende : la plus rare. Carte vivante, sur le modèle des cartes de visite Légende (prisme, aura, double image, particules, inclinaison) ---- */
 .tccine.yZ{--yc:#d5b3ff}
-.tc.f-Z{border:2px solid transparent;background:linear-gradient(#090614,#090614) padding-box,linear-gradient(120deg,#ff5a8a,#fff275,#6ee7a8,#5ac8fa,#b07cff,#ff5a8a) border-box;background-size:auto,300% 300%;box-shadow:0 0 34px rgba(176,124,255,.6);transform:perspective(650px) rotateX(var(--vx,0deg)) rotateY(var(--vy,0deg));transition:transform .5s cubic-bezier(.2,.8,.2,1)}
-/* 3 nov. 2026 : coins de la Légende (et de toutes les cartes) : Safari et Chrome laissaient dépasser ou noircir les coins de l'illustration
-   déplacée en 3D sous un cadre arrondi incliné. Déplacement en 2D et rognage forcé (isolation) sur chaque carte. */
-.tc{isolation:isolate}
+.tc.f-Z{border:2px solid transparent;background:linear-gradient(#090614,#090614) padding-box,linear-gradient(120deg,#ff5a8a,#fff275,#6ee7a8,#5ac8fa,#b07cff,#ff5a8a) border-box;background-size:auto,300% 300%;box-shadow:0 0 34px rgba(176,124,255,.6)}
+/* 4 nov. 2026 : coins carrés sur iPhone (Épique et plus, versions rares) : Safari n'arrondit plus le rognage d'une carte isolée (isolation)
+   dont les calques sont fusionnés ou animés, ni celui d'une carte basculée en 3D. Plus d'isolation sur les cartes, plus de bascule 3D de la Légende
+   (jamais inclinée par le code). Vue en grand (carte inclinée en 3D) : seul un masque arrondit sûrement la face ; il effacerait sa lueur et sa tranche,
+   qui sont donc recopiées sur le support (.vf, --vfsh) ; le dos est caché tant que la carte est de face (son coin blanc dépassait en bas à gauche). */
+.tcview .vf .tc{-webkit-mask-image:-webkit-radial-gradient(white,black)}
+.tcview .vf{box-shadow:var(--vfsh,none)}
+.tcview .vf .tc.arp > img{clip-path:inset(0 round 7px)}   /* AR : l'illustration intérieure garde ses coins arrondis (Safari ignorait son arrondi une fois agrandie) */
+.tcview .vcard:not(.bk) .vb{visibility:hidden;transition:visibility 0s .28s}
 .tc.f-Z.live{transition:transform .08s linear;box-shadow:0 0 54px rgba(255,122,184,.85),0 18px 40px rgba(0,0,0,.6)}
 .tc.f-Z > .aur,.tc.f-Z > .bolt,.tc.f-Z > .glare,.tc.f-Z > img.g{position:absolute}
 .tc.f-Z > .aur{inset:-40%;z-index:0;pointer-events:none;background:conic-gradient(from 0deg at 50% 46%,transparent 0 20deg,rgba(255,90,138,.55) 40deg,transparent 70deg,rgba(90,200,250,.55) 130deg,transparent 170deg,rgba(255,242,117,.45) 230deg,transparent 280deg,rgba(176,124,255,.6) 320deg,transparent 360deg);filter:blur(12px);mix-blend-mode:screen;opacity:.3;-webkit-mask-image:radial-gradient(ellipse at 50% 40%,transparent 30%,#000 75%);mask-image:radial-gradient(ellipse at 50% 40%,transparent 30%,#000 75%)}
@@ -11515,6 +11520,8 @@ function tcView(c, want){
   const face = () => { V.querySelector(".vf").innerHTML = tcCard(c, {f, x: s.own[c.id]}); V.querySelector(".tcfiche-w").innerHTML = tcSheet(c, s, f); queueMicrotask(() => { try { ficheEdge(); } catch {} });   /* contour du dos posé dans la même image que la face : animations (Légende) synchronisées */ V.querySelectorAll("[data-tcf]").forEach(b => b.classList.toggle("sel", b.dataset.tcf === f)); };
   const tilt = (rx, ry, mx = 50, my = 50) => { card.style.setProperty("--rx", rx + "deg"); card.style.setProperty("--ry", (ry + (back ? 180 : 0)) + "deg"); card.style.setProperty("--mx", mx + "%"); card.style.setProperty("--my", my + "%"); card.style.setProperty("--px", mx + "%"); card.style.setProperty("--py", my + "%"); card.style.setProperty("--ph", Math.min(1, Math.hypot(mx - 50, my - 50) / 50).toFixed(2)); card.style.setProperty("--ex", (-ry * .15).toFixed(2) + "px"); card.style.setProperty("--ey", (rx * .15).toFixed(2) + "px"); };   // --ex/--ey : tranche de la carte, du côté qui s'éloigne
   face(); tilt(0, 0);
+  // 4 nov. 2026 : la face est masquée (coins arrondis sur iPhone) ; sa lueur et sa tranche sont recopiées à chaque image sur le support
+  { const vf = V.querySelector(".vf"), sh = () => { if (!V.isConnected) return; const t = vf.querySelector(".tc"); if (t) vf.style.setProperty("--vfsh", getComputedStyle(t).boxShadow); requestAnimationFrame(sh); }; sh(); }
   /* 1er nov. 2026 : vendre la version affichée depuis la fiche (le formulaire du marché demande une confirmation à cocher) */
   { const sb = V.querySelector("#tcvSell"); if (sb) sb.onclick = () => { const s2 = tcLoad(); if ((s2.lock || {})[c.id]) return frToast(c.n + " est sous cadenas : retire le cadenas pour la vendre."); if (typeof CP !== "undefined" && !CP.user) return frToast("Connecte-toi à ton compte pour vendre au marché."); if (!tcHas(s2, c, f || "")) return frToast("Tu n'as pas cette version."); V.remove(); hvSellForm(c.id, f || ""); }; }
   // cadenas (19 oct. 2026) : une carte verrouillée n'est ni recyclée (même « Recycler tout ») ni proposée à la vente
