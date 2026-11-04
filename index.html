@@ -21166,6 +21166,10 @@ new MutationObserver(() => { const sh = document.querySelector("#nvPk .nvsh>div"
 .hkinv .hkc.on{opacity:1;animation:hkfl 3.8s ease-in-out infinite}
 .hkinv .hkc .tc,.hkinv .hkc .tc.hlon:not(.no){animation:none;filter:drop-shadow(0 0 1px var(--rc))}
 .hkinv .hkc .tc{width:100%;margin:0;transition:transform .25s ease-out;box-shadow:0 0 0 1px var(--rc),0 0 6px color-mix(in srgb,var(--rc) 25%,transparent),0 30px 60px rgba(0,0,0,.7)}
+/* 4 nov. 2026 : coins carrés sur iPhone (calques de la carte qui dépassaient) : la carte est masquée en arrondi ; le masque effaçant
+   son ombre, la lueur et l'ombre portée sont reprises par son support (.hkc, couleur et arrondi recopiés de la carte) */
+.hkinv .hkc .tc{-webkit-mask-image:-webkit-radial-gradient(white,black)}
+.hkinv .hkc{border-radius:var(--hkr,12px);box-shadow:0 0 6px color-mix(in srgb,var(--rc,#fff) 25%,transparent),0 30px 60px rgba(0,0,0,.7)}
 @keyframes hkfl{0%,100%{transform:translate(-50%,-50%) rotateY(-5deg)}50%{transform:translate(-50%,calc(-50% - 1.6%)) rotateY(5deg)}}
 </style>
 <script>
@@ -21450,7 +21454,7 @@ function tcInvGL(c, o, key){ return new Promise(async res => {
   let riseOff = () => {};
   try {
     inv = HKInv.create(st, {dpr: TC_LITE ? 1.5 : 2});
-    const cw = document.createElement("div"); cw.className = "hkc"; cw.innerHTML = tcCard(c, {isNew: c.isNew, newFin: c.newFin, f: c.f}); inv.wrap.insertBefore(cw, inv.front);
+    const cw = document.createElement("div"); cw.className = "hkc"; cw.innerHTML = tcCard(c, {isNew: c.isNew, newFin: c.newFin, f: c.f}); inv.wrap.insertBefore(cw, inv.front); { const t = cw.firstElementChild, cs = t && getComputedStyle(t); if (cs){ cw.style.setProperty("--rc", cs.getPropertyValue("--rc")); cw.style.setProperty("--hkr", cs.borderTopLeftRadius); } }
     const chain = HKInv.ivChain(key), p = tcOddsPct(c, o.key), vib = v => { try { navigator.vibrate?.(v); } catch {} };
     const ev = [[400, () => { riseOff = hkRiser((HKInv.HIT - 400 - 110) / 1000); }], [HKInv.HIT, () => { riseOff(); hkBoom(); vib(key === "E" || key === "L" ? [50, 30, 120] : [60, 40, 60, 40, 180]); }]];
     HKInv.UP.slice(0, chain.length - 1).forEach(u => ev.push([u - 240, () => { hkCrack(); vib(25); }]));
